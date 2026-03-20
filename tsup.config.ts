@@ -1,0 +1,19 @@
+import { defineConfig } from "tsup";
+
+export default defineConfig({
+  entry: [
+    "src/index.ts",
+    "src/common/index.ts",
+    "src/users/index.ts",
+    "src/consultations/index.ts",
+    "src/events/index.ts",
+    "src/companies/index.ts",
+    "src/bulletins/index.ts",
+    "src/auth/index.ts",
+  ],
+  format: ["cjs", "esm"],
+  dts: true,
+  splitting: false,
+  sourcemap: true,
+  clean: true,
+});

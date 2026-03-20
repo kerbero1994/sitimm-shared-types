@@ -1,0 +1,57 @@
+{
+  "name": "@sitimm/shared-types",
+  "version": "0.1.0",
+  "description": "Shared TypeScript types for the SITIMM ecosystem",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": { "types": "./dist/index.d.mts", "default": "./dist/index.mjs" },
+      "require": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+    },
+    "./common": {
+      "import": { "types": "./dist/common/index.d.mts", "default": "./dist/common/index.mjs" },
+      "require": { "types": "./dist/common/index.d.ts", "default": "./dist/common/index.js" }
+    },
+    "./users": {
+      "import": { "types": "./dist/users/index.d.mts", "default": "./dist/users/index.mjs" },
+      "require": { "types": "./dist/users/index.d.ts", "default": "./dist/users/index.js" }
+    },
+    "./consultations": {
+      "import": { "types": "./dist/consultations/index.d.mts", "default": "./dist/consultations/index.mjs" },
+      "require": { "types": "./dist/consultations/index.d.ts", "default": "./dist/consultations/index.js" }
+    },
+    "./events": {
+      "import": { "types": "./dist/events/index.d.mts", "default": "./dist/events/index.mjs" },
+      "require": { "types": "./dist/events/index.d.ts", "default": "./dist/events/index.js" }
+    },
+    "./companies": {
+      "import": { "types": "./dist/companies/index.d.mts", "default": "./dist/companies/index.mjs" },
+      "require": { "types": "./dist/companies/index.d.ts", "default": "./dist/companies/index.js" }
+    },
+    "./bulletins": {
+      "import": { "types": "./dist/bulletins/index.d.mts", "default": "./dist/bulletins/index.mjs" },
+      "require": { "types": "./dist/bulletins/index.d.ts", "default": "./dist/bulletins/index.js" }
+    },
+    "./auth": {
+      "import": { "types": "./dist/auth/index.d.mts", "default": "./dist/auth/index.mjs" },
+      "require": { "types": "./dist/auth/index.d.ts", "default": "./dist/auth/index.js" }
+    }
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.9.0"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "license": "UNLICENSED",
+  "private": false
+}
