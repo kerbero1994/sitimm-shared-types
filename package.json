@@ -1,5 +1,5 @@
 {
-  "name": "@sitimm/shared-types",
+  "name": "@kerbero1994/shared-types",
   "version": "0.1.0",
   "description": "Shared TypeScript types for the SITIMM ecosystem",
   "main": "./dist/index.js",
@@ -51,6 +51,10 @@
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kerbero1994/sitimm-shared-types.git"
   },
   "license": "UNLICENSED",
   "private": false
