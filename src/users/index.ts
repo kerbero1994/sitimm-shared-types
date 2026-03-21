@@ -200,3 +200,50 @@ export interface UpdateProfileV2Response {
   user: UserProfileV2;
   message: string;
 }
+
+/**
+ * Extended profile with resolved catalog names.
+ * Backend: app/presentation/schemas/user.py :: UserMeResponse (extended)
+ */
+export interface UserProfileV2Extended extends UserProfileV2 {
+  scholarship_name?: string | null;
+  civil_state_name?: string | null;
+}
+
+/**
+ * Employee data from GET /users/me/employment.
+ * Backend: app/presentation/schemas/user.py :: EmployeeMeResponse
+ */
+export interface EmployeeDataV2 {
+  payroll: string | null;
+  job: string | null;
+  day_salary: string | null;
+  entry: string | null;
+  address: string | null;
+  city_text: string | null;
+  street_address: string | null;
+  state_name: string | null;
+  paternal_last: string | null;
+  maternal_last: string | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+/**
+ * Company data from GET /users/me/company.
+ * Backend: app/presentation/schemas/user.py :: CompanyMeResponse
+ */
+export interface CompanyDataV2 {
+  uuid: string | null;
+  name: string | null;
+  address: string | null;
+  country: string | null;
+  phone: string | null;
+  industrial_park: string | null;
+  has_committee: boolean | null;
+  colective_contract: string | null;
+  internal_regulation: string | null;
+  other_documents: string | null;
+  latitude: number | null;
+  longitude: number | null;
+}

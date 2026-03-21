@@ -27,6 +27,8 @@ export const V1_PUBLIC_ENDPOINTS = {
 export const V2_ENDPOINTS = {
   // Profile
   USERS_ME: "/users/me",
+  USERS_ME_EMPLOYMENT: "/users/me/employment",
+  USERS_ME_COMPANY: "/users/me/company",
 
   // Event Participants
   EVENT_PARTICIPANTS: "/event-participants",

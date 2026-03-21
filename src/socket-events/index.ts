@@ -46,3 +46,10 @@ export const STATE_CHANGE_EVENTS = [
 export type ServerEvent = (typeof SERVER_EVENTS)[keyof typeof SERVER_EVENTS];
 export type ClientEvent = (typeof CLIENT_EVENTS)[keyof typeof CLIENT_EVENTS];
 export type StateChangeEvent = (typeof STATE_CHANGE_EVENTS)[number];
+
+/** Socket.IO connection configuration shared across frontends */
+export const SOCKET_CONFIG = {
+  PATH: "/ws/socket.io",
+  HEARTBEAT_INTERVAL_MS: 25_000,
+  TYPING_TIMEOUT_MS: 3_000,
+} as const;
