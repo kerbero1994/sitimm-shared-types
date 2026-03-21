@@ -20,6 +20,20 @@ export interface CloseProposalInfo {
   max_reopens: number;
 }
 
+// -- State Machine Constants --
+
+export const CONSULTATION_STATES = {
+  PENDING: 1,
+  RESOLVING: 2,
+  CLOSED: 3,
+  CLOSE_PROPOSED: 4,
+  REOPENED: 5,
+  ESCALATED: 6,
+} as const;
+
+export type ConsultationStateId =
+  (typeof CONSULTATION_STATES)[keyof typeof CONSULTATION_STATES];
+
 // -- Consultation --
 
 export interface ConsultationV2 {
