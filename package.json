@@ -1,6 +1,6 @@
 {
   "name": "@kerbero1994/shared-types",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Shared TypeScript types for the SITIMM ecosystem",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -37,6 +37,26 @@
     "./auth": {
       "import": { "types": "./dist/auth/index.d.mts", "default": "./dist/auth/index.mjs" },
       "require": { "types": "./dist/auth/index.d.ts", "default": "./dist/auth/index.js" }
+    },
+    "./endpoints": {
+      "import": { "types": "./dist/endpoints/index.d.mts", "default": "./dist/endpoints/index.mjs" },
+      "require": { "types": "./dist/endpoints/index.d.ts", "default": "./dist/endpoints/index.js" }
+    },
+    "./socket-events": {
+      "import": { "types": "./dist/socket-events/index.d.mts", "default": "./dist/socket-events/index.mjs" },
+      "require": { "types": "./dist/socket-events/index.d.ts", "default": "./dist/socket-events/index.js" }
+    },
+    "./validation": {
+      "import": { "types": "./dist/validation/index.d.mts", "default": "./dist/validation/index.mjs" },
+      "require": { "types": "./dist/validation/index.d.ts", "default": "./dist/validation/index.js" }
+    },
+    "./locales": {
+      "import": { "types": "./dist/locales/index.d.mts", "default": "./dist/locales/index.mjs" },
+      "require": { "types": "./dist/locales/index.d.ts", "default": "./dist/locales/index.js" }
+    },
+    "./feature-flags": {
+      "import": { "types": "./dist/feature-flags/index.d.mts", "default": "./dist/feature-flags/index.mjs" },
+      "require": { "types": "./dist/feature-flags/index.d.ts", "default": "./dist/feature-flags/index.js" }
     }
   },
   "files": ["dist", "README.md"],

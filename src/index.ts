@@ -5,3 +5,8 @@ export * from "./consultations";
 export * from "./events";
 export * from "./companies";
 export * from "./bulletins";
+export * from "./endpoints";
+export * from "./socket-events";
+export * from "./validation";
+export * from "./locales";
+export * from "./feature-flags";
