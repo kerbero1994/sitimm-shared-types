@@ -51,3 +51,11 @@ export const V2_ENDPOINTS = {
 
 export type V1PublicEndpoint = (typeof V1_PUBLIC_ENDPOINTS)[keyof typeof V1_PUBLIC_ENDPOINTS];
 export type V2Endpoint = (typeof V2_ENDPOINTS)[keyof typeof V2_ENDPOINTS];
+
+/** Replace `{param}` placeholders in endpoint templates */
+export function endpoint(
+  template: string,
+  params: Record<string, string>
+): string {
+  return template.replace(/\{(\w+)\}/g, (_, key) => params[key] ?? `{${key}}`);
+}
