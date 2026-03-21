@@ -98,6 +98,7 @@ export interface CreateConsultationV2Request {
 // -- Update (take / solve / rate) --
 
 export interface UpdateConsultationV2Request {
+  uuid: string;
   action: "take" | "solve" | "rate";
   solution?: string;
   score?: number;
