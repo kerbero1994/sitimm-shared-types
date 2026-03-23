@@ -1,16 +1,27 @@
 /**
- * User types, permissions, and profile types.
+ * User types, permissions, field permissions, and profile types.
  *
  * Backend equivalents:
- * - UserType      -> app/domain/enums/user_types.py :: UserType(IntEnum)
- * - Action        -> app/domain/enums/permissions.py :: Action(StrEnum)
- * - Resource      -> app/domain/enums/permissions.py :: Resource(StrEnum)
- * - UserProfileV2 -> app/presentation/schemas/user.py (V2 response)
+ * - UserType          -> app/domain/enums/user_types.py :: UserType(IntEnum)
+ * - Action            -> app/domain/enums/permissions.py :: Action(StrEnum)
+ * - Resource          -> app/domain/enums/permissions.py :: Resource(StrEnum)
+ * - FieldPermissions  -> app/application/services/field_permissions.py
+ * - UserBasicV2       -> app/presentation/schemas/user_v2.py :: UserBasicV2
+ * - UserProfileV2     -> app/presentation/schemas/user_v2.py :: UserProfileV2
+ * - EmploymentV2      -> app/presentation/schemas/user_v2.py :: EmploymentV2
+ * - UserMeV2Response  -> app/presentation/schemas/user_v2.py :: UserMeV2Response
  */
+
+// ============================================================
+// User Types & Hierarchy
+// ============================================================
 
 /**
  * Production user type IDs matching mini-back IntEnum.
  * Backend: app/domain/enums/user_types.py :: UserType
+ *
+ * V2 changes: SUPER_ADMIN eliminated (maps to MANAGER for backward compat).
+ * ADMIN now sits above sub-admins (ADMIN_COMMUNICATION, ADMIN_EMPLOYEES, FINANCIAL).
  */
 export const UserType = {
   INVITADO: 41726,
@@ -20,26 +31,55 @@ export const UserType = {
   ADMIN: 81493,
   ADMIN_COMMUNICATION: 31847,
   ADMIN_EMPLOYEES: 29563,
-  SUPER_ADMIN: 72468,
   FINANCIAL: 85672,
   MANAGER: 45298,
 } as const;
 
 export type UserTypeValue = (typeof UserType)[keyof typeof UserType];
 
-/** Hierarchy levels for each role (-1 = guest, 6 = highest) */
+/**
+ * @deprecated SUPER_ADMIN was removed in V2. DB rows with this ID map to MANAGER.
+ * Use only for backward-compat migration logic.
+ */
+export const DEPRECATED_SUPER_ADMIN_ID = 72468 as const;
+
+/**
+ * V2 hierarchy levels (0 = guest, 6 = supreme).
+ * Backend: app/domain/enums/user_types.py :: _HIERARCHY
+ *
+ * Key V2 changes vs V1:
+ * - ADMIN moved from 3 -> 5 (now above sub-admins)
+ * - FINANCIAL moved from 5 -> 4 (now peer of other sub-admins)
+ * - SUPER_ADMIN removed (was level 4)
+ * - All levels shifted: INVITADO is now 0 (was -1)
+ */
 export const USER_TYPE_HIERARCHY: Record<UserTypeValue, number> = {
-  [UserType.INVITADO]: -1,
-  [UserType.EMPLOYEE]: 0,
-  [UserType.HR]: 1,
-  [UserType.ADVISOR]: 2,
-  [UserType.ADMIN]: 3,
-  [UserType.ADMIN_COMMUNICATION]: 3,
-  [UserType.ADMIN_EMPLOYEES]: 3,
-  [UserType.SUPER_ADMIN]: 4,
-  [UserType.FINANCIAL]: 5,
+  [UserType.INVITADO]: 0,
+  [UserType.EMPLOYEE]: 1,
+  [UserType.HR]: 2,
+  [UserType.ADVISOR]: 3,
+  [UserType.ADMIN_COMMUNICATION]: 4,
+  [UserType.ADMIN_EMPLOYEES]: 4,
+  [UserType.FINANCIAL]: 4,
+  [UserType.ADMIN]: 5,
   [UserType.MANAGER]: 6,
 };
+
+/**
+ * Ordered list of user types from lowest to highest hierarchy.
+ * Backend: app/domain/enums/user_types.py :: UserType.hierarchy_order()
+ */
+export const USER_TYPE_ORDER: readonly UserTypeValue[] = [
+  UserType.INVITADO,
+  UserType.EMPLOYEE,
+  UserType.HR,
+  UserType.ADVISOR,
+  UserType.ADMIN_COMMUNICATION,
+  UserType.ADMIN_EMPLOYEES,
+  UserType.FINANCIAL,
+  UserType.ADMIN,
+  UserType.MANAGER,
+];
 
 /** Check if a user type meets or exceeds a required hierarchy level */
 export function hasAtLeast(
@@ -51,6 +91,21 @@ export function hasAtLeast(
     (USER_TYPE_HIERARCHY[required] ?? 999)
   );
 }
+
+/**
+ * Resolve a raw DB integer to a UserTypeValue, handling SUPER_ADMIN backward compat.
+ * Returns undefined for unknown values.
+ */
+export function resolveUserType(value: number | null | undefined): UserTypeValue | undefined {
+  if (value == null) return undefined;
+  if (value === DEPRECATED_SUPER_ADMIN_ID) return UserType.MANAGER;
+  const valid = new Set<number>(Object.values(UserType));
+  return valid.has(value) ? (value as UserTypeValue) : undefined;
+}
+
+// ============================================================
+// Permissions (Action + Resource)
+// ============================================================
 
 /**
  * Permission actions.
@@ -66,7 +121,7 @@ export const Action = {
 export type ActionValue = (typeof Action)[keyof typeof Action];
 
 /**
- * Controllable resources — matches production entities.js.
+ * Controllable resources — matches production entities.
  * Backend: app/domain/enums/permissions.py :: Resource(StrEnum)
  */
 export const Resource = {
@@ -133,6 +188,8 @@ export const Resource = {
   COMPANY_FORM_CAMPAIGNS: "company_form_campaigns",
   COMPANY_FORM_ENTRIES: "company_form_entries",
   COMPANY_FORM_QUESTION_TYPES: "company_form_question_types",
+  COMPANY_CONTACTS: "company_contacts",
+  COMPANY_TECHNICAL_DETAILS: "company_technical_details",
   SEND_NOTIFICATIONS: "send_notifications",
   NOTIFICATIONS: "notifications",
   LOGS: "logs",
@@ -150,83 +207,172 @@ export const Resource = {
 
 export type ResourceValue = (typeof Resource)[keyof typeof Resource];
 
+// ============================================================
+// Field Permissions System
+// ============================================================
+
+/** Permission state for a profile field */
+export type FieldPermissionState = "editable" | "readonly" | "hidden";
+
 /**
- * V2 user profile response.
- * Backend: app/presentation/schemas/user.py (V2)
- * All fields use snake_case matching the backend response.
+ * All profile fields tracked by the field permissions system.
+ * camelCase — matches BE aliases and API JSON response.
+ * Backend: app/application/services/field_permissions.py :: _ALL_FIELDS
+ */
+export const PROFILE_FIELDS = [
+  "name",
+  "lastNames",
+  "paternalLast",
+  "maternalLast",
+  "dateOfBirth",
+  "sex",
+  "rfc",
+  "curp",
+  "nss",
+  "personalPhone",
+  "mobilePhone",
+  "email",
+  "otherMail",
+  "profilePic",
+  "address",
+  "city",
+  "charge",
+  "title",
+  "scholarshipId",
+  "civilStateId",
+  "affiliationDate",
+] as const;
+
+export type ProfileFieldName = (typeof PROFILE_FIELDS)[number];
+
+/**
+ * Field permission map returned by GET /api/v2/users/me → fieldPermissions.
+ * Maps each profile field to its permission state for the current user type.
+ * Backend: app/application/services/field_permissions.py :: get_field_permissions()
+ */
+export type FieldPermissions = Record<ProfileFieldName, FieldPermissionState>;
+
+/**
+ * Semantic field groups — mirrors BE categories for building form sections.
+ * Backend: app/application/services/field_permissions.py :: _CONTACT, _PERSONAL, etc.
+ */
+export const FIELD_GROUPS = {
+  /** Contact fields — editable by everyone */
+  CONTACT: ["personalPhone", "mobilePhone", "email", "otherMail", "profilePic"] as const,
+  /** Personal identity fields */
+  PERSONAL: ["name", "lastNames", "paternalLast", "maternalLast", "dateOfBirth", "sex"] as const,
+  /** Census/sindical fields (RFC, CURP, NSS) */
+  SINDICAL: ["rfc", "curp", "nss"] as const,
+  /** Address fields */
+  ADDRESS: ["address", "city"] as const,
+  /** Demographic stats fields */
+  STATS: ["scholarshipId", "civilStateId"] as const,
+  /** Labor fields */
+  LABOR: ["charge", "title"] as const,
+  /** Sindical metadata */
+  SINDICAL_META: ["affiliationDate"] as const,
+} as const;
+
+// ============================================================
+// V2 User Schemas (match mini-back Pydantic schemas, camelCase aliases)
+// ============================================================
+
+/**
+ * Basic user info from User table.
+ * Backend: app/presentation/schemas/user_v2.py :: UserBasicV2
+ */
+export interface UserBasicV2 {
+  id: number;
+  uuid: string;
+  email: string | null;
+  userType: number;
+}
+
+/**
+ * User profile fields (19 fields + name split).
+ * Backend: app/presentation/schemas/user_v2.py :: UserProfileV2
+ *
+ * Deprecated fields NOT exposed: isFatherAlive, titleType.
  */
 export interface UserProfileV2 {
-  uuid: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  mobile_phone: string | null;
-  personal_phone: string | null;
-  address: string | null;
-  rfc: string | null;
-  company_uuid: string | null;
-  company_name: string | null;
-  avatar_url: string | null;
-  user_type: number | null;
-  date_of_birth: string | null;
+  name: string | null;
+  lastNames: string | null;
+  paternalLast: string | null;
+  maternalLast: string | null;
+  dateOfBirth: string | null;
   sex: string | null;
+  rfc: string | null;
   curp: string | null;
   nss: string | null;
-  other_email: string | null;
+  personalPhone: string | null;
+  mobilePhone: string | null;
+  otherMail: string | null;
+  profilePic: string | null;
   charge: string | null;
-  civil_state_id: number | null;
-  scholarship_id: number | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface UpdateProfileV2Request {
-  email?: string;
-  mobile_phone?: string;
-  personal_phone?: string;
-  address?: string;
-  other_email?: string;
-  avatar_url?: string;
-  new_password?: string;
-  current_password?: string;
-}
-
-export interface ChangePasswordV2Request {
-  current_password: string;
-  new_password: string;
-}
-
-export interface UpdateProfileV2Response {
-  user: UserProfileV2;
-  message: string;
-}
-
-/**
- * Extended profile with resolved catalog names.
- * Backend: app/presentation/schemas/user.py :: UserMeResponse (extended)
- */
-export interface UserProfileV2Extended extends UserProfileV2 {
-  scholarship_name?: string | null;
-  civil_state_name?: string | null;
-}
-
-/**
- * Employee data from GET /users/me/employment.
- * Backend: app/presentation/schemas/user.py :: EmployeeMeResponse
- */
-export interface EmployeeDataV2 {
-  payroll: string | null;
-  job: string | null;
-  day_salary: string | null;
-  entry: string | null;
+  title: string | null;
   address: string | null;
-  city_text: string | null;
-  street_address: string | null;
-  state_name: string | null;
-  paternal_last: string | null;
-  maternal_last: string | null;
-  latitude: number | null;
-  longitude: number | null;
+  city: string | null;
+  affiliationDate: string | null;
+  scholarshipId: number | null;
+  civilStateId: number | null;
+}
+
+/**
+ * Employment data from Employee table.
+ * Backend: app/presentation/schemas/user_v2.py :: EmploymentV2
+ */
+export interface EmploymentV2 {
+  companyName: string | null;
+  job: string | null;
+  daySalary: number | null;
+  entryDate: string | null;
+}
+
+/**
+ * Full response from GET /api/v2/users/me.
+ * Backend: app/presentation/schemas/user_v2.py :: UserMeV2Response
+ *
+ * The fieldPermissions map tells the FE which fields to render as
+ * editable inputs, readonly text, or hidden — per user type.
+ */
+export interface UserMeV2Response {
+  user: UserBasicV2;
+  profile: UserProfileV2;
+  employment: EmploymentV2 | null;
+  fieldPermissions: FieldPermissions;
+}
+
+/**
+ * PATCH /api/v2/users/me — partial profile update.
+ * Backend: app/presentation/schemas/user_v2.py :: UserProfileUpdateV2
+ *
+ * Only fields marked "editable" in fieldPermissions can be submitted.
+ * Server returns 403 if a non-editable field is included.
+ */
+export interface UserProfileUpdateV2 {
+  name?: string;
+  lastNames?: string;
+  paternalLast?: string;
+  maternalLast?: string;
+  dateOfBirth?: string;
+  sex?: string;
+  rfc?: string;
+  curp?: string;
+  nss?: string;
+  personalPhone?: string;
+  mobilePhone?: string;
+  otherMail?: string;
+  profilePic?: string;
+  address?: string;
+  city?: string;
+  scholarshipId?: number;
+  civilStateId?: number;
+}
+
+/** Password change request — separate from profile update */
+export interface ChangePasswordV2Request {
+  currentPassword: string;
+  newPassword: string;
 }
 
 /**
@@ -239,11 +385,11 @@ export interface CompanyDataV2 {
   address: string | null;
   country: string | null;
   phone: string | null;
-  industrial_park: string | null;
-  has_committee: boolean | null;
-  colective_contract: string | null;
-  internal_regulation: string | null;
-  other_documents: string | null;
+  industrialPark: string | null;
+  hasCommittee: boolean | null;
+  colectiveContract: string | null;
+  internalRegulation: string | null;
+  otherDocuments: string | null;
   latitude: number | null;
   longitude: number | null;
 }
