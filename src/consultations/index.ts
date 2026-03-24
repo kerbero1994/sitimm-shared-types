@@ -195,7 +195,7 @@ export interface ConsultationTypeV2 {
   content: string;
 }
 
-// -- Socket.IO Events --
+// -- Socket.IO Client State --
 
 export type SocketConnectionStatus =
   | "disconnected"
@@ -204,17 +204,85 @@ export type SocketConnectionStatus =
   | "reconnecting"
   | "auth_failed";
 
-export interface SocketPresenceUser {
-  user_uuid: string;
-  last_seen: string;
-}
+// -- Socket.IO Event Payloads (Server → Client) --
+// Typed payloads for each server event. See socket-events for event names.
 
-export interface SocketPresencePayload {
+/** new_message — broadcast when a message is sent or replayed on join */
+export interface WsNewMessagePayload {
+  uuid: string | null;
   consultation_uuid: string;
-  users: SocketPresenceUser[];
+  body: string;
+  author_uuid: string;
+  author_name: string;
+  author_role: "employee" | "advisor" | "system";
+  message_type: MessageType;
+  is_internal: boolean;
+  created_at: string;
 }
 
-export interface SocketErrorPayload {
-  code: string;
+/** consultation_taken — advisor took the consultation */
+export interface WsConsultationTakenPayload {
+  consultation_uuid: string;
+  advisor_uuid: string;
+  advisor_name: string;
+  taken_at: string | null;
+}
+
+/** close_proposed — advisor proposed closing */
+export interface WsCloseProposedPayload {
+  consultation_uuid: string;
+  proposed_solution: string;
+  proposed_at: string | null;
+}
+
+/** close_confirmed — employee confirmed closure */
+export interface WsCloseConfirmedPayload {
+  consultation_uuid: string;
+  closed_at: string | null;
+  score: number | null;
+  feedback: string | null;
+}
+
+/** close_rejected — employee rejected close proposal */
+export interface WsCloseRejectedPayload {
+  consultation_uuid: string;
+  reason: string;
+  reopen_count: number;
+}
+
+/** consultation_rated — employee rated a closed consultation */
+export interface WsConsultationRatedPayload {
+  consultation_uuid: string;
+  score: number;
+  feedback: string | null;
+}
+
+/** auto_expired — Celery task closed an expired proposal (72h TTL) */
+export interface WsAutoExpiredPayload {
+  consultation_uuid: string;
+  closed_reason: "auto_expired";
+}
+
+/** presence — user joined/left a consultation room */
+export interface WsPresencePayload {
+  user_id: number;
+  status: "online" | "offline";
+}
+
+/** typing_start / typing_stop — typing indicator */
+export interface WsTypingPayload {
+  user_id: number;
+  consultation_uuid: string;
+}
+
+/** ack — read receipt relay */
+export interface WsAckPayload {
+  user_id: number;
+  message_uuid: string;
+  consultation_uuid: string;
+}
+
+/** error — server error notification */
+export interface WsErrorPayload {
   message: string;
 }
