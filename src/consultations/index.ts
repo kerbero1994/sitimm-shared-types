@@ -7,7 +7,12 @@
  * - CloseProposalInfo      -> consultation_v2.py :: CloseProposalInfoV2
  * - ConsultationTypeV2     -> consultation_v2.py :: ConsultationTypeV2Response
  *
- * States: 1=Pending, 2=Resolving, 3=Closed, 4=CloseProposed, 5=Reopened, 6=Escalated
+ * States: 1=Pending, 2=Resolving, 3=Closed, 4=CloseProposed, 5=Reopened
+ *
+ * Constants:
+ * - MAX_MESSAGES          -> consultation_messages_v2.py :: MAX_MESSAGES
+ * - MAX_REOPENS           -> consultation_helpers.py :: MAX_REOPENS
+ * - CLOSE_PROPOSAL_TTL_HOURS -> consultation_helpers.py :: CLOSE_PROPOSAL_TTL_HOURS
  */
 
 // -- Close Proposal --
@@ -28,7 +33,19 @@ export const CONSULTATION_STATES = {
   CLOSED: 3,
   CLOSE_PROPOSED: 4,
   REOPENED: 5,
-  ESCALATED: 6,
+} as const;
+
+/**
+ * Consultation limits — match mini-back constants.
+ * Backend: consultation_helpers.py, consultation_messages_v2.py
+ */
+export const CONSULTATION_LIMITS = {
+  /** Max messages per consultation thread */
+  MAX_MESSAGES: 50,
+  /** Max times a consultation can be reopened after close proposal */
+  MAX_REOPENS: 3,
+  /** Hours before a close proposal auto-expires */
+  CLOSE_PROPOSAL_TTL_HOURS: 72,
 } as const;
 
 export type ConsultationStateId =

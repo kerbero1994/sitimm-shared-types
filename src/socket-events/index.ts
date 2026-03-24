@@ -10,6 +10,7 @@
 
 export const SERVER_EVENTS = {
   NEW_MESSAGE: "new_message",
+  CONSULTATION_TAKEN: "consultation_taken",
   CLOSE_PROPOSED: "close_proposed",
   CLOSE_CONFIRMED: "close_confirmed",
   CLOSE_REJECTED: "close_rejected",
@@ -36,6 +37,7 @@ export const CLIENT_EVENTS = {
 
 /** Events that indicate a consultation state change (trigger cache invalidation) */
 export const STATE_CHANGE_EVENTS = [
+  SERVER_EVENTS.CONSULTATION_TAKEN,
   SERVER_EVENTS.CLOSE_PROPOSED,
   SERVER_EVENTS.CLOSE_CONFIRMED,
   SERVER_EVENTS.CLOSE_REJECTED,
