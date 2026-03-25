@@ -50,6 +50,21 @@ export const V2_ENDPOINTS = {
   USERS_ME_EMPLOYMENT: "/users/me/employment",
   /** GET → V2Response<CompanyDataV2>. Returns company info for current user. Auth required. */
   USERS_ME_COMPANY: "/users/me/company",
+  /** POST → Body: AvatarUploadRequest (fileUuid). Returns V2Response<AvatarV2Response>. Auth required. */
+  USERS_ME_AVATAR: "/users/me/avatar",
+  /** DELETE → V2Response<AvatarV2Response>. Removes profile picture. Auth required. */
+  USERS_ME_AVATAR_DELETE: "/users/me/avatar",
+
+  // ── Social Auth ───────────────────────────────────────────
+
+  /** POST → Body: SocialLoginRequest. Returns V2Response<SocialLoginResponse>. No auth. */
+  AUTH_SOCIAL_LOGIN: "/auth/social/login",
+  /** POST → Body: VerifyIdentityRequest. Returns V2Response<VerifyIdentityResponse>. No auth. */
+  AUTH_SOCIAL_VERIFY: "/auth/social/verify",
+  /** POST → Body: GuestLoginRequest. Returns V2Response<GuestLoginResponse>. No auth. */
+  AUTH_SOCIAL_GUEST: "/auth/social/guest",
+  /** GET → V2Response<SocialAccountListResponse>. Auth required. */
+  AUTH_SOCIAL_ACCOUNTS: "/auth/social/accounts",
 
   // ── Events ───────────────────────────────────────────────
 
@@ -125,6 +140,26 @@ export const V2_ENDPOINTS = {
   CONSULTATION_REJECT_CLOSE: "/consultations/{uuid}/reject-close",
   /** POST → Body: RateConsultationV2Request (score: 1–5, feedback?). State must be 3 with score=null. Employee-only. */
   CONSULTATION_RATE: "/consultations/{uuid}/rate",
+
+  // ── Consultation Admin ────────────────────────────────────
+
+  /** POST → Body: AssignConsultationV2Request. Admin-only. Assigns advisor. */
+  CONSULTATION_ASSIGN: "/consultations/{uuid}/assign",
+  /** POST → Body: EscalateConsultationV2Request. Admin-only. Escalates priority. */
+  CONSULTATION_ESCALATE: "/consultations/{uuid}/escalate",
+  /** POST → Body: TransferConsultationV2Request. Admin-only. Transfers to another advisor. */
+  CONSULTATION_TRANSFER: "/consultations/{uuid}/transfer",
+  /** POST → Body: AddCoAdvisorV2Request. Admin-only. Adds co-advisor. */
+  CONSULTATION_ADD_ADVISOR: "/consultations/{uuid}/add-advisor",
+
+  // ── Consultation Reports ──────────────────────────────────
+
+  /** POST → Body: CreateReportRequest (reason: 10–2000 chars). Auth required. Files a report against the other party. */
+  CONSULTATION_REPORT: "/consultations/{uuid}/report",
+  /** GET → V2Response<ListReportsV2Response>. Query: status, report_type, company_uuid, date_from, date_to, page, per_page. Admin-only. */
+  CONSULTATION_REPORTS: "/consultations/reports",
+  /** PATCH → Body: ResolveReportRequest. Admin-only. Resolves/dismisses a report. */
+  CONSULTATION_REPORT_RESOLVE: "/consultations/reports/{uuid}",
 
   // ── Bulletins ────────────────────────────────────────────
 

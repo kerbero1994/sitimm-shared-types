@@ -122,6 +122,141 @@ export interface LoginV2Response {
   };
 }
 
+// -- Social Auth --
+
+/** OAuth provider. Backend: social_auth.py :: SocialLoginRequest.provider */
+export type SocialProvider = "google" | "apple";
+
+/** Social login status. Backend: social_auth.py :: SocialLoginResponse.status */
+export type SocialLoginStatus = "authenticated" | "needs_verification" | "requires_setup";
+
+/**
+ * Request body for POST /api/v2/auth/social/login.
+ * Backend: social_auth.py :: SocialLoginRequest
+ */
+export interface SocialLoginRequest {
+  /** OAuth provider. */
+  provider: SocialProvider;
+  /** ID token from the provider (Google/Apple). Min 10 chars. */
+  id_token: string;
+}
+
+/**
+ * Response from POST /api/v2/auth/social/login.
+ * Backend: social_auth.py :: SocialLoginResponse
+ *
+ * Flow:
+ * - "authenticated" → returning user, token is a full JWT. Login complete.
+ * - "needs_verification" → new user, call /auth/social/verify with session_id + RFC.
+ * - "requires_setup" → user exists but needs additional setup.
+ */
+export interface SocialLoginResponse {
+  /** Login status determining next step. */
+  status: SocialLoginStatus;
+  /** JWT access token. Only present when status="authenticated". */
+  token: string | null;
+  /** JWT refresh token. Only present when status="authenticated". */
+  refreshToken: string | null;
+  /** User UUID. Only present when status="authenticated". */
+  user_uuid: string | null;
+  /** Numeric user type. Only present when status="authenticated". */
+  user_type: number | null;
+  /** Temporary session ID. Only present when status="needs_verification". */
+  session_id: string | null;
+  /** Email from the OAuth provider. Shown in verification screen. */
+  social_email: string | null;
+  /** Name from the OAuth provider. */
+  social_name: string | null;
+  /** Whether the user needs to update contact info. */
+  needsContactUpdate: boolean | null;
+  /** Reason why contact update is needed. */
+  contactUpdateReason: string | null;
+}
+
+/**
+ * Request body for POST /api/v2/auth/social/verify.
+ * Links a social login to an existing employee via RFC.
+ * Backend: social_auth.py :: VerifyIdentityRequest
+ */
+export interface VerifyIdentityRequest {
+  /** Temporary session ID from SocialLoginResponse. */
+  session_id: string;
+  /** Employee RFC. 10–13 chars. */
+  rfc: string;
+}
+
+/**
+ * Response from POST /api/v2/auth/social/verify.
+ * Backend: social_auth.py :: VerifyIdentityResponse
+ */
+export interface VerifyIdentityResponse {
+  /** JWT access token. */
+  token: string;
+  /** JWT refresh token. */
+  refreshToken: string | null;
+  /** User UUID. */
+  user_uuid: string;
+  /** Employee UUID. */
+  employee_uuid: string;
+  /** Company name the employee belongs to. */
+  company_name: string;
+  /** Whether the user still needs additional setup. */
+  requires_setup: boolean;
+  /** Whether the user needs to update contact info. */
+  needsContactUpdate: boolean | null;
+  /** Reason why contact update is needed. */
+  contactUpdateReason: string | null;
+}
+
+/**
+ * Request body for POST /api/v2/auth/social/guest.
+ * Creates a guest (INVITADO) account from a social session.
+ * Backend: social_auth.py :: GuestLoginRequest
+ */
+export interface GuestLoginRequest {
+  /** Temporary session ID from SocialLoginResponse. */
+  session_id: string;
+}
+
+/**
+ * Response from POST /api/v2/auth/social/guest.
+ * Backend: social_auth.py :: GuestLoginResponse
+ */
+export interface GuestLoginResponse {
+  /** Always "authenticated". */
+  status: "authenticated";
+  /** JWT access token. */
+  token: string;
+  /** JWT refresh token. */
+  refreshToken: string | null;
+  /** User UUID. */
+  user_uuid: string;
+  /** Numeric user type (INVITADO = 41726). */
+  user_type: number;
+}
+
+/**
+ * Social account linked to a user.
+ * Backend: social_auth.py :: SocialAccountInfo
+ */
+export interface SocialAccountInfo {
+  /** OAuth provider name. */
+  provider: string;
+  /** Email from the provider. Null if not provided. */
+  email: string | null;
+  /** ISO-8601 datetime when the account was linked. */
+  createdAt: string;
+}
+
+/**
+ * Response from GET /api/v2/auth/social/accounts.
+ * Backend: social_auth.py :: SocialAccountListResponse
+ */
+export interface SocialAccountListResponse {
+  /** Array of linked social accounts. */
+  accounts: SocialAccountInfo[];
+}
+
 /**
  * Menu item descriptor — shell menu config (dashboard only).
  * Used by Shell to build the sidebar navigation.

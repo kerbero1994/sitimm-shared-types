@@ -5,7 +5,9 @@
  * - ConsultationV2         -> app/presentation/schemas/consultation_v2.py :: ConsultationV2Response
  * - ConsultationMessageV2  -> consultation_v2.py :: MessageV2Response
  * - CloseProposalInfo      -> consultation_v2.py :: CloseProposalInfoV2
+ * - CoAdvisorInfoV2        -> consultation_v2.py :: CoAdvisorInfoV2
  * - ConsultationTypeV2     -> consultation_v2.py :: ConsultationTypeV2Response
+ * - ReportV2Response       -> consultation_report_v2.py :: ReportV2Response
  *
  * States: 1=Pending, 2=Resolving, 3=Closed, 4=CloseProposed, 5=Reopened
  *
@@ -32,6 +34,21 @@ export interface CloseProposalInfo {
   reopen_count: number;
   /** Maximum allowed reopens (currently 3). */
   max_reopens: number;
+}
+
+// -- Co-Advisor Info --
+
+/**
+ * Co-advisor assigned to a consultation.
+ * Backend: consultation_v2.py :: CoAdvisorInfoV2
+ */
+export interface CoAdvisorInfoV2 {
+  /** Co-advisor user UUID. */
+  uuid: string;
+  /** Co-advisor full name. */
+  name: string;
+  /** ISO-8601 datetime when added. Null if unknown. */
+  added_at: string | null;
 }
 
 // -- State Machine Constants --
@@ -110,8 +127,14 @@ export interface ConsultationV2 {
   state_id: number;
   /** Initial problem description written by the affiliate. 1–10,000 chars. */
   description: string;
-  /** Priority level. Only "normal" or "high". */
+  /** @deprecated Use escalation_level instead. Only "normal" or "high". */
   priority: "normal" | "high";
+  /** Escalation level: 0=normal, 1=escalado, 2=urgente. Default: 0. */
+  escalation_level: number;
+  /** ISO-8601 datetime when escalated. Null if not escalated. */
+  escalated_at: string | null;
+  /** Name of the admin who escalated. Null if not escalated. */
+  escalated_by_name: string | null;
   /** UUID of the employee/affiliate who created the consultation. */
   affiliate_uuid: string;
   /** Full name of the affiliate (name + lastNames). */
@@ -124,6 +147,12 @@ export interface ConsultationV2 {
   advisor_uuid: string | null;
   /** Full name of the assigned advisor, or null if unassigned. */
   advisor_name: string | null;
+  /** Co-advisors assigned to this consultation. Null if none. */
+  co_advisors: CoAdvisorInfoV2[] | null;
+  /** UUID of the company associated with this consultation. */
+  company_uuid: string | null;
+  /** Name of the company associated with this consultation. */
+  company_name: string | null;
   /** Solution text, set when the advisor solves or proposes close. Null until resolved. */
   solution: string | null;
   /** Employee rating 1–5. Null until rated. Validated: ge=1, le=5. */
@@ -148,6 +177,8 @@ export interface ConsultationV2 {
   close_proposal: CloseProposalInfo | null;
   /** How many times this consultation has been reopened. Default: 0. Max: 3. */
   reopen_count: number;
+  /** Whether this consultation has an active report/complaint. Default: false. */
+  has_report: boolean;
 }
 
 // -- List --
@@ -158,15 +189,27 @@ export interface ConsultationV2 {
  */
 export interface ListConsultationsV2Request {
   /** Caller's role — determines which consultations are visible. */
-  role: "advisor" | "affiliate";
+  role: "advisor" | "affiliate" | "admin";
   /** Filter by state UUIDs. Omit or empty to return all states. */
   states?: string[];
   /** Filter by type UUIDs. Omit or empty to return all types. */
   types?: string[];
-  /** Filter by priority. Only "high" supported; omit for all priorities. */
+  /** @deprecated Use escalation_level instead. Only "high" supported; omit for all priorities. */
   priority?: "high";
+  /** Filter by escalation level (0=normal, 1=escalado, 2=urgente). */
+  escalation_level?: number;
   /** ISO-8601 date string. Only return consultations created after this date. */
   date_from?: string;
+  /** ISO-8601 date string. Only return consultations created before this date. */
+  date_to?: string;
+  /** Filter by company UUID. Admin role only. */
+  company_uuid?: string;
+  /** Filter by advisor UUID. Admin role only. */
+  advisor_uuid?: string;
+  /** If true, only return unassigned consultations. Admin role only. */
+  unassigned?: boolean;
+  /** If true, only return consultations with active reports. Admin role only. */
+  has_reports?: boolean;
   /** Page number (1-based). Default: 1. */
   page?: number;
   /** Items per page. Default: 20. Max: 100 (enforced by PAGINATION_DEFAULTS). */
@@ -221,8 +264,6 @@ export interface CreateConsultationV2Request {
  * - `"rate"` — `score` required (1–5), `feedback` optional.
  */
 export interface UpdateConsultationV2Request {
-  /** Consultation UUID (path param, included for convenience). */
-  uuid: string;
   /** Action to perform. Determines required fields. */
   action: "take" | "solve" | "rate";
   /** Solution text. Required when action="solve". */
@@ -588,4 +629,148 @@ export interface WsAckPayload {
 export interface WsErrorPayload {
   /** Human-readable error description. Check for "Authentication failed" or "Token revoked" to detect auth errors. */
   message: string;
+}
+
+// -- Admin Actions --
+
+/**
+ * Request body for POST /api/v2/consultations/{uuid}/assign.
+ * Admin-only. Assigns an advisor to a consultation.
+ * Backend: consultation_v2.py :: AssignConsultationV2Request
+ */
+export interface AssignConsultationV2Request {
+  /** UUID of the advisor to assign. */
+  advisor_uuid: string;
+}
+
+/**
+ * Request body for POST /api/v2/consultations/{uuid}/escalate.
+ * Admin-only. Escalates a consultation's priority level.
+ * Backend: consultation_v2.py :: EscalateConsultationV2Request
+ */
+export interface EscalateConsultationV2Request {
+  /** Escalation level: 1=escalado, 2=urgente. */
+  level: 1 | 2;
+  /** Optional reason for escalation. Max 2000 chars. */
+  reason?: string;
+}
+
+/**
+ * Request body for POST /api/v2/consultations/{uuid}/transfer.
+ * Admin-only. Transfers a consultation to another advisor.
+ * Backend: consultation_v2.py :: TransferConsultationV2Request
+ */
+export interface TransferConsultationV2Request {
+  /** UUID of the new advisor. */
+  advisor_uuid: string;
+  /** If true, previous advisor stays as co-advisor. Default: true. */
+  keep_previous?: boolean;
+}
+
+/**
+ * Request body for POST /api/v2/consultations/{uuid}/add-advisor.
+ * Admin-only. Adds a co-advisor to a consultation.
+ * Backend: consultation_v2.py :: AddCoAdvisorV2Request
+ */
+export interface AddCoAdvisorV2Request {
+  /** UUID of the advisor to add as co-advisor. */
+  advisor_uuid: string;
+}
+
+// -- Consultation Reports --
+
+/** Report status. Backend: consultation_report_v2.py */
+export type ReportStatus = "open" | "reviewed" | "resolved" | "dismissed";
+
+/** Report type. Backend: consultation_report_v2.py */
+export type ReportType = "report_advisor" | "report_employee";
+
+/**
+ * Consultation report response.
+ * Backend: consultation_report_v2.py :: ReportV2Response
+ */
+export interface ReportV2Response {
+  /** Report UUID. */
+  uuid: string;
+  /** UUID of the consultation being reported. */
+  consultation_uuid: string;
+  /** UUID of the user who filed the report. */
+  reporter_uuid: string;
+  /** Full name of the reporter. */
+  reporter_name: string;
+  /** UUID of the reported user. */
+  reported_uuid: string;
+  /** Full name of the reported user. */
+  reported_name: string;
+  /** Type of report. */
+  report_type: ReportType;
+  /** Report reason/description. 10–2000 chars. */
+  reason: string;
+  /** Current status of the report. */
+  status: ReportStatus;
+  /** Name of the admin who reviewed. Null if not yet reviewed. */
+  reviewed_by_name: string | null;
+  /** ISO-8601 datetime when reviewed. Null if not yet reviewed. */
+  reviewed_at: string | null;
+  /** Admin's resolution notes. Null if not resolved. Max 2000 chars. */
+  resolution_notes: string | null;
+  /** ISO-8601 datetime when the report was filed. */
+  created_at: string;
+}
+
+/**
+ * Request body for POST /api/v2/consultations/{uuid}/report.
+ * Backend: consultation_report_v2.py :: CreateReportRequest
+ */
+export interface CreateReportRequest {
+  /** Report reason. Min 10, max 2000 chars. */
+  reason: string;
+}
+
+/**
+ * Request params for GET /api/v2/consultations/reports.
+ * Backend: consultation_report_v2.py :: ListReportsV2Request
+ */
+export interface ListReportsV2Request {
+  /** Filter by report status. */
+  status?: ReportStatus;
+  /** Filter by report type. */
+  report_type?: ReportType;
+  /** Filter by company UUID. */
+  company_uuid?: string;
+  /** ISO-8601 date string. Reports created after this date. */
+  date_from?: string;
+  /** ISO-8601 date string. Reports created before this date. */
+  date_to?: string;
+  /** Page number (1-based). Default: 1. */
+  page?: number;
+  /** Items per page. Default: 20. Max: 100. */
+  per_page?: number;
+}
+
+/**
+ * Response from GET /api/v2/consultations/reports.
+ * Backend: consultation_report_v2.py :: ListReportsV2Response
+ */
+export interface ListReportsV2Response {
+  /** Array of reports matching filters. */
+  reports: ReportV2Response[];
+  /** Total count of matching reports. */
+  total: number;
+  /** Current page number. */
+  page: number;
+  /** Items per page. */
+  per_page: number;
+}
+
+/**
+ * Request body for PATCH /api/v2/consultations/reports/{uuid}.
+ * Admin-only. Resolves or dismisses a report.
+ * Backend: consultation_report_v2.py :: ResolveReportRequest
+ */
+export interface ResolveReportRequest {
+  /** New status for the report. */
+  status: "reviewed" | "resolved" | "dismissed";
+  /** Optional resolution notes. Max 2000 chars. */
+  resolution_notes?: string;
 }

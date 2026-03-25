@@ -394,6 +394,10 @@ export interface UserProfileV2 {
   otherMail: string | null;
   /** Profile picture URL (presigned S3 URL or relative path). */
   profilePic: string | null;
+  /** Medium-size profile picture URL. */
+  profilePicMedium: string | null;
+  /** Thumbnail profile picture URL. */
+  profilePicThumb: string | null;
   /** Job title/charge within the company. */
   charge: string | null;
   /** Honorific title (e.g., "Lic.", "Ing."). */
@@ -486,8 +490,6 @@ export interface UserProfileUpdateV2 {
   mobilePhone?: string;
   /** Alternate email. */
   otherMail?: string;
-  /** Profile pic URL. */
-  profilePic?: string;
   /** Street address. */
   address?: string;
   /** City name. */
@@ -504,6 +506,29 @@ export interface ChangePasswordV2Request {
   currentPassword: string;
   /** New password. Min 6, max 100 chars (FIELD_LIMITS.PASSWORD_MIN/MAX). */
   newPassword: string;
+}
+
+/**
+ * Request body for POST /api/v2/users/me/avatar.
+ * Upload profile picture via staged file UUID.
+ * Backend: app/presentation/schemas/user_v2.py :: AvatarUploadRequest
+ */
+export interface AvatarUploadRequest {
+  /** UUID of the staged file to use as avatar. Must be valid UUID v4. */
+  fileUuid: string;
+}
+
+/**
+ * Response after avatar upload/change/delete.
+ * Backend: app/presentation/schemas/user_v2.py :: AvatarV2Response
+ */
+export interface AvatarV2Response {
+  /** Full-size profile picture URL. Null if avatar was deleted. */
+  profilePic: string | null;
+  /** Medium-size profile picture URL. Null if avatar was deleted. */
+  profilePicMedium: string | null;
+  /** Thumbnail profile picture URL. Null if avatar was deleted. */
+  profilePicThumb: string | null;
 }
 
 /**

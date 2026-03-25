@@ -15,6 +15,7 @@ export default defineConfig({
     "src/validation/index.ts",
     "src/locales/index.ts",
     "src/feature-flags/index.ts",
+    "src/magazines/index.ts",
   ],
   format: ["cjs", "esm"],
   dts: true,

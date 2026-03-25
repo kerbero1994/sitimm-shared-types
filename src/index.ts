@@ -10,3 +10,4 @@ export * from "./socket-events";
 export * from "./validation";
 export * from "./locales";
 export * from "./feature-flags";
+export * from "./magazines";
