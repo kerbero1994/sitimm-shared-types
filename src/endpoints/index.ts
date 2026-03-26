@@ -190,6 +190,28 @@ export const V2_ENDPOINTS = {
   MAGAZINE_UNLIKE: "/magazines/{uuid}/like",
   /** POST → V2Response<{message}>. Record a view (debounced 1h server-side). Auth required. */
   MAGAZINE_VIEW: "/magazines/{uuid}/view",
+
+  // ── Headquarters ───────────────────────────────────────────
+
+  /** GET → V2Response<AllHQMetricsResponse>. Real-time metrics for all HQs. Admin+ only. */
+  HQ_METRICS: "/headquarters/metrics",
+  /** GET → V2Response<HQMetricsSummary>. Real-time metrics for one HQ. Admin+ only. */
+  HQ_METRICS_SINGLE: "/headquarters/{hq_uuid}/metrics",
+  /** GET → V2Response<HQHistoryResponse>. Historical snapshots. Query: from, to. Manager only. */
+  HQ_METRICS_HISTORY: "/headquarters/{hq_uuid}/metrics/history",
+
+  // ── Advisor Assignments ────────────────────────────────────
+
+  /** POST → Body: AssignRequest (advisor_uuid, company_uuids[]). Returns V2Response<AssignResponse>. Status 201. Admin+ only. */
+  ADVISOR_ASSIGN: "/advisor-assignments/assign",
+  /** POST → Body: UnassignRequest (advisor_uuid, company_uuid). Returns V2Response<UnassignResponse>. Admin+ only. */
+  ADVISOR_UNASSIGN: "/advisor-assignments/unassign",
+  /** GET → V2Response<ByAdvisorResponse>. Companies assigned to an advisor. Admin+ only. */
+  ADVISOR_BY_ADVISOR: "/advisor-assignments/by-advisor/{advisor_uuid}",
+  /** GET → V2Response<ByCompanyResponse>. Advisors assigned to a company. Admin+ only. */
+  ADVISOR_BY_COMPANY: "/advisor-assignments/by-company/{company_uuid}",
+  /** GET → V2Response<ByAdvisorResponse>. Current advisor's own companies. Advisor only. */
+  ADVISOR_MY_COMPANIES: "/advisor-assignments/my-companies",
 } as const;
 
 export type V1PublicEndpoint = (typeof V1_PUBLIC_ENDPOINTS)[keyof typeof V1_PUBLIC_ENDPOINTS];

@@ -27,7 +27,7 @@
  *
  * @example "PEGJ900515ABC" (13 chars, persona fisica)
  */
-export const RFC_PATTERN = /^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/;
+export const RFC_PATTERN = /^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{2}[0-9A]$/;
 
 /**
  * CURP (Clave Unica de Registro de Poblacion) — Mexican national ID.
@@ -35,7 +35,7 @@ export const RFC_PATTERN = /^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/;
  *
  * @example "PEGJ900515HJCRNS09"
  */
-export const CURP_PATTERN = /^[A-Z0-9]{18}$/;
+export const CURP_PATTERN = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/;
 
 /**
  * Mexican phone number — exactly 10 digits (no country code, no separators).
@@ -112,10 +112,10 @@ export const FIELD_LIMITS = {
   CITY_MAX: 100,
   /** Maximum characters for a company name. Backend: max_length=200. */
   COMPANY_NAME_MAX: 200,
-  /** Minimum valid age in years (for date-of-birth validation). */
-  AGE_MIN: 15,
-  /** Maximum valid age in years (for date-of-birth validation). */
-  AGE_MAX: 120,
+  /** Minimum valid age in years (for date-of-birth validation). Backend: 14 years. */
+  AGE_MIN: 14,
+  /** Maximum valid age in years (for date-of-birth validation). Backend: 110 years. */
+  AGE_MAX: 110,
 } as const;
 
 // -- Mexican catalog enums --

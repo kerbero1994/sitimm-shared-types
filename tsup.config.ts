@@ -16,6 +16,8 @@ export default defineConfig({
     "src/locales/index.ts",
     "src/feature-flags/index.ts",
     "src/magazines/index.ts",
+    "src/headquarters/index.ts",
+    "src/advisor-assignments/index.ts",
   ],
   format: ["cjs", "esm"],
   dts: true,
