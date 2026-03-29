@@ -6,6 +6,7 @@
  * - ConsultationMessageV2  -> consultation_v2.py :: MessageV2Response
  * - CloseProposalInfo      -> consultation_v2.py :: CloseProposalInfoV2
  * - CoAdvisorInfoV2        -> consultation_v2.py :: CoAdvisorInfoV2
+ * - GuestInfoV2            -> consultation_v2.py :: GuestInfoV2
  * - ConsultationTypeV2     -> consultation_v2.py :: ConsultationTypeV2Response
  * - ReportV2Response       -> consultation_report_v2.py :: ReportV2Response
  *
@@ -51,6 +52,24 @@ export interface CoAdvisorInfoV2 {
   added_at: string | null;
 }
 
+// -- Guest Info --
+
+/**
+ * Contact info provided by a guest (INVITADO) user at consultation creation.
+ * Backend: consultation_v2.py :: GuestInfoV2
+ *
+ * Populated from OptionalData table. Only present when
+ * `is_guest_consultation === true`.
+ */
+export interface GuestInfoV2 {
+  /** Guest's name. Null if not provided. */
+  name: string | null;
+  /** Guest's phone number. Null if not provided. */
+  phone: string | null;
+  /** Guest's email address. Null if not provided. */
+  email: string | null;
+}
+
 // -- State Machine Constants --
 
 /**
@@ -85,6 +104,12 @@ export const CONSULTATION_LIMITS = {
   MAX_REOPENS: 3,
   /** Hours before a close proposal auto-expires. Backend: CLOSE_PROPOSAL_TTL_HOURS = 72. */
   CLOSE_PROPOSAL_TTL_HOURS: 72,
+  /** Max additional REST messages a guest (INVITADO) can send per consultation. Backend: GUEST_MAX_MESSAGES = 3. */
+  GUEST_MAX_MESSAGES: 3,
+  /** Max active (non-closed) consultations a guest can have at once. */
+  GUEST_MAX_ACTIVE: 2,
+  /** Max consultations a guest can create per day. */
+  GUEST_MAX_DAILY: 3,
 } as const;
 
 export type ConsultationStateId =
@@ -179,6 +204,12 @@ export interface ConsultationV2 {
   reopen_count: number;
   /** Whether this consultation has an active report/complaint. Default: false. */
   has_report: boolean;
+  /** ISO-8601 datetime of the SLA deadline for this consultation. Null if not set. */
+  sla_deadline: string | null;
+  /** Whether the consultation was created by a guest (INVITADO) user. Default: false. */
+  is_guest_consultation: boolean;
+  /** Guest contact info (name/phone/email). Null for non-guest consultations. */
+  guest_info: GuestInfoV2 | null;
 }
 
 // -- List --
