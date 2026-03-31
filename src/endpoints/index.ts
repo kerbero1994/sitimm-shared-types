@@ -152,6 +152,43 @@ export const V2_ENDPOINTS = {
   /** POST → Body: AddCoAdvisorV2Request. Admin-only. Adds co-advisor. */
   CONSULTATION_ADD_ADVISOR: "/consultations/{uuid}/add-advisor",
 
+  // ── Consultation Messages with Attachments ─────────────────
+
+  /** POST → Multipart body: files[] + body + is_internal?. Returns V2Response<ConsultationMessageV2>. Max 5 files, 10MB each. Auth required. */
+  CONSULTATION_SEND_MESSAGE_ATTACHMENTS: "/consultations/{uuid}/messages/with-attachments",
+
+  // ── Consultation Transitions (Audit Log) ──────────────────
+
+  /** GET → V2Response<ListTransitionsV2Response>. Full state transition history. Auth required. */
+  CONSULTATION_TRANSITIONS: "/consultations/{uuid}/transitions",
+
+  // ── Consultation Statistics ───────────────────────────────
+
+  /** POST → Body: ConsultationStatsV2Request. Returns V2Response<ConsultationStatsV2Response>. Admin-only. */
+  CONSULTATION_STATS: "/consultations/stats",
+  /** GET → V2Response<AdvisorMyStatsV2Response>. Personal advisor metrics. Advisor+ only. */
+  CONSULTATION_MY_STATS: "/consultations/my-stats",
+
+  // ── Consultation Templates ────────────────────────────────
+
+  /** GET → V2Response<ListTemplatesV2Response>. Advisors see active only; admins see all. Auth required. */
+  CONSULTATION_TEMPLATES: "/consultations/templates",
+  /** POST → Body: CreateTemplateV2Request. Returns V2Response<TemplateV2Response>. Status 201. Admin/Manager only. */
+  CONSULTATION_TEMPLATES_CREATE: "/consultations/templates",
+  /** PATCH → Body: UpdateTemplateV2Request. Returns V2Response<TemplateV2Response>. Admin/Manager only. */
+  CONSULTATION_TEMPLATE: "/consultations/templates/{uuid}",
+  /** DELETE → 204 No Content. Admin/Manager only. */
+  CONSULTATION_TEMPLATE_DELETE: "/consultations/templates/{uuid}",
+  /** POST → V2Response<TemplateV2Response>. Increments usage_count. Advisor+ only. */
+  CONSULTATION_TEMPLATE_USE: "/consultations/templates/{uuid}/use",
+
+  // ── Consultation Archive ──────────────────────────────────
+
+  /** POST → V2Response<{message}>. Archive consultation for current user. Auth required. */
+  CONSULTATION_ARCHIVE: "/consultations/{uuid}/archive",
+  /** DELETE → 204 No Content. Unarchive consultation. Auth required. */
+  CONSULTATION_ARCHIVE_DELETE: "/consultations/{uuid}/archive",
+
   // ── Consultation Reports ──────────────────────────────────
 
   /** POST → Body: CreateReportRequest (reason: 10–2000 chars). Auth required. Files a report against the other party. */
@@ -160,6 +197,8 @@ export const V2_ENDPOINTS = {
   CONSULTATION_REPORTS: "/consultations/reports",
   /** PATCH → Body: ResolveReportRequest. Admin-only. Resolves/dismisses a report. */
   CONSULTATION_REPORT_RESOLVE: "/consultations/reports/{uuid}",
+  /** DELETE → 204 No Content. Manager-only. */
+  CONSULTATION_REPORT_DELETE: "/consultations/reports/{uuid}",
 
   // ── Bulletins ────────────────────────────────────────────
 

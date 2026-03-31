@@ -10,7 +10,7 @@
  * - ConsultationTypeV2     -> consultation_v2.py :: ConsultationTypeV2Response
  * - ReportV2Response       -> consultation_report_v2.py :: ReportV2Response
  *
- * States: 1=Pending, 2=Resolving, 3=Closed, 4=CloseProposed, 5=Reopened
+ * States: 1=Pending, 2=Resolving, 3=Closed, 4=CloseProposed, 5=Reopened, 6=Escalated
  *
  * Constants:
  * - MAX_MESSAGES          -> consultation_messages_v2.py :: MAX_MESSAGES
@@ -27,7 +27,7 @@
 export interface CloseProposalInfo {
   /** ISO-8601 datetime when the advisor proposed closing. */
   proposed_at: string;
-  /** ISO-8601 datetime when the proposal auto-expires (proposed_at + 72h). */
+  /** ISO-8601 datetime when the proposal auto-expires (proposed_at + 120h). */
   expires_at: string;
   /** Proposed solution text written by the advisor. Max 4000 chars. */
   solution: string;
@@ -77,8 +77,12 @@ export interface GuestInfoV2 {
  * Backend: consultation_messages_v2.py :: STATE_NEW / STATE_RESOLVIENDO / etc.
  *
  * Flow: PENDING(1) → RESOLVING(2) → CLOSE_PROPOSED(4) → CLOSED(3)
- *                                  ↑                    ↓ (rejected)
- *                                  └── REOPENED(5) ←────┘
+ *                   ↑              ↑                    ↓ (rejected)
+ *                   |              └── REOPENED(5) ←────┘
+ *                   |
+ *        ESCALATED(6) ← SLA breach (states 1,2 auto-transition)
+ *                   ↓ (admin assigns)
+ *              RESOLVING(2)
  */
 export const CONSULTATION_STATES = {
   /** 1 — Sin resolver. Initial state, no advisor assigned yet. */
@@ -91,6 +95,21 @@ export const CONSULTATION_STATES = {
   CLOSE_PROPOSED: 4,
   /** 5 — Reabierta. Employee rejected the close proposal; chat resumes. */
   REOPENED: 5,
+  /** 6 — Escalada. SLA breach or manual escalation. Transitions: 1,2→6 (SLA), 6→2 (assign). */
+  ESCALATED: 6,
+} as const;
+
+/**
+ * State UUIDs matching mini-back ConsultationState rows.
+ * Use these to filter by state in ListConsultationsV2Request.states.
+ */
+export const CONSULTATION_STATE_UUIDS = {
+  PENDING: "4641bc38-22e4-46ea-86c8-90cd59b5747e",
+  RESOLVING: "78af7cd9-acbe-4029-81d0-4d409359e8c8",
+  CLOSED: "3871e90d-bb62-4cf1-8c12-9e2f0033aa82",
+  CLOSE_PROPOSED: "01c9968e-5769-49ec-9e71-fd783bcf02f2",
+  REOPENED: "fb6eb18a-17ab-46bd-89b1-0b6c5c9611f5",
+  ESCALATED: "53a36df7-fe48-4d52-899d-df99f73ff73d",
 } as const;
 
 /**
@@ -98,12 +117,36 @@ export const CONSULTATION_STATES = {
  * Backend: consultation_helpers.py, consultation_messages_v2.py
  */
 export const CONSULTATION_LIMITS = {
-  /** Max messages per consultation thread. Backend: MAX_MESSAGES = 50. */
-  MAX_MESSAGES: 50,
+  /** Max messages per consultation thread. Backend: MAX_MESSAGES = 200. */
+  MAX_MESSAGES: 200,
   /** Max times a consultation can be reopened after close proposal. Backend: MAX_REOPENS = 3. */
   MAX_REOPENS: 3,
-  /** Hours before a close proposal auto-expires. Backend: CLOSE_PROPOSAL_TTL_HOURS = 72. */
-  CLOSE_PROPOSAL_TTL_HOURS: 72,
+  /** Hours before a close proposal auto-expires. Backend: CLOSE_PROPOSAL_TTL_HOURS = 120 (5 days). */
+  CLOSE_PROPOSAL_TTL_HOURS: 120,
+  /** Message count at which a WS notification is sent (no block). Backend: MESSAGE_ALERT_THRESHOLD = 100. */
+  MESSAGE_ALERT_THRESHOLD: 100,
+  /** Max reopens after auto-expire (vs 3 for regular reject). Backend: MAX_AUTO_EXPIRE_REOPENS = 1. */
+  MAX_AUTO_EXPIRE_REOPENS: 1,
+  /** Max file attachments per message. Backend: MAX_ATTACHMENTS_PER_MESSAGE = 5. */
+  MAX_ATTACHMENTS_PER_MESSAGE: 5,
+  /** Max file size per attachment in bytes (10 MB). Backend: MAX_ATTACHMENT_SIZE = 10_485_760. */
+  MAX_ATTACHMENT_SIZE_BYTES: 10_485_760,
+  /** Default SLA deadline in hours. Backend: _DEFAULT_SLA_HOURS = 48. */
+  DEFAULT_SLA_HOURS: 48,
+  /** Max chars for consultation description. Backend: description Field(max_length=10000). */
+  DESCRIPTION_MAX: 10_000,
+  /** Max chars for solution text. Backend: solution Field(max_length=4000). */
+  SOLUTION_MAX: 4_000,
+  /** Max chars for rating feedback. Backend: feedback Field(max_length=2000). */
+  FEEDBACK_MAX: 2_000,
+  /** Max chars for template title. Backend: title Field(max_length=200). */
+  TEMPLATE_TITLE_MAX: 200,
+  /** Max chars for template body. Backend: body Field(max_length=4000). */
+  TEMPLATE_BODY_MAX: 4_000,
+  /** Min chars for report reason. Backend: reason Field(min_length=10). */
+  REPORT_REASON_MIN: 10,
+  /** Max chars for report reason. Backend: reason Field(max_length=2000). */
+  REPORT_REASON_MAX: 2_000,
   /** Max additional REST messages a guest (INVITADO) can send per consultation. Backend: GUEST_MAX_MESSAGES = 3. */
   GUEST_MAX_MESSAGES: 3,
   /** Max active (non-closed) consultations a guest can have at once. */
@@ -112,8 +155,65 @@ export const CONSULTATION_LIMITS = {
   GUEST_MAX_DAILY: 3,
 } as const;
 
+/**
+ * MIME types accepted for file attachments.
+ * Backend: consultation_messages_v2.py :: ALLOWED_MIME_TYPES
+ */
+export const ALLOWED_ATTACHMENT_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+] as const;
+
 export type ConsultationStateId =
   (typeof CONSULTATION_STATES)[keyof typeof CONSULTATION_STATES];
+
+// -- Report Summary (nested in ConsultationV2) --
+
+/**
+ * Inline summary of a report embedded in ConsultationV2.report_summary.
+ * Lighter than full ReportV2Response — only the essential fields.
+ * Backend: consultation_v2.py :: ReportSummaryV2
+ */
+export interface ReportSummaryV2 {
+  /** Report UUID. */
+  uuid: string;
+  /** "report_advisor" | "report_employee". */
+  report_type: ReportType;
+  /** Current status of the report. */
+  status: ReportStatus;
+  /** Full name of the user who filed the report. */
+  reporter_name: string;
+  /** Full name of the user being reported. */
+  reported_name: string;
+  /** Report reason text. */
+  reason: string;
+  /** ISO-8601 creation datetime. */
+  created_at: string;
+}
+
+// -- Attachment --
+
+/**
+ * File attachment on a consultation message.
+ * Backend: consultation_v2.py :: AttachmentV2
+ */
+export interface AttachmentV2 {
+  /** Attachment UUID. */
+  uuid: string;
+  /** Original filename. */
+  filename: string;
+  /** MIME type (e.g. "image/jpeg", "application/pdf"). */
+  mime_type: string;
+  /** File size in bytes. */
+  size_bytes: number;
+  /** Pre-signed download URL (S3/MinIO). */
+  url: string;
+}
 
 // -- Consultation --
 
@@ -148,8 +248,8 @@ export interface ConsultationV2 {
   state_uuid: string;
   /** Human-readable state name. Comes from ConsultationState.content. */
   state_name: string;
-  /** Numeric state ID (1–5). Use CONSULTATION_STATES constants to compare. */
-  state_id: number;
+  /** Numeric state ID (1–6). Use CONSULTATION_STATES constants to compare. */
+  state_id: ConsultationStateId;
   /** Initial problem description written by the affiliate. 1–10,000 chars. */
   description: string;
   /** @deprecated Use escalation_level instead. Only "normal" or "high". */
@@ -204,8 +304,20 @@ export interface ConsultationV2 {
   reopen_count: number;
   /** Whether this consultation has an active report/complaint. Default: false. */
   has_report: boolean;
+  /** Inline summary of the most recent report, if any. Null if has_report is false. */
+  report_summary: ReportSummaryV2 | null;
   /** ISO-8601 datetime of the SLA deadline for this consultation. Null if not set. */
   sla_deadline: string | null;
+  /** Whether the SLA deadline has been breached. Default: false. */
+  sla_breached: boolean;
+  /** Seconds from created_at to taken_at. Null if not yet taken. Computed, not persisted. */
+  time_to_take_seconds: number | null;
+  /** Seconds from created_at to solved_at. Null if not yet solved. Computed, not persisted. */
+  time_to_resolve_seconds: number | null;
+  /** Seconds elapsed since last state transition. Always present. Computed, not persisted. */
+  time_in_current_state_seconds: number;
+  /** Reason for closure. "auto_expired" when Celery auto-closed the proposal. Null otherwise. */
+  closed_reason: string | null;
   /** Whether the consultation was created by a guest (INVITADO) user. Default: false. */
   is_guest_consultation: boolean;
   /** Guest contact info (name/phone/email). Null for non-guest consultations. */
@@ -241,6 +353,16 @@ export interface ListConsultationsV2Request {
   unassigned?: boolean;
   /** If true, only return consultations with active reports. Admin role only. */
   has_reports?: boolean;
+  /** Filter by report status. Admin role only. */
+  report_status?: ReportStatus;
+  /** Filter by report type. Admin role only. */
+  report_type?: ReportType;
+  /** If true, exclude archived consultations. Default: false. */
+  exclude_archived?: boolean;
+  /** Text search on description + solution (ILIKE). */
+  search?: string;
+  /** If true, only return guest-created consultations. Admin role only. */
+  is_guest?: boolean;
   /** Page number (1-based). Default: 1. */
   page?: number;
   /** Items per page. Default: 20. Max: 100 (enforced by PAGINATION_DEFAULTS). */
@@ -343,6 +465,8 @@ export interface ConsultationMessageV2 {
   message_type: MessageType;
   /** Internal note flag. If true, only advisors can see this message. Default: false. */
   is_internal: boolean;
+  /** File attachments on this message. Empty array if none. */
+  attachments: AttachmentV2[];
   /** ISO-8601 datetime when the message was created. */
   created_at: string;
 }
@@ -596,7 +720,7 @@ export interface WsConsultationRatedPayload {
 
 /**
  * Payload for SERVER_EVENTS.AUTO_EXPIRED.
- * Broadcast by Celery task when a close proposal expires after 72h.
+ * Broadcast by Celery task when a close proposal expires after 120h (5 days).
  * Backend: consultation_tasks.py → external_emitter.emit("auto_expired", {...})
  */
 export interface WsAutoExpiredPayload {
@@ -804,4 +928,311 @@ export interface ResolveReportRequest {
   status: "reviewed" | "resolved" | "dismissed";
   /** Optional resolution notes. Max 2000 chars. */
   resolution_notes?: string;
+}
+
+// -- Templates --
+
+/**
+ * Quick-reply template for advisors.
+ * Backend: consultation_templates_v2.py :: TemplateV2Response
+ */
+export interface TemplateV2Response {
+  /** Template UUID. */
+  uuid: string;
+  /** Template title. 1–200 chars. */
+  title: string;
+  /** Template body text. 1–4000 chars. */
+  body: string;
+  /** Category label for grouping. */
+  category: string;
+  /** Whether the template is active and usable. */
+  is_active: boolean;
+  /** Number of times this template has been used. */
+  usage_count: number;
+  /** Full name of the admin/manager who created it. */
+  created_by_name: string;
+  /** ISO-8601 creation datetime. */
+  created_at: string;
+  /** ISO-8601 last update datetime. */
+  updated_at: string;
+}
+
+/**
+ * Response from GET /api/v2/consultations/templates.
+ * Backend: consultation_templates_v2.py :: ListTemplatesV2Response
+ */
+export interface ListTemplatesV2Response {
+  /** Array of templates. */
+  templates: TemplateV2Response[];
+  /** Total count. */
+  total: number;
+}
+
+/**
+ * Request body for POST /api/v2/consultations/templates.
+ * Admin/Manager only.
+ * Backend: consultation_templates_v2.py :: CreateTemplateV2Request
+ */
+export interface CreateTemplateV2Request {
+  /** Template title. 1–200 chars. */
+  title: string;
+  /** Template body text. 1–4000 chars. */
+  body: string;
+  /** Category label for grouping. */
+  category: string;
+}
+
+/**
+ * Request body for PATCH /api/v2/consultations/templates/{uuid}.
+ * Admin/Manager only.
+ * Backend: consultation_templates_v2.py :: UpdateTemplateV2Request
+ */
+export interface UpdateTemplateV2Request {
+  /** Template title. 1–200 chars. */
+  title?: string;
+  /** Template body text. 1–4000 chars. */
+  body?: string;
+  /** Category label for grouping. */
+  category?: string;
+  /** Activate or deactivate the template. */
+  is_active?: boolean;
+}
+
+// -- Statistics --
+
+/**
+ * Request body for POST /api/v2/consultations/stats.
+ * Admin-only. Filters for aggregated statistics.
+ * Backend: consultation_stats_v2.py :: ConsultationStatsV2Request
+ */
+export interface ConsultationStatsV2Request {
+  /** Filter by company UUID. */
+  company_uuid?: string;
+  /** Filter by advisor UUID. */
+  advisor_uuid?: string;
+  /** Filter by consultation type UUID. */
+  type_uuid?: string;
+  /** ISO-8601 date. Only include consultations created after this date. */
+  date_from?: string;
+  /** ISO-8601 date. Only include consultations created before this date. */
+  date_to?: string;
+}
+
+/**
+ * Aggregated consultation statistics (admin view).
+ * Backend: consultation_stats_v2.py :: ConsultationStatsV2Response
+ */
+export interface ConsultationStatsV2Response {
+  /** Total number of consultations matching filters. */
+  total_consultations: number;
+  /** Average seconds from creation to advisor take. Null if no data. */
+  avg_time_to_take_seconds: number | null;
+  /** Average seconds from creation to resolution. Null if no data. */
+  avg_time_to_resolve_seconds: number | null;
+  /** Count of consultations by state name. */
+  by_state: Record<string, number>;
+  /** Count of consultations by escalation level. */
+  by_escalation: Record<string, number>;
+  /** Top advisors ranked by resolved count. */
+  top_advisors: Array<{ uuid: string; name: string; count: number }>;
+  /** SLA compliance rate 0.0–1.0. Returns 1.0 if no consultations with SLA. */
+  sla_compliance_rate: number;
+}
+
+/**
+ * Personal advisor statistics.
+ * Backend: consultation_stats_v2.py :: AdvisorMyStatsV2Response
+ */
+export interface AdvisorMyStatsV2Response {
+  /** Total consultations assigned to this advisor. */
+  total_consultations: number;
+  /** Currently active (non-closed) consultations. */
+  active_consultations: number;
+  /** Total resolved consultations. */
+  resolved_consultations: number;
+  /** Average seconds from creation to advisor take. Null if no data. */
+  avg_time_to_take_seconds: number | null;
+  /** Average seconds from creation to resolution. Null if no data. */
+  avg_time_to_resolve_seconds: number | null;
+  /** Average rating score. Null if no ratings yet. */
+  avg_score: number | null;
+  /** Total number of rated consultations. */
+  total_rated: number;
+  /** SLA compliance rate 0.0–1.0. */
+  sla_compliance_rate: number;
+}
+
+// -- Transitions (Audit Log) --
+
+/** How the transition was triggered. */
+export type TransitionTriggerType = "user" | "system" | "celery";
+
+/**
+ * Single state transition entry from the audit log.
+ * Backend: consultation_transitions_v2.py :: TransitionV2Response
+ */
+export interface TransitionV2Response {
+  /** Transition UUID. */
+  uuid: string;
+  /** State ID before the transition. */
+  from_state: number;
+  /** State name before the transition. */
+  from_state_name: string;
+  /** State ID after the transition. */
+  to_state: number;
+  /** State name after the transition. */
+  to_state_name: string;
+  /** UUID of the user who triggered it. Null for system/celery triggers. */
+  triggered_by_uuid: string | null;
+  /** Name of the user who triggered it. Null for system/celery triggers. */
+  triggered_by_name: string | null;
+  /** How the transition was triggered. */
+  trigger_type: TransitionTriggerType;
+  /** Optional metadata (e.g., reason, solution). */
+  metadata: Record<string, unknown> | null;
+  /** ISO-8601 datetime when the transition occurred. */
+  created_at: string;
+}
+
+/**
+ * Response from GET /api/v2/consultations/{uuid}/transitions.
+ * Backend: consultation_transitions_v2.py :: ListTransitionsV2Response
+ */
+export interface ListTransitionsV2Response {
+  /** Array of transitions, ordered by created_at descending. */
+  transitions: TransitionV2Response[];
+  /** Total number of transitions for this consultation. */
+  total: number;
+}
+
+// -- Socket.IO Event Payloads (v2.9.0 additions) --
+
+/**
+ * Payload for SERVER_EVENTS.CONSULTATION_REOPENED.
+ * Broadcast when an employee reopens a consultation after auto-expire.
+ * Backend: consultation_messages_v2.py → emit("consultation_reopened", {...})
+ */
+export interface WsConsultationReopenedPayload {
+  /** Consultation UUID. */
+  consultation_uuid: string;
+  /** Updated reopen count after this reopen. */
+  reopen_count: number;
+}
+
+/**
+ * Payload for SERVER_EVENTS.CONSULTATION_STATE_CHANGED.
+ * Broadcast on auto-transition from REOPENED(5) → RESOLVING(2) when first message is sent.
+ * Backend: consultation_messages_v2.py → emit("consultation_state_changed", {...})
+ */
+export interface WsStateChangedPayload {
+  /** Consultation UUID. */
+  consultation_uuid: string;
+  /** State ID before the transition. */
+  from_state: number;
+  /** State ID after the transition. */
+  to_state: number;
+  /** Always "auto" — triggered by the system on first message in REOPENED state. */
+  trigger: "auto";
+}
+
+/**
+ * Payload for SERVER_EVENTS.CONSULTATION_MESSAGE_LIMIT.
+ * Alert broadcast when message count hits MESSAGE_ALERT_THRESHOLD (100).
+ * Does NOT block messaging — just a notification.
+ * Backend: consultation_messages_v2.py → emit("consultation_message_limit", {...})
+ */
+export interface WsMessageLimitPayload {
+  /** Consultation UUID. */
+  consultation_uuid: string;
+  /** Current message count. */
+  current_count: number;
+  /** Maximum allowed messages (200). */
+  max_messages: number;
+}
+
+/**
+ * Payload for SERVER_EVENTS.CONSULTATION_ASSIGNED.
+ * Broadcast when an admin assigns an advisor to a consultation.
+ * Backend: consultation_admin_v2.py → emit("consultation_assigned", {...})
+ */
+export interface WsConsultationAssignedPayload {
+  /** Consultation UUID. */
+  consultation_uuid: string;
+  /** UUID of the assigned advisor. */
+  advisor_uuid: string;
+  /** Full name of the assigned advisor. */
+  advisor_name: string;
+  /** UUID of the admin who assigned. */
+  assigned_by_uuid: string;
+  /** Full name of the admin who assigned. */
+  assigned_by_name: string;
+}
+
+/**
+ * Payload for SERVER_EVENTS.CONSULTATION_ESCALATED.
+ * Discriminated union: manual escalation by admin vs automatic SLA breach.
+ * Backend: consultation_admin_v2.py + consultation_tasks.py
+ */
+export type WsConsultationEscalatedPayload =
+  | {
+      /** Consultation UUID. */
+      consultation_uuid: string;
+      /** Manual escalation by an admin. */
+      trigger: "manual";
+      /** Escalation level: 1=escalado, 2=urgente. */
+      level: number;
+      /** Admin's reason for escalation. Null if not provided. */
+      reason: string | null;
+      /** UUID of the admin who escalated. */
+      escalated_by_uuid: string;
+      /** Full name of the admin who escalated. */
+      escalated_by_name: string;
+    }
+  | {
+      /** Consultation UUID. */
+      consultation_uuid: string;
+      /** Automatic SLA breach escalation by Celery. */
+      trigger: "sla";
+      /** Escalation level (always 1 for SLA). */
+      level: number;
+      /** ISO-8601 SLA deadline that was breached. */
+      sla_deadline: string;
+    };
+
+/**
+ * Payload for SERVER_EVENTS.CONSULTATION_TRANSFERRED.
+ * Broadcast when an admin transfers a consultation to a different advisor.
+ * Backend: consultation_admin_v2.py → emit("consultation_transferred", {...})
+ */
+export interface WsConsultationTransferredPayload {
+  /** Consultation UUID. */
+  consultation_uuid: string;
+  /** UUID of the previous advisor. */
+  from_advisor_uuid: string;
+  /** Full name of the previous advisor. */
+  from_advisor_name: string;
+  /** UUID of the new advisor. */
+  to_advisor_uuid: string;
+  /** Full name of the new advisor. */
+  to_advisor_name: string;
+  /** Whether the previous advisor was kept as co-advisor. */
+  keep_previous: boolean;
+}
+
+/**
+ * Payload for SERVER_EVENTS.ADVISOR_ADDED.
+ * Broadcast when an admin adds a co-advisor to a consultation.
+ * Backend: consultation_admin_v2.py → emit("advisor_added", {...})
+ */
+export interface WsAdvisorAddedPayload {
+  /** Consultation UUID. */
+  consultation_uuid: string;
+  /** UUID of the new co-advisor. */
+  advisor_uuid: string;
+  /** Full name of the new co-advisor. */
+  advisor_name: string;
+  /** UUID of the admin who added the co-advisor. */
+  added_by_uuid: string;
+  /** Full name of the admin who added the co-advisor. */
+  added_by_name: string;
 }

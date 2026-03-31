@@ -31,8 +31,22 @@ export const SERVER_EVENTS = {
   CLOSE_REJECTED: "close_rejected",
   /** Employee rated a closed consultation. Payload: WsConsultationRatedPayload. */
   CONSULTATION_RATED: "consultation_rated",
-  /** Celery auto-expired a proposal (72h TTL). Payload: WsAutoExpiredPayload. */
+  /** Celery auto-expired a proposal (120h TTL). Payload: WsAutoExpiredPayload. */
   AUTO_EXPIRED: "auto_expired",
+  /** Employee reopened after auto-expire. Payload: WsConsultationReopenedPayload. */
+  CONSULTATION_REOPENED: "consultation_reopened",
+  /** Auto-transition REOPENED(5)→RESOLVING(2) on first message. Payload: WsStateChangedPayload. */
+  CONSULTATION_STATE_CHANGED: "consultation_state_changed",
+  /** Message count hit alert threshold (100). Payload: WsMessageLimitPayload. */
+  CONSULTATION_MESSAGE_LIMIT: "consultation_message_limit",
+  /** Admin assigned advisor. Payload: WsConsultationAssignedPayload. */
+  CONSULTATION_ASSIGNED: "consultation_assigned",
+  /** Manual or SLA escalation. Payload: WsConsultationEscalatedPayload (discriminated union). */
+  CONSULTATION_ESCALATED: "consultation_escalated",
+  /** Admin transferred to another advisor. Payload: WsConsultationTransferredPayload. */
+  CONSULTATION_TRANSFERRED: "consultation_transferred",
+  /** Admin added co-advisor. Payload: WsAdvisorAddedPayload. */
+  ADVISOR_ADDED: "advisor_added",
   /** User joined/left a room. Payload: WsPresencePayload { user_id, status }. */
   PRESENCE: "presence",
   /** User started typing. Payload: WsTypingPayload { user_id, consultation_uuid }. */
@@ -84,6 +98,12 @@ export const STATE_CHANGE_EVENTS = [
   SERVER_EVENTS.CLOSE_REJECTED,
   SERVER_EVENTS.CONSULTATION_RATED,
   SERVER_EVENTS.AUTO_EXPIRED,
+  SERVER_EVENTS.CONSULTATION_REOPENED,
+  SERVER_EVENTS.CONSULTATION_STATE_CHANGED,
+  SERVER_EVENTS.CONSULTATION_ASSIGNED,
+  SERVER_EVENTS.CONSULTATION_ESCALATED,
+  SERVER_EVENTS.CONSULTATION_TRANSFERRED,
+  SERVER_EVENTS.ADVISOR_ADDED,
 ] as const;
 
 export type ServerEvent = (typeof SERVER_EVENTS)[keyof typeof SERVER_EVENTS];
