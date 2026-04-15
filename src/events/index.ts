@@ -34,6 +34,15 @@ export type EventParticipantStatus =
  */
 export type EventMediaType = "cover" | "gallery";
 
+/**
+ * Streaming lifecycle state for an event.
+ * - `"idle"` — No stream configured.
+ * - `"scheduled"` — Stream set up but not yet live.
+ * - `"live"` — Stream is currently broadcasting.
+ * - `"ended"` — Stream has finished (VOD may still be available at streamingUrl).
+ */
+export type EventStreamingStatus = "idle" | "scheduled" | "live" | "ended";
+
 // ── Event Types ──
 
 /**
@@ -83,6 +92,18 @@ export interface EventV2 {
   longitude: number | null;
   /** Structured address JSON blob (street, city, state, zip, country, etc.). */
   addressStructured: Record<string, unknown> | null;
+  /** Accessibility metadata (wheelchair access, sign-language, captions, etc.). */
+  accessibility: Record<string, unknown> | null;
+  /** RFC 5545 RRULE for recurring events. Null for one-off events. */
+  recurrenceRule: string | null;
+  /** Parent event UUID when this is a recurrence instance. Null for parents/one-offs. */
+  parentEventUuid: string | null;
+  /** Streaming playback URL. Null if no stream configured. */
+  streamingUrl: string | null;
+  /** Streaming provider tag (e.g., "youtube", "cloudflare"). Null if no stream. */
+  streamingProvider: string | null;
+  /** Streaming lifecycle state. */
+  streamingStatus: EventStreamingStatus | null;
   /** Public share URL for social/web sharing. Null if not computable. */
   shareUrl: string | null;
   /** App deep-link URL. Null if not computable. */
@@ -200,6 +221,14 @@ export interface CreateEventV2Request {
   longitude?: number;
   /** Structured address JSON blob. */
   addressStructured?: Record<string, unknown>;
+  /** Accessibility metadata blob. */
+  accessibility?: Record<string, unknown>;
+  /** RFC 5545 RRULE string for recurring events. */
+  recurrenceRule?: string;
+  /** Streaming playback URL. */
+  streamingUrl?: string;
+  /** Streaming provider tag. */
+  streamingProvider?: string;
 }
 
 /**
@@ -249,6 +278,14 @@ export interface UpdateEventV2Request {
   longitude?: number;
   /** Structured address JSON blob. */
   addressStructured?: Record<string, unknown>;
+  /** Accessibility metadata blob. */
+  accessibility?: Record<string, unknown>;
+  /** RFC 5545 RRULE string for recurring events. */
+  recurrenceRule?: string;
+  /** Streaming playback URL. */
+  streamingUrl?: string;
+  /** Streaming provider tag. */
+  streamingProvider?: string;
 }
 
 // ── Participant Types ──
@@ -527,6 +564,8 @@ export interface EventMediaV2 {
   sizeBytes: number | null;
   /** MIME type (image/jpeg, image/png, image/webp). */
   mimeType: string | null;
+  /** Screen-reader alt text for accessibility (Wave 3.8). */
+  altText: string | null;
   /** ISO-8601 creation timestamp. */
   createdAt: string;
   /** ISO-8601 last update timestamp. */
@@ -629,4 +668,89 @@ export interface EventTicketV2 {
 export interface CheckInV2Request {
   /** JWT ticket issued via GET /api/v2/events/{uuid}/my-ticket. */
   token: string;
+}
+
+// ── Sponsor Types (Wave 3.6) ──
+
+/**
+ * Sponsor shown on an event's landing page.
+ * Backend: EventSponsor ORM model + event_sponsors_v2.py
+ */
+export interface EventSponsorV2 {
+  /** Sponsor UUID. */
+  uuid: string;
+  /** Sponsor display name. Max 255 chars. */
+  name: string;
+  /** Sponsor logo URL. Max 2,048 chars. Null if no logo. */
+  logoUrl: string | null;
+  /** Sponsor website URL. Max 2,048 chars. Null if no link. */
+  websiteUrl: string | null;
+  /** Tier label (e.g., "gold", "silver"). Max 50 chars. Null if untiered. */
+  tier: string | null;
+  /** Ordering hint (0-based, ascending). */
+  sortOrder: number;
+  /** ISO-8601 creation timestamp. */
+  createdAt: string | null;
+  /** ISO-8601 last update timestamp. */
+  updatedAt: string | null;
+}
+
+/**
+ * GET /api/v2/events/{uuid}/sponsors response.
+ */
+export interface EventSponsorListV2Response {
+  items: EventSponsorV2[];
+}
+
+/**
+ * Request body for POST /api/v2/events/{uuid}/sponsors.
+ */
+export interface CreateEventSponsorV2Request {
+  name: string;
+  logoUrl?: string;
+  websiteUrl?: string;
+  tier?: string;
+  sortOrder?: number;
+}
+
+/**
+ * Request body for PATCH /api/v2/events/{uuid}/sponsors/{sponsorUuid}.
+ */
+export interface UpdateEventSponsorV2Request {
+  name?: string;
+  logoUrl?: string;
+  websiteUrl?: string;
+  tier?: string;
+  sortOrder?: number;
+}
+
+// ── Recurrence Types (Wave 3.2) ──
+
+/**
+ * Response from POST /api/v2/events/{uuid}/expand-recurrence?count=N.
+ * Returns the UUIDs of newly created child events.
+ */
+export interface ExpandRecurrenceV2Response {
+  /** Parent event UUID. */
+  parentUuid: string;
+  /** Number of child events created by this call. */
+  createdCount: number;
+  /** UUIDs of the newly created child events, in chronological order. */
+  createdUuids: string[];
+}
+
+// ── Streaming Types (Wave 3.7) ──
+
+/**
+ * Webhook payload accepted at POST /api/v2/events/{uuid}/streaming/webhook.
+ * Request body is HMAC-SHA256 signed with `STREAMING_WEBHOOK_SECRET` —
+ * signature goes in the `X-Signature` header as a hex digest.
+ */
+export interface StreamingWebhookV2Request {
+  /** New streaming lifecycle state. */
+  status: EventStreamingStatus;
+  /** Updated streaming URL (optional). */
+  url?: string;
+  /** Updated provider tag (optional). */
+  provider?: string;
 }
