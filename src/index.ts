@@ -13,3 +13,4 @@ export * from "./feature-flags";
 export * from "./magazines";
 export * from "./headquarters";
 export * from "./advisor-assignments";
+export * from "./censuses";

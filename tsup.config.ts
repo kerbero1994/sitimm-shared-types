@@ -18,6 +18,7 @@ export default defineConfig({
     "src/magazines/index.ts",
     "src/headquarters/index.ts",
     "src/advisor-assignments/index.ts",
+    "src/censuses/index.ts",
   ],
   format: ["cjs", "esm"],
   dts: true,
