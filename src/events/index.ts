@@ -17,10 +17,22 @@ export type EventModality = "presencial" | "virtual" | "mixto";
 /**
  * Participant status in an event.
  * - `"registered"` — Signed up, awaiting confirmation.
- * - `"confirmed"` — Attendance confirmed.
+ * - `"confirmed"` — Attendance confirmed (or checked in).
  * - `"cancelled"` — Registration cancelled.
+ * - `"waitlisted"` — On the waitlist; auto-promoted when capacity frees up.
  */
-export type EventParticipantStatus = "registered" | "confirmed" | "cancelled";
+export type EventParticipantStatus =
+  | "registered"
+  | "confirmed"
+  | "cancelled"
+  | "waitlisted";
+
+/**
+ * Event media role.
+ * - `"cover"` — Hero/cover image (max 1 per event).
+ * - `"gallery"` — Additional gallery images (max 20 per event).
+ */
+export type EventMediaType = "cover" | "gallery";
 
 // ── Event Types ──
 
@@ -57,6 +69,24 @@ export interface EventV2 {
   hasVirtualUrl: boolean;
   /** Total number of registered participants. Default: 0. */
   participantCount: number;
+  /** Maximum number of participants. Null = unlimited. */
+  capacity: number | null;
+  /** Whether waitlist is enabled once capacity is reached. Default: false. */
+  waitlistEnabled: boolean;
+  /** Number of participants currently waitlisted. Default: 0. */
+  waitlistCount: number;
+  /** Remaining seats (`max(0, capacity - participantCount)`). Null if capacity is null. */
+  seatsRemaining: number | null;
+  /** Venue latitude (WGS84). Null if not set. */
+  latitude: number | null;
+  /** Venue longitude (WGS84). Null if not set. */
+  longitude: number | null;
+  /** Structured address JSON blob (street, city, state, zip, country, etc.). */
+  addressStructured: Record<string, unknown> | null;
+  /** Public share URL for social/web sharing. Null if not computable. */
+  shareUrl: string | null;
+  /** App deep-link URL. Null if not computable. */
+  deepLink: string | null;
   /** Days until event (floor of `eventDate - now` in days). Negative if in the past, null if eventDate is null. */
   daysUntilEvent: number | null;
   /** True if the caller can currently register (event.register=true, enabled, future, not cancelled). */
@@ -103,6 +133,7 @@ export interface EventParticipantStats {
   registered: number;
   confirmed: number;
   cancelled: number;
+  waitlisted: number;
 }
 
 /**
@@ -159,6 +190,16 @@ export interface CreateEventV2Request {
   audience?: unknown;
   /** Audience title filters (JSON). */
   audienceTitles?: unknown;
+  /** Maximum number of participants. Omit or null for unlimited. */
+  capacity?: number | null;
+  /** Enable waitlist when capacity is reached. Default: false. */
+  waitlistEnabled?: boolean;
+  /** Venue latitude (WGS84, -90..90). */
+  latitude?: number;
+  /** Venue longitude (WGS84, -180..180). */
+  longitude?: number;
+  /** Structured address JSON blob. */
+  addressStructured?: Record<string, unknown>;
 }
 
 /**
@@ -198,6 +239,16 @@ export interface UpdateEventV2Request {
   audience?: unknown;
   /** Audience title filters (JSON). */
   audienceTitles?: unknown;
+  /** Maximum number of participants. Null = unlimited. */
+  capacity?: number | null;
+  /** Enable waitlist when capacity is reached. */
+  waitlistEnabled?: boolean;
+  /** Venue latitude (WGS84). */
+  latitude?: number;
+  /** Venue longitude (WGS84). */
+  longitude?: number;
+  /** Structured address JSON blob. */
+  addressStructured?: Record<string, unknown>;
 }
 
 // ── Participant Types ──
@@ -247,6 +298,8 @@ export interface EventParticipantV2 {
   avatarUrl: string | null;
   /** ISO-8601 datetime when attendance was confirmed. */
   confirmationDate: string | null;
+  /** ISO-8601 datetime when the participant was checked in via QR ticket. */
+  checkedInAt: string | null;
   /** ISO-8601 creation timestamp. */
   createdAt: string;
   /** ISO-8601 last update timestamp. */
@@ -449,4 +502,131 @@ export interface UpdateEventTypeV2Request {
   background?: string;
   /** Brief description. Max 500 chars. */
   brief?: string;
+}
+
+// ── Media Types (Wave 2) ──
+
+/**
+ * Event media record (cover image or gallery item).
+ * Backend: EventMedia ORM model + event_media_service.to_response()
+ */
+export interface EventMediaV2 {
+  /** Media UUID. */
+  uuid: string;
+  /** Presigned or relative URL to the image. */
+  url: string;
+  /** Role: "cover" (max 1 per event) or "gallery". */
+  mediaType: EventMediaType;
+  /** Ordering hint within the gallery (max+1 on insert). */
+  sortOrder: number;
+  /** Image width in pixels (from PIL probe). */
+  width: number | null;
+  /** Image height in pixels. */
+  height: number | null;
+  /** File size in bytes. */
+  sizeBytes: number | null;
+  /** MIME type (image/jpeg, image/png, image/webp). */
+  mimeType: string | null;
+  /** ISO-8601 creation timestamp. */
+  createdAt: string;
+  /** ISO-8601 last update timestamp. */
+  updatedAt: string;
+}
+
+/**
+ * GET /api/v2/events/{uuid}/media response.
+ */
+export interface EventMediaListV2Response {
+  /** All non-deleted media for the event, cover first (if any). */
+  items: EventMediaV2[];
+}
+
+/**
+ * Multipart form for POST /api/v2/events/{uuid}/media.
+ * File is uploaded as `file` form field; `asCover` is a form bool.
+ */
+export interface UploadEventMediaV2Request {
+  /** Image file — JPEG, PNG, or WebP, max 8 MB. */
+  file: File;
+  /** If true, promote this media to cover (demotes any existing cover). */
+  asCover?: boolean;
+}
+
+/**
+ * Request body for PATCH /api/v2/events/{uuid}/media/{mediaUuid}.
+ */
+export interface UpdateEventMediaV2Request {
+  /** New ordering hint. */
+  sortOrder?: number;
+  /** If true, promote this media to cover. */
+  setAsCover?: boolean;
+}
+
+// ── Feedback Types (Wave 2) ──
+
+/**
+ * Post-event rating (1..5) + optional comment.
+ * Backend: EventFeedback ORM + event_feedback_v2.py
+ */
+export interface EventFeedbackV2 {
+  /** Feedback UUID. */
+  uuid: string;
+  /** Event UUID this feedback belongs to. */
+  eventUuid: string;
+  /** 1–5 star rating. */
+  rating: 1 | 2 | 3 | 4 | 5;
+  /** Free-text comment. Max 2,000 chars. */
+  comment: string | null;
+  /** ISO-8601 creation timestamp. */
+  createdAt: string | null;
+}
+
+/**
+ * Request body for POST /api/v2/events/{uuid}/feedback.
+ * One feedback per (event, user). Event must be in the past.
+ */
+export interface CreateFeedbackV2Request {
+  /** 1–5 star rating. Required. */
+  rating: 1 | 2 | 3 | 4 | 5;
+  /** Optional free-text comment. Max 2,000 chars. */
+  comment?: string;
+}
+
+/**
+ * Aggregated feedback summary for an event (ADVISOR+ only).
+ * Backend: EventFeedbackRepository.get_summary()
+ */
+export interface EventFeedbackSummaryV2 {
+  /** Average rating (0.0 if no feedback yet). */
+  average: number;
+  /** Total number of feedback submissions. */
+  total: number;
+  /** Histogram keyed by rating ("1".."5") → count. */
+  histogram: Record<"1" | "2" | "3" | "4" | "5", number>;
+}
+
+// ── Ticket / Check-in Types (Wave 2) ──
+
+/**
+ * Short-lived JWT ticket for event check-in.
+ * Backend: event_ticket_service.issue_ticket()
+ */
+export interface EventTicketV2 {
+  /** Signed JWT (HS256) to present at check-in. */
+  token: string;
+  /** ISO-8601 expiry. Clients should refresh before this. */
+  expiresAt: string;
+  /** Event UUID this ticket is for. */
+  eventUuid: string;
+  /** Participant UUID this ticket represents. */
+  participantUuid: string;
+}
+
+/**
+ * Request body for POST /api/v2/events/{uuid}/check-in.
+ * Only events:update staff may call this.
+ */
+export interface CheckInV2Request {
+  /** JWT ticket issued via GET /api/v2/events/{uuid}/my-ticket. */
+  token: string;
 }
