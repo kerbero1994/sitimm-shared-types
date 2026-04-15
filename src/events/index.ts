@@ -51,8 +51,20 @@ export interface EventV2 {
   enabled: boolean | null;
   /** Foreign key to EventType catalog. */
   EventTypeId: number | null;
+  /** EventType.name denormalized for list views. */
+  eventTypeName: string | null;
+  /** True if `virtualUrl` is set. Computed field. */
+  hasVirtualUrl: boolean;
   /** Total number of registered participants. Default: 0. */
   participantCount: number;
+  /** Days until event (floor of `eventDate - now` in days). Negative if in the past, null if eventDate is null. */
+  daysUntilEvent: number | null;
+  /** True if the caller can currently register (event.register=true, enabled, future, not cancelled). */
+  canRegister: boolean;
+  /** Caller's registration status on this event, or null if not registered. */
+  myStatus: EventParticipantStatus | null;
+  /** Caller's participant UUID on this event, or null. */
+  myParticipantUuid: string | null;
   /** ISO-8601 creation timestamp. */
   createdAt: string;
   /** ISO-8601 last update timestamp. */
@@ -76,6 +88,21 @@ export interface EventDetailV2 extends EventV2 {
   audience: unknown | null;
   /** Audience job titles filter (JSON). */
   audienceTitles: unknown | null;
+  /** True if the caller has an active (non-cancelled) registration. */
+  isRegistered: boolean;
+  /** Participant stats breakdown (ADVISOR+ only; null for regular users). */
+  participantStats: EventParticipantStats | null;
+}
+
+/**
+ * Participant-count breakdown returned on event detail for staff.
+ * Backend: computed field on EventDetailV2Response.participantStats.
+ */
+export interface EventParticipantStats {
+  total: number;
+  registered: number;
+  confirmed: number;
+  cancelled: number;
 }
 
 /**
@@ -196,6 +223,8 @@ export interface EventParticipantV2 {
   modality: EventModality;
   /** Registration status: "registered", "confirmed", or "cancelled". */
   status: EventParticipantStatus;
+  /** Human-readable status label (es-MX). E.g. "Confirmado", "Registrado", "Cancelado". */
+  statusLabel: string | null;
   /** Whether this is an alternative (non-system-user) registration. Default: false. */
   isAlternative: boolean;
   /** Whether the participant needs transportation. Default: false. */
@@ -204,14 +233,58 @@ export interface EventParticipantV2 {
   campusId: number | null;
   /** Bus stop catalog ID (for transport routing). */
   busStopId: number | null;
+  /** Campus display name, denormalized. */
+  campusName: string | null;
+  /** Bus stop display name, denormalized. */
+  busStopName: string | null;
   /** Company ID the participant belongs to. */
   companyId: number | null;
+  /** Company display name, denormalized. */
+  companyName: string | null;
+  /** Full user name from UserProfile (null for alternatives). */
+  userFullName: string | null;
+  /** Profile picture URL. */
+  avatarUrl: string | null;
   /** ISO-8601 datetime when attendance was confirmed. */
   confirmationDate: string | null;
   /** ISO-8601 creation timestamp. */
   createdAt: string;
   /** ISO-8601 last update timestamp. */
   updatedAt: string;
+}
+
+/**
+ * A registration + embedded event data for the /my-events endpoint.
+ * Backend: event_v2.py :: MyEventItemV2Response
+ */
+export interface MyEventItemV2 {
+  // Participant fields
+  uuid: string;
+  status: EventParticipantStatus;
+  statusLabel: string | null;
+  modality: EventModality;
+  isAlternative: boolean;
+  needTransport: boolean;
+  campusId: number | null;
+  busStopId: number | null;
+  campusName: string | null;
+  busStopName: string | null;
+  confirmationDate: string | null;
+  registeredAt: string;
+
+  // Event fields (enriched)
+  eventUuid: string;
+  eventTitle: string;
+  eventDate: string | null;
+  eventImg: string | null;
+  eventDescription: string | null;
+  eventPlace: string | null;
+  eventEnabled: boolean | null;
+  eventRegister: boolean | null;
+  eventHasVirtualUrl: boolean;
+  eventOffersMobility: boolean | null;
+  eventTypeName: string | null;
+  eventParticipantCount: number;
 }
 
 /**
@@ -287,13 +360,46 @@ export interface ParticipantListV2Response {
 
 /**
  * Response from GET /api/v2/events/my-events.
- * Returns the current user's event registrations.
+ * Returns the current user's event registrations, paginated.
  */
 export interface MyEventsV2Response {
-  /** Array of participant records (user's registrations). */
-  items: EventParticipantV2[];
+  /** Array of my-event records with enriched event data. */
+  items: MyEventItemV2[];
   /** Total number of registrations. */
   total: number;
+  /** Current page number (1-based). */
+  page: number;
+  /** Items per page. */
+  pageSize: number;
+  /** Whether there are more pages. */
+  hasNext: boolean;
+}
+
+/**
+ * Request body for POST /api/v2/events/{uuid}/clone.
+ * Backend: event_v2.py :: EventCloneV2
+ */
+export interface CloneEventV2Request {
+  /** New event date. Optional — falls back to the source event's date if omitted. */
+  eventDate?: string;
+  /** Override title for the clone. Max 500 chars. */
+  title?: string;
+}
+
+/**
+ * Allowed bulk participant action verbs.
+ */
+export type BulkParticipantAction = "confirm" | "cancel";
+
+/**
+ * Request body for POST /api/v2/events/{uuid}/participants/bulk.
+ * Backend: event_v2.py :: BulkParticipantActionV2
+ */
+export interface BulkParticipantActionV2Request {
+  /** Action to perform on all listed participants. */
+  action: BulkParticipantAction;
+  /** Participant UUIDs to operate on. 1..200 items. */
+  participantUuids: string[];
 }
 
 // ── Event Type Types ──
@@ -311,6 +417,8 @@ export interface EventTypeV2 {
   background: string | null;
   /** Brief description. Max 500 chars. */
   brief: string | null;
+  /** Number of events currently using this type (computed). */
+  eventCount: number;
   /** ISO-8601 creation timestamp. */
   createdAt: string;
   /** ISO-8601 last update timestamp. */
