@@ -56,6 +56,8 @@ export interface EventV2 {
   title: string;
   /** ISO-8601 datetime of the event. Null if date not set. */
   eventDate: string | null;
+  /** ISO-8601 end datetime of the event. Null = single-moment event ending at eventDate. */
+  endDate?: string | null;
   /** Short description. Max 2,000 chars. */
   description: string | null;
   /** Image URL (presigned S3 or relative path). Max 2,048 chars. */
@@ -183,6 +185,8 @@ export interface CreateEventV2Request {
   title: string;
   /** ISO-8601 event date. Required. */
   eventDate: string;
+  /** ISO-8601 end datetime. Must be strictly after eventDate when provided. */
+  endDate?: string | null;
   /** Event type catalog ID. Required. */
   EventTypeId: number;
   /** Rich HTML content. Max 100,000 chars. */
@@ -240,6 +244,8 @@ export interface UpdateEventV2Request {
   title?: string;
   /** ISO-8601 event date. */
   eventDate?: string;
+  /** ISO-8601 end datetime. Must be strictly after eventDate when provided. */
+  endDate?: string | null;
   /** Event type catalog ID. */
   EventTypeId?: number;
   /** Rich HTML content. Max 100,000 chars. */
@@ -366,6 +372,7 @@ export interface MyEventItemV2 {
   eventUuid: string;
   eventTitle: string;
   eventDate: string | null;
+  eventEndDate?: string | null;
   eventImg: string | null;
   eventDescription: string | null;
   eventPlace: string | null;
