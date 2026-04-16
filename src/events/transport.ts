@@ -153,3 +153,254 @@ export interface UpdateParticipantTransportRequest {
   /** New bus stop catalog ID. */
   busStopId: number;
 }
+
+// ============================================================
+// Phase 2 — Capped + Scheduled
+// ============================================================
+
+/**
+ * Participant transport edit request (switch to a different whitelisted stop).
+ * PATCH /api/v2/event-participants/{participantUuid}/transport
+ */
+export interface ParticipantTransportEditRequest {
+  busStopId: number;
+}
+
+export interface ParticipantTransportEditResponse {
+  participantUuid: string;
+  oldStopUuid: string | null;
+  newStopUuid: string;
+}
+
+export interface ParticipantTransportReleaseResponse {
+  released: boolean;
+}
+
+// Error codes emitted by capacity / mode transitions
+export type TransportCapacityErrorCode =
+  | "transport_stop_full"
+  | "transport_stop_closed"
+  | "transport_stop_not_whitelisted"
+  | "transport_not_live_mode"
+  | "stops_required_for_mode"
+  | "stop_missing_seats_total"
+  | "stop_missing_pickup_time"
+  | "invalid_transport_mode";
+
+// ============================================================
+// Phase 3 — Live Tier
+// ============================================================
+
+/**
+ * Boarding state machine values — column EventParticipantV2.boardingStatus.
+ * NOTE: DB column is `boardingStatus`, not `transportStatus`.
+ */
+export type BoardingStatus =
+  | "not_boarded"
+  | "boarded_out"
+  | "boarded_return"
+  | "no_show_out"
+  | "no_show_return";
+
+export type BoardDirection = "out" | "return";
+export type BoardAction = "boarded" | "no_show";
+
+/**
+ * POST /api/v2/events/{eventUuid}/transport/stops/{stopUuid}/board
+ * Exactly one of participantUuid or ticket must be provided.
+ */
+export interface BoardActionRequest {
+  participantUuid?: string;
+  ticket?: string;
+  direction: BoardDirection;
+  action: BoardAction;
+  force?: boolean;
+}
+
+export interface BoardedByInfo {
+  userId: number;
+  name: string | null;
+}
+
+export interface BoardResponse {
+  participantUuid: string;
+  boardingStatus: BoardingStatus;
+  boardedOutAt: string | null;   // ISO 8601
+  boardedOutBy: BoardedByInfo | null;
+  boardedReturnAt: string | null;
+  boardedReturnBy: BoardedByInfo | null;
+  stopUuid: string;
+  wasIdempotent?: boolean;
+  warning?: "stop_mismatch";
+  expectedStop?: string;
+  actualStop?: string | null;
+}
+
+export interface BoardBulkRequest {
+  actions: BoardActionRequest[];
+}
+
+export interface BoardBulkResultItem {
+  status: "ok" | "error";
+  data?: BoardResponse;
+  code?: string;
+  message?: string;
+}
+
+export interface BoardBulkResponse {
+  results: BoardBulkResultItem[];
+}
+
+// Outreach
+export type OutreachChannel = "push" | "email" | "call_logged";
+export type OutreachTemplate =
+  | "pickup_reminder"
+  | "where_are_you"
+  | "last_call"
+  | "custom";
+
+/**
+ * POST /api/v2/events/{eventUuid}/transport/stops/{stopUuid}/outreach
+ * Rate-limited: 1 per channel per participant per 180s.
+ * If template=="custom", message is required (≤ 280 chars).
+ */
+export interface OutreachCreateRequest {
+  participantUuid: string;
+  channel: OutreachChannel;
+  template: OutreachTemplate;
+  message?: string | null;
+}
+
+export interface OutreachResponse {
+  outreachUuid: string;
+  channel: OutreachChannel;
+  template: OutreachTemplate | null;
+  sentAt: string;                 // ISO 8601
+  delivered: boolean | null;      // null for call_logged (staff confirms manually)
+  telUrl: string | null;          // populated only for call_logged
+}
+
+export interface OutreachHistoryItem {
+  outreachUuid: string;
+  participantUuid: string | null;
+  channel: OutreachChannel;
+  template: OutreachTemplate | null;
+  sentAt: string;
+  sentByUserId: number;
+  delivered: boolean | null;
+}
+
+export interface OutreachListResponse {
+  items: OutreachHistoryItem[];
+}
+
+// Error codes for outreach
+export type OutreachErrorCode =
+  | "invalid_channel"
+  | "invalid_template"
+  | "custom_message_invalid"
+  | "outreach_rate_limited"
+  | "participant_not_at_stop";
+
+// Boarding counters (live mode only)
+export interface TransportBoardingCounters {
+  boardedOut: number;
+  pending: number;
+  noShowOut: number;
+  boardedReturn: number;
+  noShowReturn: number;
+  total: number;
+}
+
+// Manifest
+export interface ManifestRiderContact {
+  phone: string | null;
+  email: string | null;
+}
+
+export interface ManifestRider {
+  participantUuid: string;
+  userName: string | null;
+  companyName: string | null;
+  boardingStatus: BoardingStatus;
+  boardedOutAt: string | null;
+  boardedOutBy: BoardedByInfo | null;
+  boardedReturnAt: string | null;
+  boardedReturnBy: BoardedByInfo | null;
+  contact?: ManifestRiderContact;   // Only when caller has events:transport_board
+}
+
+export interface ManifestStop {
+  uuid: string;
+  label: string | null;
+  pickupTime: string | null;       // ISO 8601
+  seatsTotal: number | null;
+  counters: TransportBoardingCounters;
+}
+
+export interface ManifestEvent {
+  uuid: string;
+  title: string;
+  eventDate: string | null;        // ISO 8601
+}
+
+export interface ManifestResponse {
+  event: ManifestEvent;
+  stop: ManifestStop;
+  riders: ManifestRider[];
+}
+
+// Boarding state error codes
+export type BoardingErrorCode =
+  | "invalid_direction"
+  | "invalid_action"
+  | "transport_invalid_transition"
+  | "transport_not_live_mode"
+  | "transport_stop_closed"
+  | "participant_not_found"
+  | "stop_not_found"
+  | "event_not_found"
+  | "forbidden"
+  | "ticket_decode_not_implemented"
+  | "invalid_ticket";
+
+// ============================================================
+// Socket.IO — transport-phase WS events
+// ============================================================
+
+export interface WSTransportStopFull {
+  stopUuid: string;
+  stopLabel: string | null;
+}
+
+export interface WSTransportStopUpdated {
+  stopUuid: string;
+  seatsTotal: number | null;
+  seatsReserved: number;
+  seatsAvailable: number | null;
+}
+
+export interface WSTransportParticipantBoarded {
+  stopUuid: string;
+  participantUuid: string;
+  boardingStatus: BoardingStatus;
+  direction: BoardDirection;
+  at: string;                      // ISO 8601
+  by: BoardedByInfo;
+}
+
+export interface WSTransportOutreachSent {
+  stopUuid: string;
+  participantUuid: string;
+  channel: OutreachChannel;
+  template: OutreachTemplate | null;
+  at: string;
+  byUser: BoardedByInfo;
+}
+
+/** Emitted to user:{userId} room, NOT event:{eventUuid}. */
+export interface WSTransportSeatReleased {
+  eventUuid: string;
+  stopUuid: string;
+  reason: "admin_closed" | "admin_reduced" | "stop_deleted" | "mode_none";
+}
