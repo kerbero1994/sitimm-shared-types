@@ -10,6 +10,7 @@ import type { EventCampusV2, CreateEventCampusV2Request } from "../campuses";
 import type { EventTransportListV2, TransportMode } from "./transport";
 
 export * from "./transport";
+export * from "./eligibility";
 
 // ── Shared Unions ──
 
@@ -25,12 +26,16 @@ export type EventModality = "presencial" | "virtual" | "mixto";
  * - `"confirmed"` — Attendance confirmed (or checked in).
  * - `"cancelled"` — Registration cancelled.
  * - `"waitlisted"` — On the waitlist; auto-promoted when capacity frees up.
+ * - `"pending_approval"` — Guest registration awaiting reviewer decision.
+ * - `"rejected"` — Guest registration was declined by a reviewer.
  */
 export type EventParticipantStatus =
   | "registered"
   | "confirmed"
   | "cancelled"
-  | "waitlisted";
+  | "waitlisted"
+  | "pending_approval"
+  | "rejected";
 
 /**
  * Event media role.
