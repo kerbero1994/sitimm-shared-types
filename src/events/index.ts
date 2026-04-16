@@ -6,6 +6,8 @@
  * Covers: events CRUD, participant registration, event type catalog.
  */
 
+import type { EventCampusV2, CreateEventCampusV2Request } from "../campuses";
+
 // ── Shared Unions ──
 
 /**
@@ -145,6 +147,8 @@ export interface EventDetailV2 extends EventV2 {
   isRegistered: boolean;
   /** Participant stats breakdown (ADVISOR+ only; null for regular users). */
   participantStats: EventParticipantStats | null;
+  /** Venue slots linked to this event. Empty array when none configured. */
+  venues?: EventCampusV2[];
 }
 
 /**
@@ -233,6 +237,8 @@ export interface CreateEventV2Request {
   streamingUrl?: string;
   /** Streaming provider tag. */
   streamingProvider?: string;
+  /** Venue slots to create alongside the event. */
+  venues?: CreateEventCampusV2Request[] | null;
 }
 
 /**
@@ -393,6 +399,8 @@ export interface CreateParticipantV2Request {
   modality?: EventModality;
   /** Campus catalog ID (for transport). */
   campusId?: number;
+  /** Event campus slot ID (for event-specific venues). */
+  eventCampusId?: number | null;
   /** Bus stop catalog ID (for transport). */
   busStopId?: number;
   /** Whether participant needs transportation. Default: false. */
@@ -416,6 +424,8 @@ export interface UpdateParticipantV2Request {
   modality?: EventModality;
   /** Campus catalog ID. */
   campusId?: number;
+  /** Event campus slot ID (for event-specific venues). */
+  eventCampusId?: number | null;
   /** Bus stop catalog ID. */
   busStopId?: number;
   /** Transport need flag. */

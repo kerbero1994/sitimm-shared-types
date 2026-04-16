@@ -31,14 +31,26 @@ export interface Company extends BaseEntity {
   cityUuid?: string;
   /** State UUID (foreign key to states catalog). */
   stateUuid?: string;
-  /** Country name. */
-  country?: string;
-  /** Industrial park name (if applicable). */
-  industrialPark?: string;
   /** ISO-8601 date when the company was accepted into the union. */
   acceptanceDate?: string;
-  /** URL to the collective contract document. */
-  collectiveContractUrl?: string;
+  /** Country catalog FK. */
+  CountryId?: number;
+  /** Industrial park catalog FK. */
+  IndustrialParkId?: number;
+  /** Company type catalog FK. */
+  CompanyTypeId?: number;
+  /** State catalog FK. */
+  StateId?: number;
+  /** City catalog FK. */
+  CityId?: number;
+  /** Economic activity catalog FK. */
+  EconomicActivityId?: number;
+  /** GPS latitude. Range: -90 to 90. */
+  latitude?: number;
+  /** GPS longitude. Range: -180 to 180. */
+  longitude?: number;
+  /** URL to company logo (Clearbit or S3). Max 500 chars. */
+  logoUrl?: string;
 }
 
 /**
@@ -115,57 +127,35 @@ export interface CompanyStatistics {
 
 /**
  * Company technical/operational details.
+ *
+ * Legacy fields REMOVED (v0.15.0): delegates, commissioners, secretaries,
+ * manager, productionManager, product, clients.
+ * Use CompanyAdmin for contacts, CompanyUnionPersonal for union reps,
+ * client_ids/product_ids for catalog-based assignments.
  */
 export interface TechnicalDetail {
   /** Record UUID. */
   uuid: string;
   /** Collective contract reference. */
   contract?: string;
-  /** Number of union delegates. */
-  delegates?: number;
-  /** Number of union commissioners. */
-  commissioners?: number;
-  /** Number of union secretaries. */
-  secretaries?: number;
-  /** General manager name. */
-  manager?: string;
-  /** Production manager name. */
-  productionManager?: string;
-  /** Main product/service. */
-  product?: string;
   /** ISO-8601 date when operations started. */
   operationStart?: string;
-  /** Main clients/customers. */
-  clients?: string;
   /** ISO-8601 date of last contract revision. */
   lastRevision?: string;
+  /** Catalog-based client UUIDs. */
+  clientIds?: string[];
+  /** Catalog-based product UUIDs. */
+  productIds?: string[];
 }
 
 /**
- * Company benefits package.
- * All values are free-text descriptions (may include percentages, amounts, etc.).
+ * Company benefits — LEGACY (v0.15.0).
+ * All text fields removed. Use NormalizedBenefit (from CompanyBenefitValue + BenefitCatalog) instead.
+ * @deprecated Use normalizedBenefits on CompanyDetailsResponse
  */
 export interface Benefit {
   /** Record UUID. */
   uuid: string;
-  /** Christmas bonus description (e.g., "15 days"). */
-  christmasBox?: string;
-  /** Holiday bonus description. */
-  holydayBonus?: string;
-  /** Savings fund description. */
-  savingFund?: string;
-  /** Profit sharing description. */
-  utilities?: string;
-  /** Food/grocery vouchers description. */
-  vouchers?: string;
-  /** Attendance bonus description. */
-  attendanceBonus?: string;
-  /** Lunch bonus/subsidy description. */
-  lunchBonus?: string;
-  /** Transport bonus/subsidy description. */
-  transportBonus?: string;
-  /** Other benefits description. */
-  other?: string;
 }
 
 /**
@@ -261,8 +251,6 @@ export interface CompanyDetailsResponse {
     companyTypeName?: string;
     /** Resolved economic activity name. */
     economicActivityName?: string;
-    /** Resolved headquarter name. */
-    headquarterName?: string;
   };
   /** Aggregated employee statistics. */
   statistics?: CompanyStatistics;
@@ -281,8 +269,6 @@ export interface CompanyDetailsResponse {
   contacts?: CompanyContact[];
   /** Technical/operational details. */
   technicalDetail?: TechnicalDetail;
-  /** Benefits package. */
-  benefit?: Benefit;
   /** Top job titles by employee count. */
   topJobs?: Array<{ job: string; count: number }>;
   /** Data quality percentages per field. */

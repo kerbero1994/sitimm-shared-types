@@ -14,3 +14,4 @@ export * from "./magazines";
 export * from "./headquarters";
 export * from "./advisor-assignments";
 export * from "./censuses";
+export * from "./campuses";

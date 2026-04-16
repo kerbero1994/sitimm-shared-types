@@ -542,20 +542,10 @@ export interface CompanyDataV2 {
   name: string | null;
   /** Company address. Max 500 chars. */
   address: string | null;
-  /** Country name. */
-  country: string | null;
   /** Company phone. Max 255 chars. */
   phone: string | null;
-  /** Industrial park name (if applicable). */
-  industrialPark: string | null;
   /** Whether the company has a union committee. */
   hasCommittee: boolean | null;
-  /** URL to the collective contract document. */
-  colectiveContract: string | null;
-  /** URL to the internal regulation document. */
-  internalRegulation: string | null;
-  /** URL to other relevant documents. */
-  otherDocuments: string | null;
   /** GPS latitude. Range: -90 to 90. */
   latitude: number | null;
   /** GPS longitude. Range: -180 to 180. */
