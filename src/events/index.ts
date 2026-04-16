@@ -7,6 +7,9 @@
  */
 
 import type { EventCampusV2, CreateEventCampusV2Request } from "../campuses";
+import type { EventTransportListV2, TransportMode } from "./transport";
+
+export * from "./transport";
 
 // ── Shared Unions ──
 
@@ -124,6 +127,8 @@ export interface EventV2 {
   createdAt: string;
   /** ISO-8601 last update timestamp. */
   updatedAt: string;
+  /** Transport mode for the event. "none" when no transport is configured. */
+  transportMode?: TransportMode;
 }
 
 /**
@@ -149,6 +154,8 @@ export interface EventDetailV2 extends EventV2 {
   participantStats: EventParticipantStats | null;
   /** Venue slots linked to this event. Empty array when none configured. */
   venues?: EventCampusV2[];
+  /** Full transport configuration. Null when transportMode is "none". */
+  transport?: EventTransportListV2 | null;
 }
 
 /**
