@@ -404,3 +404,120 @@ export interface WSTransportSeatReleased {
   stopUuid: string;
   reason: "admin_closed" | "admin_reduced" | "stop_deleted" | "mode_none";
 }
+
+// ============================================================
+// Event-level boarding router (`event_boarding_v2.py`)
+//
+// These endpoints overlap with the stop-scoped transport router above but
+// operate at the event level (bulk across stops). Backend uses a smaller
+// outreach channel enum — no `call_logged`, no SMS.
+// ============================================================
+
+/**
+ * Event-level outreach channel.
+ * Backend: VALID_OUTREACH_CHANNELS = {"push", "email", "call"}.
+ */
+export type EventBoardingOutreachChannel = "push" | "email" | "call";
+
+/**
+ * Body for POST /api/v2/events/{uuid}/transport/board/{participantUuid}
+ * and POST /api/v2/events/{uuid}/transport/no-show/{participantUuid}.
+ * Backend: BoardingActionRequest.
+ */
+export interface EventBoardingActionRequest {
+  /** `"out"` or `"return"` — which leg of the trip is being recorded. */
+  direction: BoardDirection;
+}
+
+/**
+ * Body for POST /api/v2/events/{uuid}/transport/outreach/{participantUuid}.
+ * Backend: OutreachRequest.
+ */
+export interface EventBoardingOutreachRequest {
+  channel: EventBoardingOutreachChannel;
+  /** Optional free-text message. Max 500 chars. */
+  message?: string | null;
+}
+
+/**
+ * Participant row in the event-level manifest payload.
+ * Backend: event_boarding_service._participant_boarding_response().
+ */
+export interface EventBoardingManifestParticipant {
+  uuid: string;
+  name: string | null;
+  email: string | null;
+  busStopId: number | null;
+  boardingStatus: BoardingStatus;
+  boardedOutAt: string | null;
+  boardedReturnAt: string | null;
+  /** Event registration status — matches `EventParticipantStatus` from ../events. */
+  status:
+    | "registered"
+    | "confirmed"
+    | "cancelled"
+    | "waitlisted"
+    | "pending_approval"
+    | "rejected";
+}
+
+/**
+ * Response from GET /api/v2/events/{uuid}/transport/manifest.
+ * Backend: event_boarding_service.get_manifest().
+ */
+export interface EventBoardingManifestResponse {
+  eventUuid: string;
+  /** Filter applied (null = all stops). */
+  busStopId: number | null;
+  totalAssigned: number;
+  boardedOut: number;
+  boardedReturn: number;
+  noShowOut: number;
+  noShowReturn: number;
+  pendingOut: number;
+  participants: EventBoardingManifestParticipant[];
+}
+
+/**
+ * Response from POST board/no-show/outreach — wrapped one-row shape.
+ */
+export interface EventBoardingActionResponse {
+  uuid: string;
+  boardingStatus?: BoardingStatus;
+  channel?: EventBoardingOutreachChannel;
+  sentAt?: string;
+  participantUuid?: string;
+}
+
+/**
+ * Single row in GET /api/v2/events/{uuid}/transport/outreach.
+ * Backend: event_boarding_service.get_outreach_log().
+ */
+export interface EventBoardingOutreachAuditItem {
+  uuid: string;
+  participantId: number;
+  busStopId: number | null;
+  channel: EventBoardingOutreachChannel;
+  sentBy: number;
+  sentAt: string | null;
+  message: string | null;
+}
+
+/**
+ * Response from GET /api/v2/events/{uuid}/transport/outreach.
+ */
+export interface EventBoardingOutreachAuditResponse {
+  records: EventBoardingOutreachAuditItem[];
+}
+
+/**
+ * Event-level boarding error codes (distinct from BoardingErrorCode).
+ * Backend: BoardingError in event_boarding_service.py.
+ */
+export type EventBoardingErrorCode =
+  | "invalid_direction"
+  | "invalid_channel"
+  | "participant_not_found"
+  | "illegal_transition"
+  | "rate_limited"
+  | "event_not_found";
