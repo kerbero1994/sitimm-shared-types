@@ -156,6 +156,12 @@ export interface EventDetailV2 extends EventV2 {
   audienceTitles: unknown | null;
   /** True if the caller has an active (non-cancelled) registration. */
   isRegistered: boolean;
+  /**
+   * 1-indexed FIFO position on the waitlist when the caller's own registration
+   * is in state `waitlisted`. `null` for every other caller (not on the
+   * waitlist, not registered, anonymous). Backend: `EventV2Repository.get_waitlist_position`.
+   */
+  myWaitlistPosition?: number | null;
   /** Participant stats breakdown (ADVISOR+ only; null for regular users). */
   participantStats: EventParticipantStats | null;
   /** Venue slots linked to this event. Empty array when none configured. */
