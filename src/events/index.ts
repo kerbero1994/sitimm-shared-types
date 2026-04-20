@@ -790,3 +790,103 @@ export interface StreamingWebhookV2Request {
   /** Updated provider tag (optional). */
   provider?: string;
 }
+
+/* ─────────────────────────── Event Templates (v0.30.0 / mini-back v2.9.20+v2.9.21) ─────────────────────────── */
+
+/**
+ * Re-usable event blueprint. The `payload` is a sanitized snapshot of the
+ * configurable fields of an Event (see `EVENT_TEMPLATE_PAYLOAD_FIELDS`).
+ *
+ * Backend: app/infrastructure/database/models/additional_models.py::EventTemplate
+ * Router: app/presentation/api/v2/event_templates_v2.py
+ */
+export interface EventTemplateV2 {
+  uuid: string;
+  name: string;
+  description: string | null;
+  /** Sanitized event-create payload — keys restricted to the server allowlist. */
+  payload: EventTemplatePayloadV2;
+  createdBy: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+/**
+ * Allowed keys in `EventTemplate.payload`. Server enforces this allowlist;
+ * unknown keys are stripped silently. All entries are optional — a template
+ * is just a partial snapshot the admin completes when instantiating.
+ */
+export interface EventTemplatePayloadV2 {
+  title?: string;
+  description?: string | null;
+  content?: string | null;
+  img?: string | null;
+  files?: unknown;
+  place?: string | null;
+  register?: boolean;
+  isPrivate?: boolean;
+  offersMobility?: boolean;
+  daysBeforeAnouncment?: number | null;
+  virtualUrl?: string | null;
+  audience?: unknown;
+  EventTypeId?: number | null;
+  /** null = unlimited; 0 is rejected (use `register=false` to disable signup). */
+  capacity?: number | null;
+  waitlistEnabled?: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
+  addressStructured?: Record<string, unknown> | null;
+  accessibility?: Record<string, unknown> | null;
+  transportMode?: TransportMode;
+  endDate?: string | null;
+  recurrenceRule?: string | null;
+  streamingUrl?: string | null;
+  streamingProvider?: string | null;
+}
+
+/** `POST /api/v2/events/templates` body. */
+export interface CreateEventTemplateV2Request {
+  name: string;
+  description?: string | null;
+  payload: EventTemplatePayloadV2;
+}
+
+/** `POST /api/v2/events/templates/from-event/{eventUuid}` body. */
+export interface SnapshotEventTemplateV2Request {
+  name: string;
+  description?: string | null;
+}
+
+/** `PATCH /api/v2/events/templates/{templateUuid}` body. */
+export interface UpdateEventTemplateV2Request {
+  name?: string;
+  description?: string | null;
+  payload?: EventTemplatePayloadV2;
+}
+
+/** `POST /api/v2/events/from-template/{templateUuid}` body. */
+export interface CreateEventFromTemplateV2Request {
+  /** Override the templated title (optional). */
+  title?: string;
+  /** New event date — required, must be in the future. */
+  eventDate: string;
+  /** Optional end date; must be after `eventDate` when supplied. */
+  endDate?: string | null;
+}
+
+/** `POST /api/v2/events/from-template/{templateUuid}` response. */
+export interface EventFromTemplateV2Response {
+  uuid: string;
+  title: string | null;
+  eventDate: string | null;
+  enabled: boolean;
+  templateUuid: string;
+}
+
+export interface EventTemplateListV2Response {
+  items: EventTemplateV2[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasNext: boolean;
+}
