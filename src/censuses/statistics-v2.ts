@@ -275,6 +275,23 @@ export interface CensusStatisticsResponseV2 {
   computed_in_ms: number;
 }
 
+/**
+ * Request params for GET /api/v2/censuses/{uuid}/statistics.
+ *
+ * Backend: app/presentation/api/v2/censuses/census_statistics_v2.py
+ *
+ * The `include` list is serialized as a comma-separated query string
+ * and validated server-side against the StatisticsSection enum.
+ */
+export interface CensusStatisticsRequestV2 {
+  /** Census UUID — path param. */
+  censusUuid: string;
+  /** Preset bundle of sections. Default: "basic". */
+  preset?: StatisticsPreset;
+  /** Comma-separated section names. Validated server-side. */
+  include?: StatisticsSection[];
+}
+
 // ── Municipalities endpoint ─────────────────────────────────────────
 
 export interface MunicipalityEmployee {

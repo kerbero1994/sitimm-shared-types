@@ -213,6 +213,8 @@ export interface AttachmentV2 {
   size_bytes: number;
   /** Pre-signed download URL (S3/MinIO). */
   url: string;
+  /** ISO-8601 datetime when the attachment was uploaded. */
+  created_at?: string;
 }
 
 // -- Consultation --
@@ -384,6 +386,29 @@ export interface ListConsultationsV2Response {
   per_page: number;
 }
 
+// -- Show --
+
+/**
+ * Response body for GET /api/v2/consultations/{uuid}.
+ * Backend: consultation_v2.py :: ConsultationShowV2Response
+ *
+ * Returned by RTK Query endpoints that fetch a single consultation with its
+ * message history inline (typically used by the detail view / kanban card).
+ *
+ * `TConsultation` defaults to the V2 shape, but callers may specialize it to
+ * a locally-adapted shape (e.g., a camelCase kanban model produced by a
+ * client-side adapter function).
+ */
+export interface ConsultationShowResponseV2<
+  TConsultation = ConsultationV2,
+  TMessage = ConsultationMessageV2,
+> {
+  /** Consultation envelope. */
+  consultation: TConsultation;
+  /** Full message thread, ordered by created_at ascending. */
+  messages: TMessage[];
+}
+
 // -- Create --
 
 /**
@@ -466,9 +491,11 @@ export interface ConsultationMessageV2 {
   /** Internal note flag. If true, only advisors can see this message. Default: false. */
   is_internal: boolean;
   /** File attachments on this message. Empty array if none. */
-  attachments: AttachmentV2[];
+  attachments?: AttachmentV2[];
   /** ISO-8601 datetime when the message was created. */
   created_at: string;
+  /** ISO-8601 datetime when the recipient read this message. Null if unread. */
+  read_at?: string | null;
 }
 
 /**
@@ -579,6 +606,12 @@ export interface ConsultationTypeV2 {
   id: number;
   /** Type name/label (e.g., "Consulta General"). */
   content: string;
+  /** Alias for `content` exposed by some serializers. */
+  name?: string;
+  /** ISO-8601 creation timestamp (optional, exposed on admin CRUD endpoints). */
+  created_at?: string;
+  /** ISO-8601 last update timestamp (optional, exposed on admin CRUD endpoints). */
+  updated_at?: string;
 }
 
 // -- Socket.IO Client State --
@@ -943,19 +976,25 @@ export interface TemplateV2Response {
   title: string;
   /** Template body text. 1–4000 chars. */
   body: string;
-  /** Category label for grouping. */
-  category: string;
+  /** Category label for grouping. Null if the template is uncategorized. */
+  category: string | null;
   /** Whether the template is active and usable. */
   is_active: boolean;
   /** Number of times this template has been used. */
   usage_count: number;
-  /** Full name of the admin/manager who created it. */
-  created_by_name: string;
+  /** Full name of the admin/manager who created it. Null when the author row is unavailable. */
+  created_by_name: string | null;
   /** ISO-8601 creation datetime. */
   created_at: string;
   /** ISO-8601 last update datetime. */
   updated_at: string;
 }
+
+/**
+ * Alias for TemplateV2Response to match the V2-suffix naming convention
+ * used by frontend consumers. Both names refer to the same shape.
+ */
+export type TemplateV2 = TemplateV2Response;
 
 /**
  * Response from GET /api/v2/consultations/templates.
