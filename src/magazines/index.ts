@@ -27,7 +27,8 @@ export type MagazineSortOption =
   | "title"
   | "most_liked"
   | "most_viewed"
-  | "most_downloaded";
+  | "most_downloaded"
+  | "most_shared";
 
 // ── Table of Contents ───────────────────────────────────────────────
 
@@ -238,6 +239,8 @@ export interface MagazineBulkResultV2 {
 
 export interface MagazineShareResponse {
   shareCount: number;
+  /** Canonical deep-link FE can hand to OS share sheet. Added 2026-04-21. */
+  shareUrl: string;
 }
 
 // ── Download response (POST /{uuid}/download) ───────────────────────
