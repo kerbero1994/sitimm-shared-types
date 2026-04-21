@@ -10,6 +10,8 @@
  * Request fields: snake_case matching Pydantic field names.
  */
 
+import type { LocaleCode } from "../locales/index.js";
+
 // ── Category / Sort ─────────────────────────────────────────────────
 
 /**
@@ -248,6 +250,50 @@ export interface MagazineShareResponse {
 export interface MagazineDownloadResponse {
   pdfUrl: string;
   downloadCount: number;
+}
+
+// ── Multi-lang CMS (2026-04-21) ─────────────────────────────────────
+
+export type MagazineTranslationSource = "machine" | "human" | "fallback";
+
+export interface TranslationLangMetadata {
+  currentLang: LocaleCode;
+  availableLangs?: LocaleCode[];
+  translationSource?: MagazineTranslationSource;
+}
+
+export interface MagazineTranslationBody {
+  title?: string;
+  subtitle?: string;
+  description?: string;
+  excerpt?: string;
+  badgeText?: string;
+  tableOfContents?: TableOfContentsEntry[];
+}
+
+export interface MagazineTranslationResponseV2 {
+  lang: LocaleCode;
+  source: MagazineTranslationSource;
+  title: string | null;
+  subtitle: string | null;
+  description: string | null;
+  excerpt: string | null;
+  badgeText: string | null;
+  tableOfContents: TableOfContentsEntry[] | null;
+  updatedAt: string;
+}
+
+export interface MagazinePageTextResponseV2 {
+  pageNumber: number;
+  lang: LocaleCode;
+  source: MagazineTranslationSource;
+  text: string | null;
+}
+
+export interface MagazinePagesResponseV2 {
+  lang: LocaleCode;
+  total: number;
+  items: MagazinePageTextResponseV2[];
 }
 
 // ── Moderation (2026-04-21) ─────────────────────────────────────────
