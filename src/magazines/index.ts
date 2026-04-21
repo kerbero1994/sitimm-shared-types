@@ -17,7 +17,13 @@ import type { LocaleCode } from "../locales/index.js";
 /**
  * Magazine category enum. Matches backend MagazineCategory.
  */
-export type MagazineCategory = "general" | "especial" | "anual" | "boletin";
+export type MagazineCategory =
+  | "general"
+  | "especial"
+  | "anual"
+  | "boletin"
+  | "semestral"
+  | "semanal";
 
 /**
  * Sort option for magazine list queries.
