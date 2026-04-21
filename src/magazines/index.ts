@@ -250,6 +250,36 @@ export interface MagazineDownloadResponse {
   downloadCount: number;
 }
 
+// ── Moderation (2026-04-21) ─────────────────────────────────────────
+
+export type MagazineReportReason =
+  | "spam"
+  | "inappropriate"
+  | "copyright"
+  | "outdated"
+  | "broken"
+  | "other";
+
+export type MagazineReportStatus =
+  | "pending"
+  | "reviewed"
+  | "dismissed"
+  | "actioned";
+
+export interface MagazineReportCreateV2Request {
+  reason: MagazineReportReason;
+  comment?: string;
+}
+
+export interface MagazineReportResponseV2 {
+  uuid: string;
+  magazineUuid: string;
+  reason: MagazineReportReason;
+  status: MagazineReportStatus;
+  comment: string | null;
+  createdAt: string;
+}
+
 // ── Structured error detail (2026-04-21) ────────────────────────────
 
 /**
