@@ -16,3 +16,4 @@ export * from "./advisor-assignments";
 export * from "./censuses";
 export * from "./campuses";
 export * from "./benefits";
+export * from "./ai-stats";

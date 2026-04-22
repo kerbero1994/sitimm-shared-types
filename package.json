@@ -1,89 +1,206 @@
 {
   "name": "@kerbero1994/shared-types",
-  "version": "0.35.0",
+  "version": "0.36.0",
   "description": "Shared TypeScript types for the SITIMM ecosystem",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": { "types": "./dist/index.d.mts", "default": "./dist/index.mjs" },
-      "require": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
     },
     "./common": {
-      "import": { "types": "./dist/common/index.d.mts", "default": "./dist/common/index.mjs" },
-      "require": { "types": "./dist/common/index.d.ts", "default": "./dist/common/index.js" }
+      "import": {
+        "types": "./dist/common/index.d.mts",
+        "default": "./dist/common/index.mjs"
+      },
+      "require": {
+        "types": "./dist/common/index.d.ts",
+        "default": "./dist/common/index.js"
+      }
     },
     "./users": {
-      "import": { "types": "./dist/users/index.d.mts", "default": "./dist/users/index.mjs" },
-      "require": { "types": "./dist/users/index.d.ts", "default": "./dist/users/index.js" }
+      "import": {
+        "types": "./dist/users/index.d.mts",
+        "default": "./dist/users/index.mjs"
+      },
+      "require": {
+        "types": "./dist/users/index.d.ts",
+        "default": "./dist/users/index.js"
+      }
     },
     "./consultations": {
-      "import": { "types": "./dist/consultations/index.d.mts", "default": "./dist/consultations/index.mjs" },
-      "require": { "types": "./dist/consultations/index.d.ts", "default": "./dist/consultations/index.js" }
+      "import": {
+        "types": "./dist/consultations/index.d.mts",
+        "default": "./dist/consultations/index.mjs"
+      },
+      "require": {
+        "types": "./dist/consultations/index.d.ts",
+        "default": "./dist/consultations/index.js"
+      }
     },
     "./events": {
-      "import": { "types": "./dist/events/index.d.mts", "default": "./dist/events/index.mjs" },
-      "require": { "types": "./dist/events/index.d.ts", "default": "./dist/events/index.js" }
+      "import": {
+        "types": "./dist/events/index.d.mts",
+        "default": "./dist/events/index.mjs"
+      },
+      "require": {
+        "types": "./dist/events/index.d.ts",
+        "default": "./dist/events/index.js"
+      }
     },
     "./companies": {
-      "import": { "types": "./dist/companies/index.d.mts", "default": "./dist/companies/index.mjs" },
-      "require": { "types": "./dist/companies/index.d.ts", "default": "./dist/companies/index.js" }
+      "import": {
+        "types": "./dist/companies/index.d.mts",
+        "default": "./dist/companies/index.mjs"
+      },
+      "require": {
+        "types": "./dist/companies/index.d.ts",
+        "default": "./dist/companies/index.js"
+      }
     },
     "./bulletins": {
-      "import": { "types": "./dist/bulletins/index.d.mts", "default": "./dist/bulletins/index.mjs" },
-      "require": { "types": "./dist/bulletins/index.d.ts", "default": "./dist/bulletins/index.js" }
+      "import": {
+        "types": "./dist/bulletins/index.d.mts",
+        "default": "./dist/bulletins/index.mjs"
+      },
+      "require": {
+        "types": "./dist/bulletins/index.d.ts",
+        "default": "./dist/bulletins/index.js"
+      }
     },
     "./auth": {
-      "import": { "types": "./dist/auth/index.d.mts", "default": "./dist/auth/index.mjs" },
-      "require": { "types": "./dist/auth/index.d.ts", "default": "./dist/auth/index.js" }
+      "import": {
+        "types": "./dist/auth/index.d.mts",
+        "default": "./dist/auth/index.mjs"
+      },
+      "require": {
+        "types": "./dist/auth/index.d.ts",
+        "default": "./dist/auth/index.js"
+      }
     },
     "./endpoints": {
-      "import": { "types": "./dist/endpoints/index.d.mts", "default": "./dist/endpoints/index.mjs" },
-      "require": { "types": "./dist/endpoints/index.d.ts", "default": "./dist/endpoints/index.js" }
+      "import": {
+        "types": "./dist/endpoints/index.d.mts",
+        "default": "./dist/endpoints/index.mjs"
+      },
+      "require": {
+        "types": "./dist/endpoints/index.d.ts",
+        "default": "./dist/endpoints/index.js"
+      }
     },
     "./socket-events": {
-      "import": { "types": "./dist/socket-events/index.d.mts", "default": "./dist/socket-events/index.mjs" },
-      "require": { "types": "./dist/socket-events/index.d.ts", "default": "./dist/socket-events/index.js" }
+      "import": {
+        "types": "./dist/socket-events/index.d.mts",
+        "default": "./dist/socket-events/index.mjs"
+      },
+      "require": {
+        "types": "./dist/socket-events/index.d.ts",
+        "default": "./dist/socket-events/index.js"
+      }
     },
     "./validation": {
-      "import": { "types": "./dist/validation/index.d.mts", "default": "./dist/validation/index.mjs" },
-      "require": { "types": "./dist/validation/index.d.ts", "default": "./dist/validation/index.js" }
+      "import": {
+        "types": "./dist/validation/index.d.mts",
+        "default": "./dist/validation/index.mjs"
+      },
+      "require": {
+        "types": "./dist/validation/index.d.ts",
+        "default": "./dist/validation/index.js"
+      }
     },
     "./locales": {
-      "import": { "types": "./dist/locales/index.d.mts", "default": "./dist/locales/index.mjs" },
-      "require": { "types": "./dist/locales/index.d.ts", "default": "./dist/locales/index.js" }
+      "import": {
+        "types": "./dist/locales/index.d.mts",
+        "default": "./dist/locales/index.mjs"
+      },
+      "require": {
+        "types": "./dist/locales/index.d.ts",
+        "default": "./dist/locales/index.js"
+      }
     },
     "./feature-flags": {
-      "import": { "types": "./dist/feature-flags/index.d.mts", "default": "./dist/feature-flags/index.mjs" },
-      "require": { "types": "./dist/feature-flags/index.d.ts", "default": "./dist/feature-flags/index.js" }
+      "import": {
+        "types": "./dist/feature-flags/index.d.mts",
+        "default": "./dist/feature-flags/index.mjs"
+      },
+      "require": {
+        "types": "./dist/feature-flags/index.d.ts",
+        "default": "./dist/feature-flags/index.js"
+      }
     },
     "./magazines": {
-      "import": { "types": "./dist/magazines/index.d.mts", "default": "./dist/magazines/index.mjs" },
-      "require": { "types": "./dist/magazines/index.d.ts", "default": "./dist/magazines/index.js" }
+      "import": {
+        "types": "./dist/magazines/index.d.mts",
+        "default": "./dist/magazines/index.mjs"
+      },
+      "require": {
+        "types": "./dist/magazines/index.d.ts",
+        "default": "./dist/magazines/index.js"
+      }
     },
     "./headquarters": {
-      "import": { "types": "./dist/headquarters/index.d.mts", "default": "./dist/headquarters/index.mjs" },
-      "require": { "types": "./dist/headquarters/index.d.ts", "default": "./dist/headquarters/index.js" }
+      "import": {
+        "types": "./dist/headquarters/index.d.mts",
+        "default": "./dist/headquarters/index.mjs"
+      },
+      "require": {
+        "types": "./dist/headquarters/index.d.ts",
+        "default": "./dist/headquarters/index.js"
+      }
     },
     "./advisor-assignments": {
-      "import": { "types": "./dist/advisor-assignments/index.d.mts", "default": "./dist/advisor-assignments/index.mjs" },
-      "require": { "types": "./dist/advisor-assignments/index.d.ts", "default": "./dist/advisor-assignments/index.js" }
+      "import": {
+        "types": "./dist/advisor-assignments/index.d.mts",
+        "default": "./dist/advisor-assignments/index.mjs"
+      },
+      "require": {
+        "types": "./dist/advisor-assignments/index.d.ts",
+        "default": "./dist/advisor-assignments/index.js"
+      }
     },
     "./censuses": {
-      "import": { "types": "./dist/censuses/index.d.mts", "default": "./dist/censuses/index.mjs" },
-      "require": { "types": "./dist/censuses/index.d.ts", "default": "./dist/censuses/index.js" }
+      "import": {
+        "types": "./dist/censuses/index.d.mts",
+        "default": "./dist/censuses/index.mjs"
+      },
+      "require": {
+        "types": "./dist/censuses/index.d.ts",
+        "default": "./dist/censuses/index.js"
+      }
     },
     "./campuses": {
-      "import": { "types": "./dist/campuses/index.d.mts", "default": "./dist/campuses/index.mjs" },
-      "require": { "types": "./dist/campuses/index.d.ts", "default": "./dist/campuses/index.js" }
+      "import": {
+        "types": "./dist/campuses/index.d.mts",
+        "default": "./dist/campuses/index.mjs"
+      },
+      "require": {
+        "types": "./dist/campuses/index.d.ts",
+        "default": "./dist/campuses/index.js"
+      }
     },
     "./benefits": {
-      "import": { "types": "./dist/benefits/index.d.mts", "default": "./dist/benefits/index.mjs" },
-      "require": { "types": "./dist/benefits/index.d.ts", "default": "./dist/benefits/index.js" }
+      "import": {
+        "types": "./dist/benefits/index.d.mts",
+        "default": "./dist/benefits/index.mjs"
+      },
+      "require": {
+        "types": "./dist/benefits/index.d.ts",
+        "default": "./dist/benefits/index.js"
+      }
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",

@@ -243,6 +243,29 @@ export interface MagazineBulkResultV2 {
   missingUuids: string[];
 }
 
+// ── Bulk import (added 2026-04-22) ──────────────────────────────────
+
+export interface MagazineBulkImportRequest {
+  /** Up to 100 magazine create payloads. Each row validated server-side. */
+  items: MagazineCreateV2Request[];
+}
+
+export interface MagazineBulkImportFailure {
+  /** Stable zero-based index matching the submitted `items[]` order. */
+  index: number;
+  title: string | null;
+  errorCode: string;
+  errorMessage: string;
+}
+
+export interface MagazineBulkImportResultV2 {
+  total: number;
+  created: number;
+  failed: MagazineBulkImportFailure[];
+  /** UUIDs of magazines successfully created, in the order they ran. */
+  createdUuids: string[];
+}
+
 // ── Share response (POST /{uuid}/share) ─────────────────────────────
 
 export interface MagazineShareResponse {
