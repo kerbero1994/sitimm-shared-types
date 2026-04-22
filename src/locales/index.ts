@@ -56,3 +56,6 @@ export const LOCALE_FLAGS: Record<LocaleCode, string> = {
   zh: "🇨🇳",
   hi: "🇮🇳",
 };
+
+// -- Country catalog --
+export * from "./countries";

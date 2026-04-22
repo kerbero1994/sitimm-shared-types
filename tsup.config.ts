@@ -20,6 +20,7 @@ export default defineConfig({
     "src/advisor-assignments/index.ts",
     "src/censuses/index.ts",
     "src/campuses/index.ts",
+    "src/benefits/index.ts",
   ],
   format: ["cjs", "esm"],
   dts: true,

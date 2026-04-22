@@ -1,6 +1,6 @@
 {
   "name": "@kerbero1994/shared-types",
-  "version": "0.33.1",
+  "version": "0.34.0",
   "description": "Shared TypeScript types for the SITIMM ecosystem",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -77,6 +77,10 @@
     "./campuses": {
       "import": { "types": "./dist/campuses/index.d.mts", "default": "./dist/campuses/index.mjs" },
       "require": { "types": "./dist/campuses/index.d.ts", "default": "./dist/campuses/index.js" }
+    },
+    "./benefits": {
+      "import": { "types": "./dist/benefits/index.d.mts", "default": "./dist/benefits/index.mjs" },
+      "require": { "types": "./dist/benefits/index.d.ts", "default": "./dist/benefits/index.js" }
     }
   },
   "files": ["dist", "README.md"],

@@ -33,6 +33,8 @@ export const UserType = {
   EMPLOYEE: 63974,
   /** 23648 — HR specialist. Manages employees per company. Hierarchy: 2. */
   HR: 23648,
+  /** 57341 — General office staff (SITIMM office, read-only). Hierarchy: 2. */
+  OFFICE: 57341,
   /** 48235 — Advisor. Handles consultations, can chat with affiliates. Hierarchy: 3. */
   ADVISOR: 48235,
   /** 81493 — Full administrator. Manages all entities. Hierarchy: 5. */
@@ -48,6 +50,21 @@ export const UserType = {
 } as const;
 
 export type UserTypeValue = (typeof UserType)[keyof typeof UserType];
+
+/**
+ * Ergonomic alias for `UserType` matching the legacy `USER_TYPE_IDS` name used
+ * across the dashboard codebase. Same object, different name.
+ *
+ * @example
+ * ```ts
+ * import { USER_TYPE_IDS } from "@kerbero1994/shared-types/users";
+ * if (user.userType === USER_TYPE_IDS.ADMIN) { ... }
+ * ```
+ */
+export const USER_TYPE_IDS = UserType;
+
+/** Alias for `UserTypeValue`. Matches legacy dashboard naming. */
+export type UserTypeId = UserTypeValue;
 
 /**
  * @deprecated SUPER_ADMIN was removed in V2. DB rows with this ID map to MANAGER.
@@ -66,6 +83,7 @@ export const USER_TYPE_HIERARCHY: Record<UserTypeValue, number> = {
   [UserType.INVITADO]: 0,
   [UserType.EMPLOYEE]: 1,
   [UserType.HR]: 2,
+  [UserType.OFFICE]: 2,
   [UserType.ADVISOR]: 3,
   [UserType.ADMIN_COMMUNICATION]: 4,
   [UserType.ADMIN_EMPLOYEES]: 4,
@@ -82,6 +100,7 @@ export const USER_TYPE_ORDER: readonly UserTypeValue[] = [
   UserType.INVITADO,
   UserType.EMPLOYEE,
   UserType.HR,
+  UserType.OFFICE,
   UserType.ADVISOR,
   UserType.ADMIN_COMMUNICATION,
   UserType.ADMIN_EMPLOYEES,
@@ -551,3 +570,66 @@ export interface CompanyDataV2 {
   /** GPS longitude. Range: -180 to 180. */
   longitude: number | null;
 }
+
+// ============================================================
+// Gender Codes (DB-level literal values)
+// ============================================================
+
+/**
+ * Biological sex codes stored in the database.
+ *
+ * - `"M"` — Male
+ * - `"F"` — Female
+ *
+ * Backend references:
+ * - `Employee.gender` column (companies.Employee)
+ * - `UserProfile.sex` column (users.UserProfileV2)
+ *
+ * Census import and profile update endpoints both accept/return these exact
+ * literal values.
+ */
+export const Gender = {
+  MALE: "M",
+  FEMALE: "F",
+} as const;
+
+/** String literal union for the two stored gender codes. */
+export type GenderCode = (typeof Gender)[keyof typeof Gender];
+
+// ============================================================
+// Access-Control Convenience Sets
+// ============================================================
+
+/**
+ * User types that can access the admin panel (hierarchy level >= 5).
+ * Includes ADMIN and MANAGER.
+ */
+export const ADMIN_LEVEL_IDS: ReadonlySet<UserTypeValue> = new Set<UserTypeValue>([
+  UserType.ADMIN,
+  UserType.MANAGER,
+]);
+
+/**
+ * User types that act as advisors in consultations.
+ * Only ADVISOR today — kept as a set for future extensibility.
+ */
+export const ADVISOR_LEVEL_IDS: ReadonlySet<UserTypeValue> = new Set<UserTypeValue>([
+  UserType.ADVISOR,
+]);
+
+/**
+ * User types that are guest-level (INVITADO only).
+ * These users have not yet completed social-login-triggered activation.
+ */
+export const GUEST_LEVEL_IDS: ReadonlySet<UserTypeValue> = new Set<UserTypeValue>([
+  UserType.INVITADO,
+]);
+
+/**
+ * User types that should NOT access the dashboard at all.
+ * Includes INVITADO (guest) and EMPLOYEE (regular worker — they use the mobile app).
+ */
+export const NO_DASHBOARD_IDS: ReadonlySet<UserTypeValue> = new Set<UserTypeValue>([
+  UserType.INVITADO,
+  UserType.EMPLOYEE,
+]);
