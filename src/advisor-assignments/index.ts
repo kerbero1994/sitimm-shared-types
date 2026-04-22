@@ -89,6 +89,8 @@ export interface UnassignResponse {
   company_uuid: string;
   /** ISO datetime when unassigned. */
   unassigned_at: string;
+  /** True if the SITIMM AI fallback was auto-assigned after removing the last human advisor. */
+  sitimm_fallback_assigned: boolean;
 }
 
 /** Response for GET /advisor-assignments/by-advisor/{uuid} and /my-companies. */
@@ -110,5 +112,60 @@ export interface ByCompanyResponse {
   /** Advisors assigned to this company. */
   advisors: AdvisorAssignmentInfo[];
   /** Total advisor count. */
+  total: number;
+}
+
+// ---------------------------------------------------------------------------
+// Catalog schemas (V2 replacement for V1 /catalogs/advisors endpoints)
+// ---------------------------------------------------------------------------
+
+/** Single advisor entry in the V2 catalog list. */
+export interface AdvisorCatalogItem {
+  /** Advisor user UUID. */
+  uuid: string;
+  /** Advisor email. */
+  email: string;
+  /** Full display name ("name lastNames"), or null if profile missing. */
+  name: string | null;
+  /** Phone number (mobile-first, fallback to personal), or null. */
+  phone: string | null;
+  /** Number of companies currently assigned to this advisor. */
+  assigned_companies_count: number;
+  /** True if this is the SITIMM AI auto-advisor. */
+  is_auto_advisor: boolean;
+  /** ISO datetime when the advisor user was created. */
+  createdAt: string;
+}
+
+/** Response for GET /advisor-assignments/catalog. */
+export interface AdvisorCatalogListResponse {
+  items: AdvisorCatalogItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+/** Single advisor row in a company-scoped advisor list. */
+export interface CompanyAdvisorEntry {
+  /** Advisor user UUID. */
+  uuid: string;
+  /** Advisor email. */
+  email: string;
+  /** First name, or null. */
+  name: string | null;
+  /** Last names (camelCase because backend uses Pydantic alias). */
+  lastNames: string | null;
+  /** Phone (mobile-first, null if absent). */
+  phone: string | null;
+  /** True if this is the SITIMM AI virtual fallback. */
+  is_auto_advisor: boolean;
+}
+
+/** Response for GET /advisor-assignments/by-company-uuid/{uuid}. */
+export interface CompanyAdvisorsListResponse {
+  company_uuid: string;
+  company_name: string;
+  advisors: CompanyAdvisorEntry[];
   total: number;
 }
