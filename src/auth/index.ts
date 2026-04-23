@@ -279,3 +279,55 @@ export interface MenuItem {
   /** If true, only visible in development mode. */
   devOnly?: boolean;
 }
+
+// ────────────────────────────────────────────────────────────────────
+// Password reset (V2)
+//
+// Backend: app/presentation/schemas/auth_reset_v2.py
+// Three-step OTP flow for users who cannot log in:
+//   1. POST /api/v2/auth/forgot-password  → server emails/SMS OTP
+//   2. POST /api/v2/auth/verify-reset     → returns short-lived reset token
+//   3. POST /api/v2/auth/reset-password   → applies new password
+// ────────────────────────────────────────────────────────────────────
+
+/**
+ * Body for POST /api/v2/auth/forgot-password.
+ * Server resolves the contact to a user, generates a 6-digit OTP, and
+ * dispatches it via email or SMS depending on the contact format.
+ */
+export interface ForgotPasswordV2Request {
+  /** Email address or phone number of the account to recover. */
+  contact: string;
+}
+
+/**
+ * Body for POST /api/v2/auth/verify-reset.
+ * Exchanges a valid OTP for a short-lived reset token.
+ */
+export interface VerifyResetV2Request {
+  /** Same email / phone used in forgot-password. */
+  contact: string;
+  /** 6-digit OTP code. */
+  code: string;
+}
+
+/**
+ * Successful verify-reset response (unwrapped from `success_response()`).
+ * The reset token is a JWT with `type="reset"` and 10-minute TTL.
+ */
+export interface VerifyResetV2Response {
+  /** Short-lived JWT reset token (10-minute TTL, type="reset"). */
+  resetToken: string;
+}
+
+/**
+ * Body for POST /api/v2/auth/reset-password.
+ * Applies the new password using the reset token from verify-reset.
+ * The reset token must also be sent in the `Authorization: Bearer` header.
+ */
+export interface ResetPasswordV2Request {
+  /** JWT reset token from verify-reset. Also sent in the Authorization header. */
+  resetToken: string;
+  /** New password. 8+ chars, 1 uppercase, 1 lowercase, 1 digit. */
+  newPassword: string;
+}

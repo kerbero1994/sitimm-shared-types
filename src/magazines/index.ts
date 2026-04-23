@@ -109,6 +109,9 @@ export interface MagazineListV2Response {
   page: number;
   pageSize: number;
   hasNext: boolean;
+  /** Active locale resolved by the backend translation layer. Sent only
+   *  when translations are active (omitted for admin/raw lookups). */
+  currentLang?: string;
 }
 
 // ── Like Response ───────────────────────────────────────────────────

@@ -48,3 +48,41 @@ export interface ListBulletinsV2Response {
   /** Total number of bulletins matching the filter. */
   total: number;
 }
+
+/**
+ * Body for POST /api/v2/bulletins.
+ * Backend: bulletin.py :: BulletinV2CreateBody
+ *
+ * Scope (`company_uuid` + `is_general`) is set at creation time and is
+ * immutable afterwards — there is no way to convert a company-specific
+ * bulletin into a general one or vice versa via PATCH.
+ */
+export interface CreateBulletinV2Body {
+  /** Bulletin title. */
+  title: string;
+  /** Bulletin description/body text. */
+  description: string;
+  /** Optional image URL (presigned S3 or relative path). */
+  image_url?: string | null;
+  /** Optional document URL (PDF or other file). */
+  document_url?: string | null;
+  /** Company UUID for company-specific bulletins. Omit or null for general. */
+  company_uuid?: string | null;
+  /** True for a general (union-wide) bulletin. */
+  is_general?: boolean;
+  /** Optional publish timestamp (ISO-8601). Defaults to now() on the server. */
+  published_at?: string;
+}
+
+/**
+ * Body for PATCH /api/v2/bulletins/{uuid}.
+ * Backend: bulletin.py :: BulletinV2UpdateBody
+ *
+ * `company_uuid` and `is_general` are NOT accepted — scope is immutable.
+ */
+export type UpdateBulletinV2Body = Partial<
+  Pick<
+    CreateBulletinV2Body,
+    "title" | "description" | "image_url" | "document_url" | "published_at"
+  >
+>;

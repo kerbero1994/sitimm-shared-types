@@ -428,6 +428,8 @@ export interface CreateConsultationV2Request {
   guest_email?: string;
   /** Company UUID to associate with. Optional for advisor-created consultations. */
   company_uuid?: string;
+  /** Marks the consultation as high priority. Backend accepts but does not require. */
+  high_priority?: boolean;
 }
 
 // -- Update (take / solve / rate) --
