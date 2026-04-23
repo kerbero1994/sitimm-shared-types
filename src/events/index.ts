@@ -135,7 +135,14 @@ export interface EventV2 {
   updatedAt: string;
   /** Transport mode for the event. "none" when no transport is configured. */
   transportMode?: TransportMode;
+  /** Resolved locale applied to translatable fields. Present on i18n GET responses. */
+  currentLang?: string;
+  /** Origin of the translation (machine/human/fallback). Fallback = native Spanish. */
+  translationSource?: EventTranslationSource;
 }
+
+/** Source label for Event translation rows. */
+export type EventTranslationSource = "machine" | "human" | "fallback";
 
 /**
  * Event detail response — extends EventV2 with full content fields.
@@ -168,6 +175,8 @@ export interface EventDetailV2 extends EventV2 {
   venues?: EventCampusV2[];
   /** Full transport configuration. Null when transportMode is "none". */
   transport?: EventTransportListV2 | null;
+  /** Locales with a non-deleted EventTranslation row (always includes "es"). */
+  availableLangs?: string[];
 }
 
 /**
@@ -197,6 +206,8 @@ export interface EventListV2Response {
   pageSize: number;
   /** Whether there are more pages after this one. */
   hasNext: boolean;
+  /** Resolved locale applied to translatable fields on items. */
+  currentLang?: string;
 }
 
 /**
