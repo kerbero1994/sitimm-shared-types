@@ -12,6 +12,7 @@ import type { EventTransportListV2, TransportMode } from "./transport";
 export * from "./transport";
 export * from "./eligibility";
 export * from "./agenda";
+export * from "./extras";
 
 // ── Shared Unions ──
 
