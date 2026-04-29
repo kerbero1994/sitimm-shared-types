@@ -375,3 +375,82 @@ export interface MagazineErrorDetail {
   message: string;
   [extra: string]: unknown;
 }
+
+// ── Cover presentation specs (2026-04-23) ───────────────────────────
+
+/**
+ * Where a magazine cover is rendered across consumer surfaces.
+ * Drives crop output sizes, multi-preview UI in the admin dashboard,
+ * and srcset generation in web/mobile clients.
+ */
+export type CoverPresentationKey =
+  | "cardThumb"
+  | "cardLarge"
+  | "fullView"
+  | "mobileCard"
+  | "mobileFull";
+
+export interface CoverPresentationSpec {
+  /** Canonical key used as image variant identifier */
+  key: CoverPresentationKey;
+  /** Output width in pixels */
+  width: number;
+  /** Output height in pixels */
+  height: number;
+  /** Aspect ratio label, always "2:3" for magazine covers */
+  ratio: "2:3";
+  /** Human-readable context for admin UIs */
+  context: string;
+}
+
+/**
+ * Canonical cover variants every consumer should generate / display.
+ * All entries share a 2:3 aspect ratio (matches printed magazine covers).
+ *
+ * Source-of-truth dimensions for:
+ * - Admin dashboard crop output (`new_dashboard`)
+ * - Web srcset (`Sitimm-web`)
+ * - Mobile image cache sizing (`sitimmApp`)
+ */
+export const COVER_PRESENTATIONS: Readonly<
+  Record<CoverPresentationKey, CoverPresentationSpec>
+> = {
+  cardThumb: {
+    key: "cardThumb",
+    width: 320,
+    height: 480,
+    ratio: "2:3",
+    context: "Web — card grid thumbnail",
+  },
+  cardLarge: {
+    key: "cardLarge",
+    width: 480,
+    height: 720,
+    ratio: "2:3",
+    context: "Web — featured / hero card",
+  },
+  fullView: {
+    key: "fullView",
+    width: 800,
+    height: 1200,
+    ratio: "2:3",
+    context: "Web — magazine detail / full view",
+  },
+  mobileCard: {
+    key: "mobileCard",
+    width: 240,
+    height: 360,
+    ratio: "2:3",
+    context: "Mobile app — list item",
+  },
+  mobileFull: {
+    key: "mobileFull",
+    width: 600,
+    height: 900,
+    ratio: "2:3",
+    context: "Mobile app — magazine detail",
+  },
+} as const;
+
+/** Canonical cover aspect ratio (width / height). */
+export const COVER_ASPECT_RATIO = 2 / 3;
