@@ -202,8 +202,30 @@ export const V2_ENDPOINTS = {
 
   // ── Bulletins ────────────────────────────────────────────
 
-  /** GET → V2Response<ListBulletinsV2Response>. Query: company_uuid?. Auth required. */
+  /** GET → V2Response<ListBulletinsV2Response>. Query: page, page_size, company_uuid?, is_general?. Auth required. */
   BULLETINS: "/bulletins",
+  /** GET → V2Response<ListBulletinsV2Response>. Query: page, page_size. Public — no auth. Returns general bulletins whose published_at is in the past. */
+  BULLETINS_PUBLIC: "/bulletins/public",
+  /** GET → V2Response<BulletinFeedResponse>. Query: page, page_size, unread_only?. Auth required. Personal materialized inbox. */
+  BULLETINS_FEED: "/bulletins/feed",
+  /** POST → Body: PreviewAudienceRequest. Returns V2Response<PreviewAudienceResponse>. Requires content:create. Run the coverage gate before publishing. */
+  BULLETINS_PREVIEW_AUDIENCE: "/bulletins/preview-audience",
+  /** POST → Body: CreateBulletinV2Body. Returns V2Response<BulletinV2>. Status 201. Requires content:create. Queues fan-out task. */
+  BULLETINS_CREATE: "/bulletins",
+  /** GET → V2Response<BulletinV2>. Auth required. */
+  BULLETIN: "/bulletins/{uuid}",
+  /** PATCH → Body: UpdateBulletinV2Body. Returns V2Response<BulletinV2>. Requires content:update. Scope is immutable. */
+  BULLETIN_UPDATE: "/bulletins/{uuid}",
+  /** DELETE → V2Response<{message}>. Requires content:delete. Soft delete. */
+  BULLETIN_DELETE: "/bulletins/{uuid}",
+  /** POST → V2Response<{message}>. Auth required. Marks the caller's BulletinDelivery row as read. */
+  BULLETIN_READ: "/bulletins/{uuid}/read",
+  /** POST → V2Response<{message}>. Auth required. Hides the bulletin from the caller's feed (also marks read). */
+  BULLETIN_DISMISS: "/bulletins/{uuid}/dismiss",
+  /** POST → V2Response<{message}>. Query: pin=true|false. Auth required. Toggles pinned state in the caller's feed. */
+  BULLETIN_PIN: "/bulletins/{uuid}/pin",
+  /** GET → V2Response<BulletinRecipientsResponse>. Query: page, page_size. Requires content:update. Admin recipients audit + read/dismissed roll-ups. */
+  BULLETIN_RECIPIENTS: "/bulletins/{uuid}/recipients",
 
   // ── Magazines ────────────────────────────────────────────
 
