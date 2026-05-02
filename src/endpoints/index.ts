@@ -276,23 +276,27 @@ export const V2_ENDPOINTS = {
 
   // ── Programs ───────────────────────────────────────────────
 
-  /** GET → V2Response<ListProgramsV2Response>. Auth required. Includes inline active SubPrograms. */
+  /** GET → V2Response<ListProgramsV2Response>. Query: page, page_size, q?, include_deleted?. Auth required. Includes inline active SubPrograms. */
   PROGRAMS: "/programs",
-  /** GET → V2Response<ListProgramsV2PublicResponse>. Public — no auth. Marketing site feed. */
+  /** GET → V2Response<ListProgramsV2PublicResponse>. Query: page, page_size, q?. Public — no auth. Marketing site feed. */
   PROGRAMS_PUBLIC: "/programs/public",
   /** POST → Body: CreateProgramV2Body. Returns V2Response<ProgramV2>. Status 201. Requires programs:create. */
   PROGRAMS_CREATE: "/programs",
   /** GET → V2Response<ProgramV2>. Auth required. */
   PROGRAM: "/programs/{program_uuid}",
-  /** PATCH → Body: UpdateProgramV2Body. Returns V2Response<ProgramV2>. Requires programs:update. */
+  /** PATCH → Body: UpdateProgramV2Body (with optional if_match_updated_at). Returns V2Response<ProgramV2>. Requires programs:update. */
   PROGRAM_UPDATE: "/programs/{program_uuid}",
-  /** DELETE → V2Response<{message,uuid}>. Requires programs:delete. Soft delete. */
+  /** DELETE → Body: DeleteProgramV2Body (optional). Returns V2Response<{message,uuid}>. Requires programs:delete. Cascades soft-delete to active SubPrograms. */
   PROGRAM_DELETE: "/programs/{program_uuid}",
   /** POST → Body: CreateSubProgramV2Body. Returns V2Response<SubProgramV2>. Status 201. Requires programs:create. */
   PROGRAM_SUBPROGRAMS_CREATE: "/programs/{program_uuid}/subprograms",
+  /** PATCH → Body: ReorderSubProgramsBody. Returns V2Response<ReorderSubProgramsResponse>. Requires programs:update. */
+  PROGRAM_SUBPROGRAMS_REORDER: "/programs/{program_uuid}/subprograms/reorder",
+  /** POST → multipart/form-data {file}. Returns V2Response<ImageUploadResponse>. Requires programs:create. 5MB cap, MIME whitelist, 10/min/user. */
+  PROGRAMS_UPLOAD_IMAGE: "/programs/upload-image",
   /** PATCH → Body: UpdateSubProgramV2Body. Returns V2Response<SubProgramV2>. Requires programs:update. */
   SUBPROGRAM_UPDATE: "/subprograms/{sub_uuid}",
-  /** DELETE → V2Response<{message,uuid}>. Requires programs:delete. Soft delete. */
+  /** DELETE → Body: DeleteProgramV2Body (optional). Returns V2Response<{message,uuid}>. Requires programs:delete. Soft delete. */
   SUBPROGRAM_DELETE: "/subprograms/{sub_uuid}",
 } as const;
 
