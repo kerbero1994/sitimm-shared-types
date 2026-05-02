@@ -75,11 +75,28 @@ export interface MagazineV2 {
   category: MagazineCategory;
   tags: string[];
 
+  /**
+   * Public vanity counters — append-only, every public engagement request
+   * bumps these. Designed to grow with the slightest user intent (the
+   * social-proof surface). Never decrement, even on unlike. See
+   * `magazines_engagement_vanity_only` memory in Sitimm-web.
+   */
   viewCount: number;
   downloadCount: number;
   likeCount: number;
   /** Total shares. Added 2026-04-20. */
   shareCount: number;
+  /**
+   * Real engagement counters — deduped per (IP + UA) inside per-action TTL
+   * windows on BE. Use for analytics / admin dashboards, NOT for the
+   * social-proof surface. Optional on the wire because the field rolled
+   * out 2026-04-29 and older list responses still omit it. Added
+   * 2026-04-29 with the vanity-vs-real split.
+   */
+  viewCountReal?: number;
+  downloadCountReal?: number;
+  likeCountReal?: number;
+  shareCountReal?: number;
   isLiked: boolean;
 
   isPublished: boolean;
@@ -118,7 +135,10 @@ export interface MagazineListV2Response {
 
 export interface MagazineLikeResponse {
   liked: boolean;
+  /** Public vanity counter snapshot. */
   likeCount: number;
+  /** Real (deduped) counter snapshot. Optional — added 2026-04-29. */
+  likeCountReal?: number;
 }
 
 // ── Create / Update Requests ────────────────────────────────────────
@@ -273,6 +293,8 @@ export interface MagazineBulkImportResultV2 {
 
 export interface MagazineShareResponse {
   shareCount: number;
+  /** Real (deduped) share counter. Optional — added 2026-04-29. */
+  shareCountReal?: number;
   /** Canonical deep-link FE can hand to OS share sheet. Added 2026-04-21. */
   shareUrl: string;
 }
@@ -282,6 +304,8 @@ export interface MagazineShareResponse {
 export interface MagazineDownloadResponse {
   pdfUrl: string;
   downloadCount: number;
+  /** Real (deduped) download counter. Optional — added 2026-04-29. */
+  downloadCountReal?: number;
 }
 
 // ── Multi-lang CMS (2026-04-21) ─────────────────────────────────────

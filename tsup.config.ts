@@ -22,6 +22,7 @@ export default defineConfig({
     "src/campuses/index.ts",
     "src/benefits/index.ts",
     "src/notifications/index.ts",
+    "src/programs/index.ts",
   ],
   format: ["cjs", "esm"],
   dts: true,
