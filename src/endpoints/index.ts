@@ -23,7 +23,14 @@ export const V1_PUBLIC_ENDPOINTS = {
   MAGAZINES: "/magazines/showall",
   /** GET — Returns array of blog posts. Public, no auth. */
   BLOG_POSTS: "/blogposts/showall",
-  /** GET — Returns array of pages/programs. Public, no auth. */
+  /**
+   * GET — Returns array of pages/programs. Public, no auth.
+   * @deprecated Use `V2_ENDPOINTS.PROGRAMS_PUBLIC` instead. The V1 Node.js
+   * backend endpoint will be retired once all FE consumers migrate to the
+   * mini-back V2 contract (`GET /api/v2/programs/public`). Active V1
+   * consumers as of 2026-05-04: sitimmApp `publicEndpoints.ts`,
+   * Sitimm-web `programs.ts`.
+   */
   PROGRAMS: "/pages/showall",
   /** GET — Returns array of FAQ entries. Public, no auth. */
   FAQ: "/frequentqas/showall",
