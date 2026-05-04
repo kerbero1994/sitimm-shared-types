@@ -41,13 +41,12 @@ export interface ProgramCurrentLang {
 }
 
 /**
- * Per-field applied locale on a SubProgram response. v0.48.0+.
- *
- * SubProgram only stores `title` as user-facing copy, hence the single
- * key.
+ * Per-field applied locale on a SubProgram response. v0.49.0+ keys both
+ * `title` and `description` (was `title`-only in v0.48.0).
  */
 export interface SubProgramCurrentLang {
   title: ProgramLang;
+  description: ProgramLang;
 }
 
 /**
@@ -59,7 +58,9 @@ export interface SubProgramV2 {
   uuid: string;
   /** Title text. Null in legacy rows that predate the field. */
   title: string | null;
-  /** Per-field applied locale. v0.48.0+. */
+  /** Long-form description. v0.49.0+. Source `es` may be NULL when legacy data has no description. */
+  description?: string | null;
+  /** Per-field applied locale. v0.48.0+, gains `description` key in v0.49.0. */
   currentLang?: SubProgramCurrentLang | null;
   /** Image URL (relative or absolute). */
   img: string | null;
@@ -163,6 +164,8 @@ export interface ProgramV2Public {
 export interface CreateSubProgramV2Body {
   /** Required title (1-500 chars). */
   title: string;
+  /** Optional long-form description (max 100k chars). v0.49.0+. */
+  description?: string | null;
   /** Optional image URL. */
   img?: string | null;
   /** Optional free-form JSONB content (max 100 KB serialized). */
@@ -419,11 +422,13 @@ export interface ProgramTranslationUpsertBody {
 }
 
 /**
- * Body for PUT /api/v2/subprograms/{sub_uuid}/translations/{lang}. Only
- * `title` is accepted — SubProgram has no translatable description.
+ * Body for PUT /api/v2/subprograms/{sub_uuid}/translations/{lang}.
+ * v0.49.0+ accepts `description` too (the source SubProgram schema
+ * gained a `description` column to mirror the parent shape).
  */
 export interface SubProgramTranslationUpsertBody {
   title?: string | null;
+  description?: string | null;
   source?: ProgramTranslationSource;
 }
 
@@ -474,12 +479,13 @@ export interface ProgramTranslationBulkUpsertBody {
 }
 
 /**
- * Same shape as {@link ProgramTranslationBulkItem} minus `description`
- * (SubProgram only stores `title`).
+ * Same shape as {@link ProgramTranslationBulkItem} — v0.49.0+ also
+ * carries `description` (the SubProgram source schema added the column).
  */
 export interface SubProgramTranslationBulkItem {
   lang: ProgramLang;
   title?: string | null;
+  description?: string | null;
   source?: ProgramTranslationSource;
 }
 
