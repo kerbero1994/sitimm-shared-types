@@ -305,11 +305,11 @@ export const V2_ENDPOINTS = {
   SUBPROGRAM_UPDATE: "/subprograms/{sub_uuid}",
   /** DELETE → Body: DeleteProgramV2Body (optional). Returns V2Response<{message,uuid}>. Requires programs:delete. Soft delete. */
   SUBPROGRAM_DELETE: "/subprograms/{sub_uuid}",
-  /** GET → V2Response<ListProgramTranslationsV2Response>. Auth required. v0.47.0+. */
+  /** GET → V2Response<ListProgramTranslationsV2Response>. Auth required. v0.47.0+. PUT → Body: ProgramTranslationBulkUpsertBody → V2Response<BulkTranslationsV2Response>. Atomic. v0.48.0+. */
   PROGRAM_TRANSLATIONS: "/programs/{program_uuid}/translations",
   /** PUT → Body: ProgramTranslationUpsertBody. Returns V2Response<ProgramTranslationV2>. Requires programs:update. v0.47.0+. */
   PROGRAM_TRANSLATION: "/programs/{program_uuid}/translations/{lang}",
-  /** GET → V2Response<ListProgramTranslationsV2Response>. Auth required. v0.47.0+. */
+  /** GET → V2Response<ListProgramTranslationsV2Response>. Auth required. v0.47.0+. PUT → Body: SubProgramTranslationBulkUpsertBody → V2Response<BulkTranslationsV2Response>. Atomic. v0.48.0+. */
   SUBPROGRAM_TRANSLATIONS: "/subprograms/{sub_uuid}/translations",
   /** PUT → Body: SubProgramTranslationUpsertBody. Returns V2Response<SubProgramTranslationV2>. Requires programs:update. v0.47.0+. */
   SUBPROGRAM_TRANSLATION: "/subprograms/{sub_uuid}/translations/{lang}",

@@ -23,6 +23,34 @@
 // ─────────────────────────────────────────────────────────────────────
 
 /**
+ * Per-field applied locale on a Program response. v0.48.0+.
+ *
+ * Backend writes this whenever the caller opted into the multilingual
+ * surface (`?lang=` resolved to a non-empty string). Each field carries
+ * the lang the renderer actually used:
+ * - the requested lang when a `ProgramTranslation` row exists for that
+ *   `(program, lang)` AND the matching column is non-null;
+ * - the source default `es` otherwise (silent fallback).
+ *
+ * FE can branch on each entry to flag fall-back content with a UX hint
+ * (e.g. "translation pending, showing Spanish").
+ */
+export interface ProgramCurrentLang {
+  title: ProgramLang;
+  description: ProgramLang;
+}
+
+/**
+ * Per-field applied locale on a SubProgram response. v0.48.0+.
+ *
+ * SubProgram only stores `title` as user-facing copy, hence the single
+ * key.
+ */
+export interface SubProgramCurrentLang {
+  title: ProgramLang;
+}
+
+/**
  * SubProgram record — child node of a Program.
  * Backend: programs_v2.py :: SubProgramV2Response
  */
@@ -31,6 +59,8 @@ export interface SubProgramV2 {
   uuid: string;
   /** Title text. Null in legacy rows that predate the field. */
   title: string | null;
+  /** Per-field applied locale. v0.48.0+. */
+  currentLang?: SubProgramCurrentLang | null;
   /** Image URL (relative or absolute). */
   img: string | null;
   /** Free-form JSONB content blob (rich text body, blocks, etc.). */
@@ -80,10 +110,13 @@ export interface ProgramV2 {
    */
   sub_programs: SubProgramV2[] | null;
   /**
-   * Locale applied to `title` / `description`. `null` when the caller did
-   * not request a translation (source `es` returned). v0.47.0+.
+   * Per-field applied locale. Keys: `title`, `description`. Each value is
+   * the actual lang the field was rendered in — requested lang when a
+   * translation row + non-null column exist, source `es` otherwise.
+   * `null` when the caller did not request a translation (server passed
+   * no requested_lang downstream). v0.48.0+.
    */
-  currentLang?: string | null;
+  currentLang?: ProgramCurrentLang | null;
   /** ISO-8601 creation timestamp. */
   createdAt: string;
   /**
@@ -114,8 +147,8 @@ export interface ProgramV2Public {
    * Active SubPrograms. `null` when the caller passed `?include_subs=false`.
    */
   sub_programs: SubProgramV2[] | null;
-  /** Locale applied. v0.47.0+. */
-  currentLang?: string | null;
+  /** Per-field applied locale. v0.48.0+. See {@link ProgramV2.currentLang}. */
+  currentLang?: ProgramCurrentLang | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -404,4 +437,65 @@ export interface SubProgramTranslationUpsertBody {
  */
 export interface ListProgramTranslationsV2Response {
   translations: ProgramTranslationV2[];
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Bulk translation upsert (v0.48.0+)
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Single item inside a {@link ProgramTranslationBulkUpsertBody.translations}
+ * array. Server validates each item independently; one bad item rolls
+ * back the whole transaction.
+ */
+export interface ProgramTranslationBulkItem {
+  /** Target lang. Must be in {@link ProgramLang} and non-source. */
+  lang: ProgramLang;
+  /** Translated title (1-500 chars). Optional but at least one of `title`/`description` per item. */
+  title?: string | null;
+  /** Translated description (max 100 KB). */
+  description?: string | null;
+  /** Defaults to `human` when omitted. */
+  source?: ProgramTranslationSource;
+}
+
+/**
+ * Body for `PUT /api/v2/programs/{program_uuid}/translations` (no
+ * `{lang}` segment — that's the bulk variant). Atomic upsert across all
+ * langs in one transaction.
+ *
+ * Use this to seed the full multilingual surface for a program in a
+ * single round-trip. Single-lang upserts via
+ * `PUT .../translations/{lang}` remain available for incremental edits.
+ */
+export interface ProgramTranslationBulkUpsertBody {
+  /** 1-8 entries, one per lang. */
+  translations: ProgramTranslationBulkItem[];
+}
+
+/**
+ * Same shape as {@link ProgramTranslationBulkItem} minus `description`
+ * (SubProgram only stores `title`).
+ */
+export interface SubProgramTranslationBulkItem {
+  lang: ProgramLang;
+  title?: string | null;
+  source?: ProgramTranslationSource;
+}
+
+/**
+ * Body for `PUT /api/v2/subprograms/{sub_uuid}/translations`.
+ */
+export interface SubProgramTranslationBulkUpsertBody {
+  translations: SubProgramTranslationBulkItem[];
+}
+
+/**
+ * Response from the bulk upsert endpoints. Lists the rows that were
+ * inserted or updated by the call. ``upserted`` is a redundancy that
+ * lets clients skip array-length math.
+ */
+export interface BulkTranslationsV2Response {
+  translations: ProgramTranslationV2[];
+  upserted: number;
 }
