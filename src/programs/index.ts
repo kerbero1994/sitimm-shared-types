@@ -73,8 +73,17 @@ export interface ProgramV2 {
    * create/update. Unique across active rows (see INV-PROG-SLUG).
    */
   url: string | null;
-  /** Active SubPrograms ordered by `(position NULLS LAST, createdAt ASC)`. */
-  sub_programs: SubProgramV2[];
+  /**
+   * Active SubPrograms ordered by `(position NULLS LAST, createdAt ASC)`.
+   * `null` only when the caller passed `?include_subs=false` (server skipped
+   * eager-load); `[]` when loaded but the program has no children.
+   */
+  sub_programs: SubProgramV2[] | null;
+  /**
+   * Locale applied to `title` / `description`. `null` when the caller did
+   * not request a translation (source `es` returned). v0.47.0+.
+   */
+  currentLang?: string | null;
   /** ISO-8601 creation timestamp. */
   createdAt: string;
   /**
@@ -101,7 +110,12 @@ export interface ProgramV2Public {
   img: string | null;
   content: unknown | null;
   url: string | null;
-  sub_programs: SubProgramV2[];
+  /**
+   * Active SubPrograms. `null` when the caller passed `?include_subs=false`.
+   */
+  sub_programs: SubProgramV2[] | null;
+  /** Locale applied. v0.47.0+. */
+  currentLang?: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -235,6 +249,14 @@ export interface ReorderSubProgramsResponse {
 }
 
 /**
+ * Supported translation languages. v0.47.0+.
+ *
+ * `es` is the source — never accepted by translation upsert/delete
+ * endpoints (would return `400 unsupported_lang`).
+ */
+export type ProgramLang = "es" | "en" | "fr" | "de" | "ja" | "ko" | "zh" | "hi";
+
+/**
  * Query params for GET /api/v2/programs.
  * Backend: programs_v2.py :: list_programs()
  */
@@ -250,6 +272,16 @@ export interface ListProgramsV2Request {
    * response. Public endpoint NEVER honours this (INV-PUB-1).
    */
   include_deleted?: boolean;
+  /**
+   * When `false`, server skips the SubProgram eager-load and the
+   * `sub_programs` field on each Program is `null`. Default `true`. v0.47.0+.
+   */
+  include_subs?: boolean;
+  /**
+   * Locale to apply to `title` / `description`. `?lang` > `Accept-Language`
+   * > source `es`. v0.47.0+.
+   */
+  lang?: ProgramLang;
 }
 
 /**
@@ -258,7 +290,7 @@ export interface ListProgramsV2Request {
  */
 export type ListProgramsV2PublicRequest = Pick<
   ListProgramsV2Request,
-  "page" | "page_size" | "q"
+  "page" | "page_size" | "q" | "include_subs" | "lang"
 >;
 
 /**
@@ -307,4 +339,69 @@ export type ProgramsV2ErrorCode =
   | "empty_file"
   | "rate_limited"
   | "create_failed"
-  | "update_failed";
+  | "update_failed"
+  | "unsupported_lang"
+  | "translation_not_found";
+
+// ─────────────────────────────────────────────────────────────────────
+// Translations (v0.47.0+)
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Translation row source — how the row was produced. UI may want to
+ * surface "machine" rows for review.
+ */
+export type ProgramTranslationSource = "machine" | "human" | "fallback";
+
+/**
+ * Per-language metadata cache row for a Program.
+ * Backend: programs_v2.py :: TranslationResponse (Program flavor).
+ */
+export interface ProgramTranslationV2 {
+  lang: ProgramLang;
+  title: string | null;
+  description: string | null;
+  source: ProgramTranslationSource;
+  /** ISO-8601 timestamp. */
+  updatedAt: string;
+}
+
+/**
+ * Per-language metadata cache row for a SubProgram.
+ * Same shape as {@link ProgramTranslationV2} but `description` is always
+ * `null` (SubProgram only stores `title`).
+ */
+export type SubProgramTranslationV2 = ProgramTranslationV2;
+
+/**
+ * Body for PUT /api/v2/programs/{program_uuid}/translations/{lang}.
+ * At least one of `title` / `description` must be set, otherwise the
+ * server returns `400 no_fields`.
+ */
+export interface ProgramTranslationUpsertBody {
+  title?: string | null;
+  description?: string | null;
+  /** Default `human`. */
+  source?: ProgramTranslationSource;
+}
+
+/**
+ * Body for PUT /api/v2/subprograms/{sub_uuid}/translations/{lang}. Only
+ * `title` is accepted — SubProgram has no translatable description.
+ */
+export interface SubProgramTranslationUpsertBody {
+  title?: string | null;
+  source?: ProgramTranslationSource;
+}
+
+/**
+ * Response from
+ * `GET /api/v2/programs/{uuid}/translations`
+ * `GET /api/v2/subprograms/{uuid}/translations`.
+ *
+ * The caller can branch on each row's `source` to decide whether to
+ * mark it for human review.
+ */
+export interface ListProgramTranslationsV2Response {
+  translations: ProgramTranslationV2[];
+}
