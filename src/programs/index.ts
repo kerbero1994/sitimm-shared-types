@@ -23,6 +23,47 @@
 // ─────────────────────────────────────────────────────────────────────
 
 /**
+ * Single responsive image variant. v0.50.0+.
+ *
+ * The migration pipeline emits 6 variants per Program / SubProgram main
+ * image (320 / 800 / max-width × WebP + AVIF) and 4 variants per
+ * ImgList carousel item (320 / 800 × WebP + AVIF). FE assembles
+ * `<picture>` markup from the array.
+ */
+export interface ImageVariant {
+  /** Public absolute URL. */
+  url: string;
+  /** Pixel width of this variant (downscaled from source). */
+  width: number;
+  /** File extension / encoder used: `webp` or `avif`. */
+  format: "webp" | "avif";
+  /** MIME type — handy for `<source type="...">`. */
+  content_type: "image/webp" | "image/avif";
+}
+
+/**
+ * Responsive image bundle attached to Program / SubProgram /
+ * ImgList items. v0.50.0+.
+ *
+ * Suggested FE pattern::
+ *
+ *   const avif = variants.filter(v => v.format === 'avif');
+ *   const webp = variants.filter(v => v.format === 'webp');
+ *   <picture>
+ *     <source type="image/avif" srcSet={avif.map(v => `${v.url} ${v.width}w`).join(', ')} />
+ *     <source type="image/webp" srcSet={webp.map(v => `${v.url} ${v.width}w`).join(', ')} />
+ *     <img src={default} alt={title} />
+ *   </picture>
+ */
+export interface ImageVariants {
+  /** Master URL — largest WebP. Backward-compat fallback for clients that
+   * don't read variants. Mirrors the legacy `img` column. */
+  default: string;
+  /** All sizes × formats. Sorted ascending by width. */
+  variants: ImageVariant[];
+}
+
+/**
  * Per-field applied locale on a Program response. v0.48.0+.
  *
  * Backend writes this whenever the caller opted into the multilingual
@@ -62,6 +103,8 @@ export interface SubProgramV2 {
   description?: string | null;
   /** Per-field applied locale. v0.48.0+, gains `description` key in v0.49.0. */
   currentLang?: SubProgramCurrentLang | null;
+  /** Responsive variants of `img`. v0.50.0+. */
+  img_variants?: ImageVariants | null;
   /** Image URL (relative or absolute). */
   img: string | null;
   /** Free-form JSONB content blob (rich text body, blocks, etc.). */
@@ -95,8 +138,10 @@ export interface ProgramV2 {
   title: string | null;
   /** Long-form description (max 100k chars). */
   description: string | null;
-  /** Hero image URL. */
+  /** Hero image URL — largest WebP. */
   img: string | null;
+  /** Responsive variants of `img`. v0.50.0+. */
+  img_variants?: ImageVariants | null;
   /** Free-form JSONB content blob (max 100 KB serialized). */
   content: unknown | null;
   /**
@@ -142,6 +187,8 @@ export interface ProgramV2Public {
   title: string | null;
   description: string | null;
   img: string | null;
+  /** Responsive variants of `img`. v0.50.0+. */
+  img_variants?: ImageVariants | null;
   content: unknown | null;
   url: string | null;
   /**
