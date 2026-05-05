@@ -35,6 +35,10 @@ export interface ImageVariant {
   url: string;
   /** Pixel width of this variant (downscaled from source). */
   width: number;
+  /** Pixel height of this variant. v0.52.0+. Use together with `width`
+   * to set the `<img>` width/height attributes and reserve layout
+   * space — prevents Cumulative Layout Shift while the asset streams. */
+  height: number;
   /** File extension / encoder used: `webp` or `avif`. */
   format: "webp" | "avif";
   /** MIME type — handy for `<source type="...">`. */
@@ -59,6 +63,10 @@ export interface ImageVariants {
   /** Master URL — largest WebP. Backward-compat fallback for clients that
    * don't read variants. Mirrors the legacy `img` column. */
   default: string;
+  /** Width of the master variant in pixels. v0.52.0+. */
+  default_width?: number | null;
+  /** Height of the master variant in pixels. v0.52.0+. */
+  default_height?: number | null;
   /** All sizes × formats. Sorted ascending by width. */
   variants: ImageVariant[];
   /**
