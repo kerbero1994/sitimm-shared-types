@@ -48,6 +48,12 @@ export interface BulletinV2 {
   description: string;
   /** Image URL (presigned S3 or relative path). Null if no image attached. */
   image_url: string | null;
+  /**
+   * Responsive variants of `image_url` — same shape as
+   * `programs.ImageVariants`. v0.51.0+. Null on legacy rows whose images
+   * predate the responsive pipeline.
+   */
+  image_variants?: import("../programs").ImageVariants | null;
   /** Document URL (PDF or other file). Null if no document attached. */
   document_url: string | null;
   /** Company UUID this bulletin belongs to. Null for general / audience-driven bulletins. */

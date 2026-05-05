@@ -61,6 +61,14 @@ export interface ImageVariants {
   default: string;
   /** All sizes × formats. Sorted ascending by width. */
   variants: ImageVariant[];
+  /**
+   * BlurHash placeholder — ~25-35 char string the FE can render as a
+   * blurred backdrop while the real image streams in. v0.51.0+.
+   * Decoder libraries: `blurhash` (vanilla JS), `react-native-blurhash`,
+   * `flutter-blurhash`. `null` when the optional `blurhash` Python
+   * package was not installed at migration time.
+   */
+  blurhash?: string | null;
 }
 
 /**

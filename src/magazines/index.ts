@@ -58,6 +58,12 @@ export interface MagazineV2 {
   description: string | null;
 
   coverUrl: string | null;
+  /**
+   * Responsive cover variants — same shape as
+   * `programs.ImageVariants`. v0.51.0+. Null on legacy rows whose covers
+   * predate the responsive pipeline.
+   */
+  coverVariants?: import("../programs").ImageVariants | null;
   pdfUrl: string | null;
   bannerUrl: string | null;
 
