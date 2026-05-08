@@ -1,0 +1,39 @@
+/**
+ * FAQ V2 error codes — string union mirrors backend errors.md catalog.
+ *
+ * Backend: app/presentation/schemas/v2/faq/errors.py
+ */
+export const FAQ_ERROR_CODES = [
+  "FAQ_NOT_FOUND",
+  "FAQ_CATEGORY_NOT_FOUND",
+  "FAQ_CATEGORY_DEPTH_EXCEEDED",
+  "FAQ_CATEGORY_HAS_ARTICLES",
+  "FAQ_RESOURCE_ENRICHMENT_FAILED",
+  "FAQ_RESOURCE_UNSUPPORTED_URL",
+  "FAQ_RESOURCE_UNREACHABLE",
+  "FAQ_RESOURCE_TOO_LARGE",
+  "FAQ_RESOURCE_REF_INVALID",
+  "FAQ_VIEW_RATE_LIMITED",
+  "FAQ_FEEDBACK_DUPLICATE",
+  "FAQ_BOOKMARK_NOT_FOUND",
+  "FAQ_SLUG_TAKEN",
+  "FAQ_TRANSLATION_NOT_FOUND",
+  "FAQ_BODY_TOO_LONG",
+  "FAQ_BLOCK_VALIDATION_FAILED",
+  "FAQ_RELATED_TARGET_INVALID",
+  "FAQ_TABLE_SHAPE_INVALID",
+  "FAQ_SEARCH_QUERY_TOO_SHORT",
+  "FAQ_SEARCH_QUERY_TOO_LONG",
+  "FAQ_SEARCH_LOCALE_INVALID",
+  "FAQ_SUBSCRIPTION_NOT_FOUND",
+  "FAQ_SUBSCRIPTION_CATEGORY_INVALID",
+  "FAQ_LEGAL_DISCLAIMER_REQUIRED",
+] as const;
+
+export type FAQErrorCode = (typeof FAQ_ERROR_CODES)[number];
+
+export interface FAQErrorPayload {
+  code: FAQErrorCode;
+  message: string;
+  detail?: Record<string, unknown>;
+}
