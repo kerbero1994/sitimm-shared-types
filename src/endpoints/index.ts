@@ -336,3 +336,51 @@ export function endpoint(
 ): string {
   return template.replace(/\{(\w+)\}/g, (_, key) => params[key] ?? `{${key}}`);
 }
+
+// -- FAQ V2 Endpoints --
+
+/**
+ * FAQ V2 endpoint paths. Functions for parameterized routes use template
+ * literal substitution; pass UUIDs/slugs already encoded if they may
+ * contain special characters.
+ *
+ * Backend: app/presentation/api/v2/faq/*
+ */
+export const FAQ_V2_ENDPOINTS = {
+  // Public
+  CATEGORIES: "/api/v2/faq/categories",
+  ARTICLES_LIST: "/api/v2/faq/articles",
+  ARTICLE_DETAIL: (slug: string) => `/api/v2/faq/articles/${slug}`,
+  ARTICLE_RELATED: (uuid: string) => `/api/v2/faq/articles/${uuid}/related`,
+  ARTICLE_VIEW: (uuid: string) => `/api/v2/faq/articles/${uuid}/view`,
+  ARTICLE_FEEDBACK: (uuid: string) => `/api/v2/faq/articles/${uuid}/feedback`,
+  ARTICLE_PDF: (slug: string) => `/api/v2/faq/articles/${slug}.pdf`,
+  SEARCH: "/api/v2/faq/search",
+  SEARCH_SUGGEST: "/api/v2/faq/search/suggest",
+  GLOSSARY_LIST: "/api/v2/faq/glossary",
+  GLOSSARY_TERM: (term: string) => `/api/v2/faq/glossary/${encodeURIComponent(term)}`,
+  // Auth user
+  ME_BOOKMARKS: "/api/v2/me/faq-bookmarks",
+  ME_BOOKMARK: (uuid: string) => `/api/v2/me/faq-bookmarks/${uuid}`,
+  ME_SUBSCRIPTIONS: "/api/v2/me/faq-subscriptions",
+  ME_SUBSCRIPTION: (uuid: string) => `/api/v2/me/faq-subscriptions/${uuid}`,
+  // Admin
+  ADMIN_CATEGORIES: "/api/v2/admin/faq/categories",
+  ADMIN_CATEGORY: (uuid: string) => `/api/v2/admin/faq/categories/${uuid}`,
+  ADMIN_ARTICLES_LIST: "/api/v2/admin/faq/articles",
+  ADMIN_ARTICLE: (uuid: string) => `/api/v2/admin/faq/articles/${uuid}`,
+  ADMIN_ARTICLE_RESTORE: (uuid: string) => `/api/v2/admin/faq/articles/${uuid}/restore`,
+  ADMIN_ARTICLE_RETRANSLATE: (uuid: string) => `/api/v2/admin/faq/articles/${uuid}/retranslate`,
+  ADMIN_ARTICLE_REVISIONS: (uuid: string) => `/api/v2/admin/faq/articles/${uuid}/revisions`,
+  ADMIN_ARTICLE_REVIEWED: (uuid: string) => `/api/v2/admin/faq/articles/${uuid}/mark-reviewed`,
+  ADMIN_RESOURCES_FOR: (articleUuid: string) =>
+    `/api/v2/admin/faq/articles/${articleUuid}/resources`,
+  ADMIN_RESOURCE: (uuid: string) => `/api/v2/admin/faq/resources/${uuid}`,
+  ADMIN_RESOURCE_REENRICH: (uuid: string) => `/api/v2/admin/faq/resources/${uuid}/re-enrich`,
+  ADMIN_GLOSSARY_LIST: "/api/v2/admin/faq/glossary",
+  ADMIN_GLOSSARY: (uuid: string) => `/api/v2/admin/faq/glossary/${uuid}`,
+  ADMIN_MIGRATION_DRY_RUN: "/api/v2/admin/faq/migration/dry-run",
+  ADMIN_MIGRATION_COMMIT: "/api/v2/admin/faq/migration/commit",
+  ADMIN_MIGRATION_STATUS: "/api/v2/admin/faq/migration/status",
+  ADMIN_SEARCH_GAPS: "/api/v2/admin/faq/search-gaps",
+} as const;
