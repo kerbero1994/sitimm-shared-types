@@ -365,6 +365,8 @@ export interface UserBasicV2 {
   email: string | null;
   /** Numeric user type code. Compare with UserType constants. */
   userType: number;
+  /** Numeric Headquarter ID assigned to the user — null when unassigned. */
+  headquarterId?: number | null;
 }
 
 /**

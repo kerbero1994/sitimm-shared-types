@@ -21,7 +21,9 @@ export type AccessMode = "general" | "reserved" | "numbered";
  * Backend: campus_v2.py :: CampusV2Response
  */
 export interface CampusV2 {
-  /** Campus UUID — primary identifier. */
+  /** Campus numeric ID — required when linking to events via EventCampusCreateV2.campusId. */
+  id: number;
+  /** Campus UUID — primary identifier for catalog CRUD. */
   uuid: string;
   /** Campus display name. Max 255 chars. */
   name: string;

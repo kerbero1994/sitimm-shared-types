@@ -54,6 +54,8 @@ export interface UpdateHeadquarterRequest {
  * Backend: HeadquarterDetailV2 (app/presentation/schemas/headquarter.py)
  */
 export interface HeadquarterDetail {
+  /** Numeric Headquarter ID — required by AdminUpdateUserRequest.headquarterId. */
+  id: number;
   /** Headquarter UUID. */
   uuid: string;
   /** Display name. */

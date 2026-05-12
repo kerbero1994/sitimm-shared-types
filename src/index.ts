@@ -19,3 +19,4 @@ export * from "./benefits";
 export * from "./ai-stats";
 export * from "./notifications";
 export * from "./programs";
+export * from "./faq";

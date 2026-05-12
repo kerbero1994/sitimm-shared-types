@@ -23,6 +23,7 @@ export default defineConfig({
     "src/benefits/index.ts",
     "src/notifications/index.ts",
     "src/programs/index.ts",
+    "src/faq/index.ts",
   ],
   format: ["cjs", "esm"],
   dts: true,

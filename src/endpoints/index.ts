@@ -313,6 +313,50 @@ export const V2_ENDPOINTS = {
   SUBPROGRAM_TRANSLATIONS: "/subprograms/{sub_uuid}/translations",
   /** PUT → Body: SubProgramTranslationUpsertBody. Returns V2Response<SubProgramTranslationV2>. Requires programs:update. v0.47.0+. */
   SUBPROGRAM_TRANSLATION: "/subprograms/{sub_uuid}/translations/{lang}",
+
+  // ── FAQ ──────────────────────────────────────────────────
+  // Public reader endpoints — no auth required. Optional Bearer token
+  // enables per-user dedupe on view/feedback. All list endpoints accept
+  // `locale` (defaults to `"es"`); fallback to Spanish is signalled with
+  // the `X-FAQ-Locale-Fallback` response header. v0.54.0+.
+
+  /** GET → V2Response<FAQCategoryTreeResponse>. Public. 2-level tree with article counts. */
+  FAQ_CATEGORIES: "/faq/categories",
+  /** GET → V2Response<ListFAQArticlesV2Response>. Query: categoryId?, parentCategoryId?, tag?, locale?, pinned?, page?, limit?. Public. */
+  FAQ_ARTICLES: "/faq/articles",
+  /** GET → V2Response<FAQArticleV2>. Query: locale?. Public. Path param is slug, not UUID. */
+  FAQ_ARTICLE_BY_SLUG: "/faq/articles/{slug}",
+  /** GET → V2Response<FAQRelatedArticlesResponse>. Query: locale?. Public. */
+  FAQ_ARTICLE_RELATED: "/faq/articles/{article_uuid}/related",
+  /** POST → 204. Anonymous needs X-Device-Id header. 24h Redis dedupe; duplicate raises 429 FAQ_VIEW_RATE_LIMITED. */
+  FAQ_ARTICLE_VIEW: "/faq/articles/{article_uuid}/view",
+  /** POST → Body: FAQArticleFeedbackRequest. Returns V2Response<FAQArticleFeedbackResponse>. Auth users get 409 FAQ_FEEDBACK_DUPLICATE on second submit. */
+  FAQ_ARTICLE_FEEDBACK: "/faq/articles/{article_uuid}/feedback",
+  /** GET → V2Response<FAQSearchV2Response>. Query: q (2-200), locale?, categoryId?, limit (1-50). Public. */
+  FAQ_SEARCH: "/faq/search",
+  /** GET → V2Response<FAQSearchSuggestV2Response>. Query: q (2-80), locale?, limit (1-8). Public typeahead. */
+  FAQ_SEARCH_SUGGEST: "/faq/search/suggest",
+  /** GET → V2Response<FAQGlossaryListV2Response>. Query: locale?, page?, limit (1-100). Public. */
+  FAQ_GLOSSARY: "/faq/glossary",
+  /** GET → V2Response<FAQGlossaryTermV2>. Query: locale?. Public. Path param is term slug, case-insensitive. */
+  FAQ_GLOSSARY_TERM: "/faq/glossary/{term}",
+  /** GET → application/pdf. Query: locale?. Public. Streamed file response, not wrapped in V2Response. */
+  FAQ_ARTICLE_PDF: "/faq/articles/{slug}.pdf",
+
+  // ── FAQ — me-scoped (auth required) ──────────────────────
+
+  /** GET → V2Response<FAQBookmarkListResponse>. Auth required. */
+  FAQ_ME_BOOKMARKS: "/me/faq-bookmarks",
+  /** POST → V2Response<FAQBookmarkAddResponse>. Idempotent — re-bookmarking returns 201 with existing row. Auth required. */
+  FAQ_ME_BOOKMARK_ADD: "/me/faq-bookmarks/{article_uuid}",
+  /** DELETE → 204. Returns 404 FAQ_BOOKMARK_NOT_FOUND if not bookmarked. Auth required. */
+  FAQ_ME_BOOKMARK_DELETE: "/me/faq-bookmarks/{article_uuid}",
+  /** GET → V2Response<FAQSubscriptionListResponse>. Auth required. */
+  FAQ_ME_SUBSCRIPTIONS: "/me/faq-subscriptions",
+  /** POST → V2Response<FAQSubscriptionAddResponse>. Idempotent. Auth required. */
+  FAQ_ME_SUBSCRIPTION_ADD: "/me/faq-subscriptions/{category_uuid}",
+  /** DELETE → 204. Returns 404 FAQ_SUBSCRIPTION_NOT_FOUND if not subscribed. Auth required. */
+  FAQ_ME_SUBSCRIPTION_DELETE: "/me/faq-subscriptions/{category_uuid}",
 } as const;
 
 export type V1PublicEndpoint = (typeof V1_PUBLIC_ENDPOINTS)[keyof typeof V1_PUBLIC_ENDPOINTS];
