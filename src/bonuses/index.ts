@@ -400,10 +400,9 @@ export interface BonusV2DetailResponse {
 /**
  * Data payload of GET /api/v2/bonuses (paginated list).
  * Full envelope: { status: "success", data: BonusV2ListResponse }
- * Note: backend response field is "items", not "bonuses".
  */
 export interface BonusV2ListResponse {
-  items: BonusV2ListItem[];
+  bonuses: BonusV2ListItem[];
   total: number;
   page: number;
   limit: number;
