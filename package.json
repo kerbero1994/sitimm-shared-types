@@ -1,6 +1,6 @@
 {
   "name": "@kerbero1994/shared-types",
-  "version": "0.55.0",
+  "version": "0.56.0",
   "description": "Shared TypeScript types for the SITIMM ecosystem",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -224,6 +224,16 @@
       "require": {
         "types": "./dist/faq/index.d.ts",
         "default": "./dist/faq/index.js"
+      }
+    },
+    "./bonuses": {
+      "import": {
+        "types": "./dist/bonuses/index.d.mts",
+        "default": "./dist/bonuses/index.mjs"
+      },
+      "require": {
+        "types": "./dist/bonuses/index.d.ts",
+        "default": "./dist/bonuses/index.js"
       }
     }
   },

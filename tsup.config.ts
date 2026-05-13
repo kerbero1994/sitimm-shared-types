@@ -24,6 +24,7 @@ export default defineConfig({
     "src/notifications/index.ts",
     "src/programs/index.ts",
     "src/faq/index.ts",
+    "src/bonuses/index.ts",
   ],
   format: ["cjs", "esm"],
   dts: true,
