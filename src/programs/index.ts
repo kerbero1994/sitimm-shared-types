@@ -110,7 +110,62 @@ export interface SubProgramCurrentLang {
  * SubProgram record — child node of a Program.
  * Backend: programs_v2.py :: SubProgramV2Response
  */
-export interface SubProgramV2 {
+/**
+ * Single image in a Program/SubProgram event gallery. v0.57.0+.
+ * Backend: programs_v2.py :: GalleryItemV2
+ */
+export interface GalleryItemV2 {
+  /** Public image URL (absolute or relative). */
+  url: string;
+  /** Optional human caption rendered under the photo. */
+  caption?: string | null;
+  /** Optional responsive variants for this gallery item. */
+  img_variants?: ImageVariants | null;
+}
+
+/**
+ * Program/SubProgram event gallery container. v0.57.0+.
+ * Backend: programs_v2.py :: GalleryV2
+ */
+export interface GalleryV2 {
+  items: GalleryItemV2[];
+}
+
+/**
+ * Phase 1A canonical CMS service fields shared between Program and
+ * SubProgram. Backend Alembic migration `a3b4c5d6e7f8`. All fields are
+ * additive + nullable — older payloads omit them. v0.57.0+.
+ */
+export interface ProgramServiceFieldsV2 {
+  /** Tagline / kicker shown above the title. */
+  subtitle?: string | null;
+  /** Icon machine name (e.g. `"handshake"`, `"graduation"`). Consumer maps to glyph. */
+  icon?: string | null;
+  /** Theme accent — hex `#RRGGBB` or `#RRGGBBAA`. Drives card gradients. */
+  theme_color?: string | null;
+  /** Event photo gallery — separate from `img` hero. */
+  gallery?: GalleryV2 | null;
+  /** CTA button label (e.g. "Inscríbete"). Null hides the CTA. */
+  cta_label?: string | null;
+  /** CTA destination URL (external link or deep link). */
+  cta_url?: string | null;
+  /** Hides the row from public FE renders when true. Replaces ad-hoc title filtering. */
+  is_test: boolean;
+  /** Short audience tagline ("Para trabajadores en activo"). */
+  target_audience?: string | null;
+  /** Long-form eligibility / requirements copy. */
+  eligibility?: string | null;
+  /** Markdown body — replaces legacy `content` JSONB blob (Phase 1B drops `content`). */
+  body?: string | null;
+  /** Optional embedded video URL (YouTube/Vimeo). */
+  video_url?: string | null;
+  /** ISO-8601 effective / publish date. Independent of `createdAt`. */
+  published_at?: string | null;
+  /** Free-form tags array. */
+  tags?: string[] | null;
+}
+
+export interface SubProgramV2 extends ProgramServiceFieldsV2 {
   /** SubProgram UUID — primary identifier. */
   uuid: string;
   /** Title text. Null in legacy rows that predate the field. */
@@ -123,9 +178,9 @@ export interface SubProgramV2 {
   img_variants?: ImageVariants | null;
   /** Image URL (relative or absolute). */
   img: string | null;
-  /** Free-form JSONB content blob (rich text body, blocks, etc.). */
+  /** @deprecated Free-form JSONB content blob. Phase 1B will drop this. Use `body` + `gallery` instead. v0.57.0+. */
   content: unknown | null;
-  /** URL slug. */
+  /** @deprecated URL slug. Phase 1B will drop this. v0.57.0+. */
   url: string | null;
   /**
    * Display order within the parent Program. NULL means "append after
@@ -147,7 +202,7 @@ export interface SubProgramV2 {
  * Program record with embedded active SubPrograms.
  * Backend: programs_v2.py :: ProgramV2Response
  */
-export interface ProgramV2 {
+export interface ProgramV2 extends ProgramServiceFieldsV2 {
   /** Program UUID — primary identifier. */
   uuid: string;
   /** Title text. */
@@ -158,13 +213,14 @@ export interface ProgramV2 {
   img: string | null;
   /** Responsive variants of `img`. v0.50.0+. */
   img_variants?: ImageVariants | null;
-  /** Free-form JSONB content blob (max 100 KB serialized). */
+  /** @deprecated Free-form JSONB content blob. Phase 1B will drop this. Use `body` instead. v0.57.0+. */
   content: unknown | null;
-  /**
-   * URL slug. Server auto-derives `/<title-with-dashes>` when omitted on
-   * create/update. Unique across active rows (see INV-PROG-SLUG).
-   */
+  /** @deprecated URL slug. Phase 1B will drop this. Use `cta_url` for actionable links. v0.57.0+. */
   url: string | null;
+  /** Sort order — ASC, NULLS LAST. v0.57.0+. */
+  sortIndex?: number | null;
+  /** Category single-string label (e.g. "Capacitación", "Salud"). v0.57.0+. */
+  category?: string | null;
   /**
    * Active SubPrograms ordered by `(position NULLS LAST, createdAt ASC)`.
    * `null` only when the caller passed `?include_subs=false` (server skipped
@@ -198,15 +254,21 @@ export interface ProgramV2 {
  * Internal timestamps are stripped so the marketing site never displays
  * createdAt/updatedAt/deletedAt by accident.
  */
-export interface ProgramV2Public {
+export interface ProgramV2Public extends Omit<ProgramServiceFieldsV2, "is_test"> {
   uuid: string;
   title: string | null;
   description: string | null;
   img: string | null;
   /** Responsive variants of `img`. v0.50.0+. */
   img_variants?: ImageVariants | null;
+  /** @deprecated Phase 1B will drop this. v0.57.0+. */
   content: unknown | null;
+  /** @deprecated Phase 1B will drop this. v0.57.0+. */
   url: string | null;
+  /** Sort order — ASC, NULLS LAST. v0.57.0+. */
+  sortIndex?: number | null;
+  /** Category single-string label. v0.57.0+. */
+  category?: string | null;
   /**
    * Active SubPrograms. `null` when the caller passed `?include_subs=false`.
    */
@@ -224,16 +286,16 @@ export interface ProgramV2Public {
  * `CreateProgramV2Body.sub_programs` array.
  * Backend: programs_v2.py :: SubProgramV2Create
  */
-export interface CreateSubProgramV2Body {
+export interface CreateSubProgramV2Body extends Partial<ProgramServiceFieldsV2> {
   /** Required title (1-500 chars). */
   title: string;
   /** Optional long-form description (max 100k chars). v0.49.0+. */
   description?: string | null;
   /** Optional image URL. */
   img?: string | null;
-  /** Optional free-form JSONB content (max 100 KB serialized). */
+  /** @deprecated Optional free-form JSONB content. Phase 1B will drop this. */
   content?: unknown | null;
-  /** Optional URL slug. */
+  /** @deprecated Optional URL slug. Phase 1B will drop this. */
   url?: string | null;
 }
 
@@ -241,17 +303,21 @@ export interface CreateSubProgramV2Body {
  * Body for POST /api/v2/programs.
  * Backend: programs_v2.py :: ProgramV2Create
  */
-export interface CreateProgramV2Body {
+export interface CreateProgramV2Body extends Partial<ProgramServiceFieldsV2> {
   /** Required title (1-500 chars). */
   title: string;
   /** Optional description (max 100k chars). */
   description?: string | null;
   /** Optional image URL. */
   img?: string | null;
-  /** Optional free-form JSONB content (max 100 KB serialized). */
+  /** @deprecated Optional free-form JSONB content. Phase 1B will drop this. */
   content?: unknown | null;
-  /** Optional URL slug — server derives one from `title` if omitted. */
+  /** @deprecated Optional URL slug. Phase 1B will drop this. */
   url?: string | null;
+  /** Sort order — ASC, NULLS LAST. v0.57.0+. */
+  sortIndex?: number | null;
+  /** Category single-string label. v0.57.0+. */
+  category?: string | null;
   /** Optional inline subprograms; each is created in the same transaction. */
   sub_programs?: CreateSubProgramV2Body[];
 }
@@ -264,7 +330,7 @@ export interface CreateProgramV2Body {
  * their own endpoints (see CreateSubProgramV2Body / UpdateSubProgramV2Body).
  */
 export type UpdateProgramV2Body = Partial<
-  Pick<CreateProgramV2Body, "title" | "description" | "img" | "content" | "url">
+  Omit<CreateProgramV2Body, "sub_programs">
 > & {
   /**
    * Optimistic lock — pass the `updatedAt` value the client last
