@@ -324,6 +324,12 @@ export interface FAQArticleSummaryV2 {
   locale: string;
   /** True when the row was served from the Spanish fallback. */
   is_translation_fallback: boolean;
+  /**
+   * Distinct resource kinds attached to the article (e.g. ``["video", "pdf"]``).
+   * Lets list cards surface multimedia presence without forcing a per-row
+   * detail fetch. Empty array for text-only articles. v0.57.0+.
+   */
+  media_kinds: string[];
 }
 
 /**
