@@ -36,13 +36,40 @@ export const BLOG_LOCALES = [
 export type BlogLocale = (typeof BLOG_LOCALES)[number];
 
 /**
- * Post lifecycle statuses. `active` is public-visible. `archived` is
- * hidden from public reader but still in admin list. `deleted` is the
- * soft-delete (`deleted_at`) flag — never returned to public.
- * Backend: `POST_STATUSES`.
+ * Post lifecycle statuses persisted on `blog_posts.status` — exactly two
+ * values. `active` is public-visible. `archived` is hidden from public
+ * reader but still in admin list.
+ *
+ * `deleted` is **not** a status enum value. Soft deletion is the
+ * orthogonal `deleted_at IS NOT NULL` flag — filtered out of every
+ * public read regardless of `status`. To list deleted rows on the
+ * admin list endpoint, pass the `BLOG_POST_LIST_FILTERS` value
+ * `"deleted"` (or `"all"`).
+ *
+ * Backend: `POST_STATUSES` in
+ * `app/infrastructure/database/models/blog_v2.py`.
  */
-export const BLOG_POST_STATUSES = ["active", "archived", "deleted"] as const;
+export const BLOG_POST_STATUSES = ["active", "archived"] as const;
 export type BlogPostStatus = (typeof BLOG_POST_STATUSES)[number];
+
+/**
+ * Admin list-filter values accepted by
+ * `GET /api/v2/blog/admin/posts?status=...`. Not the persisted enum
+ * (use `BLOG_POST_STATUSES` for that). The extra values surface
+ * soft-deleted rows or skip the filter entirely:
+ *
+ * - `"active"` / `"archived"` — match the `status` column directly.
+ * - `"deleted"` — rows with `deleted_at IS NOT NULL`, any status.
+ * - `"all"` — no filter (admin gets every row including
+ *   soft-deleted).
+ */
+export const BLOG_POST_LIST_FILTERS = [
+  "active",
+  "archived",
+  "deleted",
+  "all",
+] as const;
+export type BlogPostListFilter = (typeof BLOG_POST_LIST_FILTERS)[number];
 
 /**
  * Reaction values. `neutral` deletes the user's reaction row.
@@ -97,16 +124,25 @@ export type BlogBlockVariant = (typeof BLOG_BLOCK_VARIANTS)[number];
 
 /**
  * Maximum comments per user per post. INV-BP-5.
- * Backend: enforced in comment write service; exceeding triggers
- * `429 BLOG_COMMENT_LIMIT_REACHED`.
+ * Backend constant: `COMMENT_LIMIT_PER_USER_PER_POST` in
+ * `app/application/services/blog_comment_service.py` (line 28).
+ * Exceeding triggers `429 BLOG_COMMENT_LIMIT_REACHED`.
  */
 export const BLOG_COMMENT_LIMIT_PER_USER_PER_POST = 5 as const;
 
 /**
- * Window in hours used to dedupe the real-view counter per identity
- * (user id or `X-Device-Id` hash). INV-BP-8.
+ * Real-view counter dedupe grain. Enforced by the migration UNIQUE
+ * constraint `blog_post_view_log_dedupe_uq` on
+ * `(post_id, identity_key, viewed_date)` — one increment per identity
+ * per calendar day, not a rolling 24h window. There is no Python-side
+ * hours constant. INV-BP-8.
+ *
+ * Backend:
+ * `alembic/versions/blogs_v2_20260514_create_schema.py` (UNIQUE
+ * constraint definition).
  */
-export const BLOG_VIEW_DEDUPE_WINDOW_HOURS = 24 as const;
+export const BLOG_VIEW_DEDUPE_BY = "calendar_day" as const;
+export type BlogViewDedupeBy = typeof BLOG_VIEW_DEDUPE_BY;
 
 /**
  * Response header set by the server when the requested locale lacks a
