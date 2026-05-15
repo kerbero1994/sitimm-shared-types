@@ -21,3 +21,4 @@ export * from "./notifications";
 export * from "./programs";
 export * from "./faq";
 export * from "./bonuses";
+export * from "./blogPosts";

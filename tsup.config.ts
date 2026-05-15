@@ -25,6 +25,7 @@ export default defineConfig({
     "src/programs/index.ts",
     "src/faq/index.ts",
     "src/bonuses/index.ts",
+    "src/blogPosts/index.ts",
   ],
   format: ["cjs", "esm"],
   dts: true,
