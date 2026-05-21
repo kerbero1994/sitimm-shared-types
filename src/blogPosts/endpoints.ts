@@ -112,6 +112,8 @@ export const BLOG_V2_ENDPOINTS = {
 
   /** GET → V2Response<BlogCommentModerationListResponseV2>. Query: post_uuid, user_id, has_flagged_terms, created_after, limit, offset. Requires blog_comments:moderate. */
   BLOG_ADMIN_COMMENTS: "/api/v2/blog/admin/comments",
+  /** DELETE → 204. Admin moderation delete (different from public BLOG_COMMENT_DELETE). Requires blog_comments:moderate. */
+  BLOG_ADMIN_COMMENT_DELETE: "/api/v2/blog/admin/comments/{id}",
 } as const;
 
 export type BlogV2EndpointKey = keyof typeof BLOG_V2_ENDPOINTS;

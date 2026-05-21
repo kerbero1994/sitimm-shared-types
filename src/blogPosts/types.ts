@@ -472,6 +472,54 @@ export interface BlogTagV2 {
 }
 
 /**
+ * Admin view of a category — superset of {@link BlogCategoryV2} adding
+ * `uuid` + `description`. Returned by `POST /api/v2/blog/admin/categories`
+ * and `PATCH /api/v2/blog/admin/categories/{id}`.
+ * Backend: `blog/admin.py :: BlogCategoryAdminResponse`.
+ */
+export interface BlogCategoryAdminV2 {
+  id: number;
+  uuid: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  usage_count: number | null;
+}
+
+/**
+ * Admin view of a tag — superset of {@link BlogTagV2} adding `uuid`.
+ * Returned by `POST /api/v2/blog/admin/tags` and
+ * `PATCH /api/v2/blog/admin/tags/{id}`.
+ * Backend: `blog/admin.py :: BlogTagAdminResponse`.
+ */
+export interface BlogTagAdminV2 {
+  id: number;
+  uuid: string;
+  slug: string;
+  name: string;
+  usage_count: number | null;
+}
+
+/**
+ * Profanity wordlist row returned by
+ * `POST /api/v2/blog/admin/profanity-terms`.
+ * Backend: `blog/admin.py :: BlogProfanityTermResponse`.
+ *
+ * `created_at` is ISO-8601 (Pydantic `datetime` serialized as JSON);
+ * the backend currently emits `null` when the column is unset, which
+ * in practice never happens after insert.
+ */
+export interface BlogProfanityTermResponseV2 {
+  id: number;
+  term: string;
+  language: BlogLocale;
+  /** `"blocker"` or `"warn"` — see `PROFANITY_SEVERITY` in `admin.py`. */
+  severity: "blocker" | "warn";
+  notes: string | null;
+  created_at: string | null;
+}
+
+/**
  * SEO metadata block embedded in post detail / admin response.
  * Backend: `blog/public.py :: BlogSeoV2`.
  */
@@ -1093,6 +1141,7 @@ export type BlogErrorCode =
   | "BLOG_HTML_SANITIZED_TOO_AGGRESSIVE"
   | "BLOG_INTERNAL"
   | "BLOG_LOCALE_INVALID"
+  | "BLOG_PATCH_INVALID"
   | "BLOG_POST_NOT_FOUND"
   | "BLOG_PUBLISHED_AT_IMMUTABLE"
   | "BLOG_RATE_LIMITED"
