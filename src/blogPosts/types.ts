@@ -453,6 +453,7 @@ export interface BlogAuthorV2 {
  * Backend: `blog/public.py :: BlogCategoryV2`.
  */
 export interface BlogCategoryV2 {
+  id: number;
   slug: string;
   name: string;
   /** Denormalized live count of posts using this category. */
@@ -464,6 +465,7 @@ export interface BlogCategoryV2 {
  * Backend: `blog/public.py :: BlogTagV2`.
  */
 export interface BlogTagV2 {
+  id: number;
   slug: string;
   name: string;
   usage_count: number | null;

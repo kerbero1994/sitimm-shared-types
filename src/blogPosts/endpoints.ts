@@ -66,6 +66,8 @@ export const BLOG_V2_ENDPOINTS = {
   BLOG_ADMIN_POSTS: "/api/v2/blog/admin/posts",
   /** PATCH → Body: BlogPostUpdateAdminV2. Returns V2Response<BlogPostAdminResponseV2>. Requires blog_posts:update. */
   BLOG_ADMIN_POST_UPDATE: "/api/v2/blog/admin/posts/{uuid}",
+  /** GET → V2Response<BlogPostAdminResponseV2>. Returns full post with ALL translations. Includes soft-deleted rows (404 only when no row exists). Requires blog_posts:update. */
+  BLOG_ADMIN_POST_BY_UUID: "/api/v2/blog/admin/posts/{uuid}",
   /** DELETE → 204. Soft delete. Idempotent. Requires blog_posts:delete. */
   BLOG_ADMIN_POST_DELETE: "/api/v2/blog/admin/posts/{uuid}",
   /** POST → V2Response<BlogPostAdminResponseV2>. Sets status=archived. Requires blog_posts:archive. */
