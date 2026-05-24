@@ -770,26 +770,48 @@ export interface BlogBookmarkListResponseV2 {
 
 /**
  * POST `/api/v2/blog/posts/{uuid}/comments` request body.
- * Backend: `blog/public.py :: BlogCommentCreateRequest`.
+ * Backend: `app/engagement/presentation/schemas/comments.py ::
+ * EngagementCommentCreateRequestV2`.
  */
 export interface BlogCommentCreateRequestV2 {
-  /** Markdown body. 2–4000 chars. */
+  /**
+   * Markdown body. 1–5000 chars (`min_length=1`, `max_length=5000` enforced
+   * server-side). Whitespace-only payloads are rejected with 422.
+   */
   body_md: string;
+  /**
+   * Optional parent comment id for threaded replies. `null` (or omitted) =
+   * top-level comment. Backend stores `parent_id` on `engagement_comments`
+   * and exposes it back on `BlogCommentV2`.
+   */
+  parent_id?: number | null;
 }
 
 /**
  * Single comment row returned by create or list.
- * Backend: `blog/public.py :: BlogCommentV2`.
+ * Backend: `app/engagement/presentation/schemas/comments.py ::
+ * EngagementCommentV2`.
  */
 export interface BlogCommentV2 {
   id: number;
   uuid: string;
+  /**
+   * Parent comment id for threaded replies. `null` for top-level comments.
+   * Threading depth is enforced server-side (currently 1 level).
+   */
+  parent_id: number | null;
   body_md: string;
   /** Server-sanitized HTML, safe to render verbatim. */
   body_html_sanitized: string;
   author: BlogAuthorV2;
   /** ISO 8601 UTC. */
   created_at: string;
+  /**
+   * ISO 8601 UTC. Non-null when the comment has been soft-deleted (by the
+   * owner via `DELETE /comments/{uuid}` or by an admin). Clients should
+   * either hide soft-deleted rows or render a "Comment deleted" placeholder.
+   */
+  deleted_at: string | null;
   /** True when the caller authored the comment (drives delete affordance). */
   is_author_self: boolean;
 }
@@ -805,6 +827,31 @@ export interface BlogCommentListResponseV2 {
 /** POST `/api/v2/blog/posts/{uuid}/view` response payload. */
 export interface BlogViewResponseV2 {
   view_count_vanity: number;
+}
+
+/**
+ * POST `/api/v2/blog/posts/{uuid}/share` request body. Optional — when
+ * omitted the server defaults `channel = "external"`. Unknown channels
+ * return 422 at the edge.
+ *
+ * Backend: `app/engagement/presentation/schemas/common.py ::
+ * EngagementShareRequestV2`.
+ */
+export interface BlogShareRequestV2 {
+  /**
+   * Where the user shared from. Defaults to `"external"` server-side when
+   * omitted. The whitelist matches the BE `ShareChannel` literal.
+   */
+  channel?:
+    | "whatsapp"
+    | "facebook"
+    | "twitter"
+    | "linkedin"
+    | "email"
+    | "telegram"
+    | "copy_link"
+    | "native_share"
+    | "external";
 }
 
 /** POST `/api/v2/blog/posts/{uuid}/share` response payload. */
@@ -1204,8 +1251,8 @@ export const BLOG_LIMITS = {
   EMBED_SPOTIFY_ID_MAX: 32,
   EMBED_CAPTION_MAX: 200,
   AUDIO_CAPTION_MAX: 200,
-  COMMENT_BODY_MIN: 2,
-  COMMENT_BODY_MAX: 4000,
+  COMMENT_BODY_MIN: 1,
+  COMMENT_BODY_MAX: 5000,
   PROFANITY_TERM_MAX: 120,
   PROFANITY_NOTES_MAX: 600,
   CATEGORY_NAME_MAX: 255,

@@ -38,7 +38,7 @@ export const BLOG_V2_ENDPOINTS = {
   BLOG_SITEMAP_INDEX: "/sitemap-blog-index.xml",
   /** POST → V2Response<BlogViewResponseV2>. Status 202. Anonymous OK. Headers: X-Device-Id (optional). */
   BLOG_POST_VIEW: "/api/v2/blog/posts/{uuid}/view",
-  /** POST → V2Response<BlogShareResponseV2>. Status 202. Anonymous OK. */
+  /** POST → Body: `BlogShareRequestV2` (optional). Returns V2Response<BlogShareResponseV2>. Status 202. Anonymous OK. Unknown channels → 422. */
   BLOG_POST_SHARE: "/api/v2/blog/posts/{uuid}/share",
 
   // ── Authenticated engagement ─────────────────────────────
@@ -55,8 +55,19 @@ export const BLOG_V2_ENDPOINTS = {
   BLOG_POST_COMMENTS_CREATE: "/api/v2/blog/posts/{uuid}/comments",
   /** GET → V2Response<BlogCommentListResponseV2>. Auth optional (read public). */
   BLOG_POST_COMMENTS: "/api/v2/blog/posts/{uuid}/comments",
-  /** DELETE → 204. Owner or admin only. */
-  BLOG_COMMENT_DELETE: "/api/v2/blog/comments/{id}",
+  /**
+   * DELETE → 204. Path: `comment_uuid` (UUID v4). Auth: owner only.
+   *
+   * The legacy 0.61.x export `/api/v2/blog/comments/{id}` was wrong — the
+   * route is mounted by `app/presentation/api/v2/blog_engagement_adapter.py`
+   * at `base_prefix="/api/v2/blog/posts"` and the factory route is
+   * `/comments/{comment_uuid}` (see
+   * `app/engagement/presentation/routes/attach_factory.py`), so the final
+   * path lives under `/posts/` and the path param is a UUID, not a numeric
+   * id. Admin moderation deletes (different route) live under
+   * `/api/v2/engagement/admin/comments/{uuid}`.
+   */
+  BLOG_COMMENT_DELETE: "/api/v2/blog/posts/comments/{comment_uuid}",
 
   // ── Admin posts ──────────────────────────────────────────
 
