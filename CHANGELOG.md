@@ -5,6 +5,22 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.66.0] - 2026-05-27
+
+### Changed
+- Regenerated `V2_ENDPOINTS_GENERATED` from mini-back HEAD
+  (chore/audit-remediation-20260527 post-Wave-10).
+- Source sha updated from `ae3ea707` to `abee96b7`.
+- Route count unchanged at 412 across 27 feature groups (source sha
+  refresh, no route signature changes).
+
+### Why
+- Pass 2 audit PASS2-TYPE-01: generated endpoints were pinned to a stale
+  commit. W2-A2 (mypy fixes), W6-A2 (deprecated flags), W9-A1 (bootstrap
+  split) all may have shifted route signatures — verified no actual
+  route changes, but sha pin refreshed so downstream FE repos see a
+  current source of truth.
+
 ## [0.65.0] - 2026-05-27
 
 ### Added

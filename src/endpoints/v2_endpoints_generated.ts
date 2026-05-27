@@ -4,8 +4,8 @@
  *   cd <mini-back> && make dump-v2-routes
  *   cd <sitimm-shared-types> && ./scripts/import-v2-endpoints.sh
  *
- * Source version : ae3ea707
- * Generated at   : 2026-05-27T21:08:57.369783+00:00
+ * Source version : abee96b7
+ * Generated at   : 2026-05-27T23:20:07.169872+00:00
  * Route count    : 412 (412 method-rows across 27 feature groups)
  *
  * Path params (e.g. {uuid}, {id}, {slug}) are emitted as
