@@ -362,6 +362,21 @@ export const V2_ENDPOINTS = {
 export type V1PublicEndpoint = (typeof V1_PUBLIC_ENDPOINTS)[keyof typeof V1_PUBLIC_ENDPOINTS];
 export type V2Endpoint = (typeof V2_ENDPOINTS)[keyof typeof V2_ENDPOINTS];
 
+// -- Auto-generated V2 endpoints (full coverage of mini-back) -------------
+//
+// The hand-maintained `V2_ENDPOINTS` constant above only covers a curated
+// subset (~96/314 routes as of AUDIT_20260527.md). The full set is exported
+// by `V2_ENDPOINTS_GENERATED`, regenerated via the mini-back
+// `make dump-v2-routes` target + this repo's `scripts/import-v2-endpoints.sh`.
+//
+// `V2_ENDPOINTS` is preserved for backward-compat — existing frontend code
+// keeps working — and `V2_ENDPOINTS_GENERATED` is the source of truth for
+// new code that needs guaranteed coverage of every backend route.
+export {
+  V2_ENDPOINTS_GENERATED,
+  type V2EndpointFeature,
+} from "./v2_endpoints_generated";
+
 /**
  * Replace `{param}` placeholders in endpoint templates.
  *

@@ -5,6 +5,27 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.64.0] - 2026-05-27
+
+### Added
+- `V2_ENDPOINTS_GENERATED` — auto-generated TS constants module
+  (`src/endpoints/v2_endpoints_generated.ts`) covering **every** V2
+  route exported by mini-back (412 method-rows across 27 feature
+  groups in this release).
+- `scripts/import-v2-endpoints.sh` + `scripts/import-v2-endpoints.mjs`
+  — helper to convert the JSON dump produced by mini-back's
+  `make dump-v2-routes` into the generated TS module.
+- Path params (`{uuid}`, `{id}`, `{slug}`, etc.) are emitted as typed
+  arrow-function builders, e.g.
+  `events.GET_EVENT(uuid)` → `"/api/v2/events/${uuid}"`.
+
+### Notes
+- The hand-maintained `V2_ENDPOINTS` constant is preserved for
+  backward compatibility — existing FE code keeps working.
+- New code should prefer `V2_ENDPOINTS_GENERATED` when it needs
+  guaranteed coverage of every backend route.
+- Closes TYPE-03 (shared-types side) from AUDIT_20260527.md.
+
 ## [0.63.0] - 2026-05-27
 
 ### Added
