@@ -5,6 +5,74 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.65.0] - 2026-05-27
+
+### Added
+- `ask` module: `AskRequest`, `AskResponse`, `AskLegacyChatRequest`,
+  `AskLegacyChatMessage`, SSE event types (`AskStreamChunkEvent`,
+  `AskStreamDoneEvent`, `AskStreamEvent`), and `ASK_ENDPOINTS` constants
+  for the V1 chatbot RAG surface
+  (`POST /api/v1/ask`, `/api/v1/ask/stream`, `/api/chat`). Const enums:
+  `ASK_SUPPORTED_LANGUAGES`, `ASK_USER_TYPES`, `ASK_SOURCES`,
+  `ASK_LEGACY_CHAT_ROLES`. V1-only (no V2 router).
+- `censusStats` module: full coverage of both the V1 stored-stats
+  endpoints (`/api/v1/census-stats/...`) and the V2 on-demand statistics
+  / municipalities / map endpoints
+  (`/api/v2/censuses/{uuid}/{statistics|municipalities|map}`). Includes
+  `CensusStatsStatisticsResponse`, `CensusStatsMunicipalitiesResponse`,
+  `CensusStatsMapResponse`, every section sub-shape (composition,
+  demographics, employment, tenure, compensation, geography, data
+  quality, intersectional, hiring trend), the V1
+  `CensusStatsV1ListResponse` envelope, and the V2 `CensusStatsV2Envelope`
+  success wrapper. Const enums: `CENSUS_STATS_PRESETS`,
+  `CENSUS_STATS_SECTIONS`, `CENSUS_STATS_EXPORT_LAYOUTS`. Endpoint
+  constants split into `CENSUS_STATS_V1_ENDPOINTS` (JSON + XLSX export)
+  and `CENSUS_STATS_V2_ENDPOINTS`.
+- `emailCensusIngestion` module: full coverage of the API-key gated
+  `/api/v1/automation/...` surface that powers the IMAP → census
+  pipeline, sender-trust tiering, transformation-rule editor, cron
+  schedule editor, pending-files approval queue, and processing-log
+  explorer. Includes `EmailCensusPendingFile`,
+  `EmailCensusDetectedCandidate`, `EmailCensusProcessingLog`,
+  `EmailCensusSenderTrust`, `EmailCensusAuthorizedEmail`,
+  `EmailCensusEmailAccount`, `EmailCensusTransformationRule`,
+  `EmailCensusEmailProcessingSummary`, and ~40 supporting types.
+  Const enums: `EMAIL_CENSUS_PENDING_FILE_STATUSES`,
+  `EMAIL_CENSUS_PROCESSING_LOG_STATUSES`, `EMAIL_CENSUS_SOURCE_TYPES`,
+  `EMAIL_CENSUS_EMAIL_ROLES`, `EMAIL_CENSUS_JOB_STATUSES`,
+  `EMAIL_CENSUS_RULE_TYPES`, `EMAIL_CENSUS_DETECTION_SOURCES`,
+  `EMAIL_CENSUS_TRUST_ACTIONS`. V1-only (no V2 router).
+- `notificationsContent` module: dedicated narrower surface for the
+  audit-locked `POST /api/v1/notifications/content` endpoint —
+  `NotificationsContentRequest`, `NotificationsContentResponse`,
+  `NotificationsContentAnnouncement`, `NotificationsContentType` const
+  union (locked to `["announcement"]`), and
+  `NOTIFICATIONS_CONTENT_ENDPOINTS`. The broader `notifications` module
+  also covers FCM topic broadcast — this module is the alias that the
+  CMS Notifications composer in `new_dashboard` should consume.
+- Package subpath exports: `@kerbero1994/shared-types/ask`,
+  `/censusStats`, `/emailCensusIngestion`, `/notificationsContent`.
+
+### Why
+- Closes mini-back `AUDIT_20260527.md` TYPE-02: five features had
+  `docs/v2/` directories but no `@kerbero1994/shared-types` module.
+  Engagement closed in v0.63.0; this release covers the remaining four
+  (Ask, CensusStats, EmailCensusIngestion, NotificationsContent) so
+  every V2 feature with a docs surface now has a canonical type
+  module.
+
+### Notes
+- All field names mirror the Pydantic wire shape exactly (snake_case),
+  except for `userType` on the Ask request body which keeps the
+  original sitimm-api-proxy camelCase contract.
+- Nullable fields use `T | null` when the backend schema is `T | None`
+  without a default; optional fields with defaults use `?`.
+- Timestamp fields are ISO 8601 UTC strings (commented inline).
+- UUIDs are strings (UUID v4, commented inline).
+- `Decimal` fields on `CensusStats` map / municipality employees
+  serialise as JSON strings (not floats) because mini-back's V2
+  envelope uses `model_dump(by_alias=True, mode="json")`.
+
 ## [0.64.0] - 2026-05-27
 
 ### Added
