@@ -22,3 +22,4 @@ export * from "./programs";
 export * from "./faq";
 export * from "./bonuses";
 export * from "./blogPosts";
+export * from "./engagement";
