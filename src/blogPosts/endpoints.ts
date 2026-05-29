@@ -93,6 +93,12 @@ export const BLOG_V2_ENDPOINTS = {
   BLOG_ADMIN_POST_ANALYTICS: "/api/v2/blog/admin/posts/{uuid}/analytics",
   /** GET → V2Response<BlogSearchGapsResponseV2>. Requires blog_posts:update. */
   BLOG_ADMIN_SEARCH_GAPS: "/api/v2/blog/admin/search-gaps",
+  /** POST → Body: BlogPostBulkActionRequest. Returns V2Response<BlogPostBulkActionResultV2>. Not fail-fast (per-uuid outcomes). Requires blog_posts:update. */
+  BLOG_ADMIN_POSTS_BULK: "/api/v2/blog/admin/posts/bulk",
+  /** POST → Body: BlogPostImportRequest. Returns V2Response<BlogPostImportResultV2>. dry_run supported. Requires blog_posts:create. */
+  BLOG_ADMIN_POSTS_IMPORT: "/api/v2/blog/admin/posts/import",
+  /** GET → V2Response<BlogAuditTrailResponseV2>. Query: limit, offset. Requires blog_posts:update. */
+  BLOG_ADMIN_POST_AUDIT_TRAIL: "/api/v2/blog/admin/posts/{uuid}/audit-trail",
 
   // ── Admin categories ─────────────────────────────────────
 
@@ -112,18 +118,18 @@ export const BLOG_V2_ENDPOINTS = {
   /** DELETE → 204. Rejected with 409 BLOG_TAG_IN_USE when usage_count > 0. Requires blog_taxonomy:manage. */
   BLOG_ADMIN_TAG_DELETE: "/api/v2/blog/admin/tags/{id}",
 
-  // ── Admin profanity wordlist ─────────────────────────────
+  // ── Admin profanity wordlist (DEPRECATED — moved to engagement) ──
 
-  /** POST → Body: BlogProfanityTermCreateV2. Status 201. Requires blog_comments:moderate. */
+  /** @deprecated Route removed in the engagement cutover. Use ENGAGEMENT_ADMIN_ENDPOINTS.ADMIN_PROFANITY_CREATE (`/api/v2/engagement/admin/profanity-terms`, gate engagement:moderate). */
   BLOG_ADMIN_PROFANITY_CREATE: "/api/v2/blog/admin/profanity-terms",
-  /** DELETE → 204. Requires blog_comments:moderate. */
+  /** @deprecated Route removed in the engagement cutover. Use ENGAGEMENT_ADMIN_ENDPOINTS.ADMIN_PROFANITY_DELETE (`/api/v2/engagement/admin/profanity-terms/{term_id}`). */
   BLOG_ADMIN_PROFANITY_DELETE: "/api/v2/blog/admin/profanity-terms/{id}",
 
-  // ── Admin comment moderation ─────────────────────────────
+  // ── Admin comment moderation (DEPRECATED — moved to engagement) ──
 
-  /** GET → V2Response<BlogCommentModerationListResponseV2>. Query: post_uuid, user_id, has_flagged_terms, created_after, limit, offset. Requires blog_comments:moderate. */
+  /** @deprecated Route removed in the engagement cutover. Use ENGAGEMENT_ADMIN_ENDPOINTS.ADMIN_COMMENTS_LIST (`/api/v2/engagement/admin/comments`, filter subject_type:"blog_post", paginates with has_more, gate engagement:moderate). */
   BLOG_ADMIN_COMMENTS: "/api/v2/blog/admin/comments",
-  /** DELETE → 204. Admin moderation delete (different from public BLOG_COMMENT_DELETE). Requires blog_comments:moderate. */
+  /** @deprecated Route removed in the engagement cutover. Use ENGAGEMENT_ADMIN_ENDPOINTS.ADMIN_COMMENT_DELETE (`/api/v2/engagement/admin/comments/{comment_uuid}` — UUID, not numeric id). */
   BLOG_ADMIN_COMMENT_DELETE: "/api/v2/blog/admin/comments/{id}",
 } as const;
 

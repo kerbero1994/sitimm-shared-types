@@ -1101,9 +1101,129 @@ export interface BlogSearchGapsResponseV2 {
   items: BlogSearchGapItemV2[];
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Bulk actions / legacy import / audit trail (admin)
+// ─────────────────────────────────────────────────────────────────────
+
+/** Action applied by `POST /api/v2/blog/admin/posts/bulk`. */
+export type BlogPostBulkAction =
+  | "archive"
+  | "unarchive"
+  | "delete"
+  | "retranslate";
+
 /**
- * Single comment surfaced in the admin moderation queue.
- * Backend: `blog/admin.py :: BlogCommentModerationItem`.
+ * Payload for `POST /api/v2/blog/admin/posts/bulk`. Not fail-fast: every
+ * uuid is attempted and per-uuid outcomes ship back in the result so the FE
+ * can render a partial-success summary.
+ * Backend: `blog/admin.py :: BlogPostBulkActionRequest`.
+ */
+export interface BlogPostBulkActionRequest {
+  /** 1..100 post uuids. */
+  uuids: string[];
+  action: BlogPostBulkAction;
+  /** Bypass safety checks (e.g. delete of published). Defaults `false`. */
+  force?: boolean;
+}
+
+/** Result envelope for `POST /api/v2/blog/admin/posts/bulk`. */
+export interface BlogPostBulkActionResultV2 {
+  requested: number;
+  succeeded: number;
+  failed: number;
+  /** Per-uuid failure details (`{ uuid, error_code, message }` shape). */
+  failures: Array<Record<string, unknown>>;
+}
+
+/**
+ * A single legacy post being imported via bulk-import. `slug` is the
+ * canonical es slug used for idempotent skip-on-duplicate semantics.
+ * Backend: `blog/admin.py :: BlogPostImportItem`.
+ */
+export interface BlogPostImportItem {
+  /** Canonical es slug. Pattern `^[a-z0-9-]+$`, max `BLOG_LIMITS.SLUG_MAX`. */
+  slug: string;
+  /** Max `BLOG_LIMITS.TITLE_MAX`. */
+  title: string;
+  /** Max `BLOG_LIMITS.SUMMARY_MAX`. */
+  summary?: string | null;
+  /** 1..400 blocks. */
+  body_blocks: BlogBlock[];
+  /** https + allowlisted host. Max 1000. */
+  cover_url?: string | null;
+  /** 0..20 category slugs to link. */
+  category_slugs?: string[];
+  /** 0..40 tag slugs to link. */
+  tag_slugs?: string[];
+  seo_title?: string | null;
+  seo_description?: string | null;
+  og_image_url?: string | null;
+  /** ISO 8601 UTC. Defaults to `now()` when omitted. */
+  published_at?: string | null;
+  /** 0..20 author user ids. */
+  author_user_ids?: number[];
+}
+
+/**
+ * Payload for `POST /api/v2/blog/admin/posts/import`. `dry_run=true` walks
+ * every item through validation + duplicate-detection but persists nothing.
+ */
+export interface BlogPostImportRequest {
+  /** 1..50 items. */
+  items: BlogPostImportItem[];
+  dry_run?: boolean;
+}
+
+/** One failed row from a bulk import. */
+export interface BlogPostImportFailure {
+  /** 0-based index into the request `items[]`. */
+  index: number;
+  slug?: string | null;
+  error_code: string;
+  message: string;
+}
+
+/**
+ * Aggregate result for `POST /api/v2/blog/admin/posts/import`.
+ * `skipped_existing` counts rows whose es slug already maps to a live post.
+ */
+export interface BlogPostImportResultV2 {
+  requested: number;
+  succeeded: number;
+  failed: number;
+  skipped_existing: number;
+  created_uuids?: string[];
+  failures: BlogPostImportFailure[];
+}
+
+/**
+ * Single row from the audit `Log` table, scoped to one blog post.
+ * Backend: `blog/admin.py :: BlogAuditEntryV2`.
+ */
+export interface BlogAuditEntryV2 {
+  id: number;
+  /** ISO 8601 UTC. */
+  created_at: string;
+  /** Null for system actions. */
+  actor_user_id?: number | null;
+  /** Action verb: `create` | `update` | `archive` | `unarchive` | `delete` | `translate` … */
+  action: string;
+  /** Captured mutation fields. */
+  payload?: Record<string, unknown> | null;
+}
+
+/** Response for `GET /api/v2/blog/admin/posts/{uuid}/audit-trail`. */
+export interface BlogAuditTrailResponseV2 {
+  items: BlogAuditEntryV2[];
+  total: number;
+}
+
+/**
+ * @deprecated The blog-scoped comment moderation surface was removed in the
+ * engagement-subsystem cutover. Use `EngagementCommentModerationItem` from
+ * `@kerbero1994/shared-types/engagement`; moderation is now cross-subject at
+ * `GET /api/v2/engagement/admin/comments` (filter `subject_type:"blog_post"`).
+ * The `/api/v2/blog/admin/comments` route no longer exists.
  */
 export interface BlogCommentModerationItemV2 {
   id: number;
@@ -1118,7 +1238,12 @@ export interface BlogCommentModerationItemV2 {
   deleted_at: string | null;
 }
 
-/** GET `/api/v2/blog/admin/comments` response payload. */
+/**
+ * @deprecated Removed in the engagement-subsystem cutover. Use
+ * `EngagementCommentModerationListResponse` from
+ * `@kerbero1994/shared-types/engagement` (note: paginates with `has_more`,
+ * not `total`). The `/api/v2/blog/admin/comments` route no longer exists.
+ */
 export interface BlogCommentModerationListResponseV2 {
   items: BlogCommentModerationItemV2[];
   total: number;
