@@ -49,6 +49,30 @@ export interface TableOfContentsEntry {
   anchor?: string | null;
 }
 
+// ── Author entry ────────────────────────────────────────────────────
+
+/**
+ * Author surfaced in magazine responses. Backend:
+ * `schemas.magazine_v2.MagazineAuthorV2Response`. A registered staff/member
+ * author carries `userUuid`; a guest author has it `null` and the `name`
+ * (+ optional `photoUrl`/`bio`) is taken from the guest fields supplied at
+ * create/update time.
+ */
+export interface MagazineAuthorV2 {
+  /** UUID of the linked user; `null` for guest authors. */
+  userUuid: string | null;
+  /** Display name (resolved from the user profile or guest fields). */
+  name: string;
+  /** Role/position shown next to the name (e.g. "Editor en jefe"). */
+  position: string;
+  /** Presigned URL for the author photo; `null` when none. */
+  photoUrl: string | null;
+  /** Short author bio; `null` when none. */
+  bio: string | null;
+  /** Display order within the magazine's author list (0-based). */
+  sortOrder: number;
+}
+
 // ── Magazine Response (list view) ───────────────────────────────────
 
 export interface MagazineV2 {
@@ -58,6 +82,17 @@ export interface MagazineV2 {
   description: string | null;
 
   coverUrl: string | null;
+  /**
+   * Small (~150px) cover render produced by the `files.generate_thumbnails`
+   * Celery task. Lets the FE skip the full-res cover for grid cards.
+   * `null` on rows whose covers predate the thumbnail pipeline.
+   */
+  coverThumbUrl: string | null;
+  /**
+   * Medium (~600px) cover render produced by the `files.generate_thumbnails`
+   * Celery task. `null` on rows whose covers predate the thumbnail pipeline.
+   */
+  coverMediumUrl: string | null;
   /**
    * Responsive cover variants — same shape as
    * `programs.ImageVariants`. v0.51.0+. Null on legacy rows whose covers
@@ -93,21 +128,29 @@ export interface MagazineV2 {
   /** Total shares. Added 2026-04-20. */
   shareCount: number;
   /**
-   * Real engagement counters — deduped per (IP + UA) inside per-action TTL
-   * windows on BE. Use for analytics / admin dashboards, NOT for the
-   * social-proof surface. Optional on the wire because the field rolled
-   * out 2026-04-29 and older list responses still omit it. Added
-   * 2026-04-29 with the vanity-vs-real split.
+   * Real (deduped-per-user) engagement counters — ADMIN-ONLY. The backend
+   * populates these only for content staff; for non-staff callers they are
+   * always `0`. Use for analytics / admin dashboards, NOT for the
+   * social-proof surface. Wire aliases:
+   * `viewCountInternal` / `downloadCountInternal` / `likeCountInternal` /
+   * `shareCountInternal` (backend `MagazineV2Response`). Renamed from the
+   * former `*Real?` optionals to match the schema aliases (0.68.0).
    */
-  viewCountReal?: number;
-  downloadCountReal?: number;
-  likeCountReal?: number;
-  shareCountReal?: number;
+  viewCountInternal: number;
+  downloadCountInternal: number;
+  likeCountInternal: number;
+  shareCountInternal: number;
   isLiked: boolean;
 
   isPublished: boolean;
   publishedAt: string | null;
   authorName: string | null;
+  /**
+   * Ordered author list (0..N). Staff picks + guest profiles. Empty array
+   * when the magazine has no authors attached. Backend:
+   * `MagazineV2Response.authors`.
+   */
+  authors: MagazineAuthorV2[];
   createdAt: string;
   updatedAt: string;
 }
