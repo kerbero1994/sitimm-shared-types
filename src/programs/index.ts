@@ -199,6 +199,17 @@ export interface SubProgramV2 extends ProgramServiceFieldsV2 {
 }
 
 /**
+ * Public SubProgram shape — {@link SubProgramV2} minus the internal
+ * timestamps. INV-PUB-1: `GET /programs/public` must never return
+ * `createdAt`/`updatedAt`/`deletedAt` on nested SubPrograms. v0.69.0+.
+ * Backend: programs_v2.py :: SubProgramV2PublicResponse
+ */
+export type SubProgramV2Public = Omit<
+  SubProgramV2,
+  "createdAt" | "updatedAt" | "deletedAt"
+>;
+
+/**
  * Program record with embedded active SubPrograms.
  * Backend: programs_v2.py :: ProgramV2Response
  */
@@ -270,9 +281,11 @@ export interface ProgramV2Public extends Omit<ProgramServiceFieldsV2, "is_test">
   /** Category single-string label. v0.57.0+. */
   category?: string | null;
   /**
-   * Active SubPrograms. `null` when the caller passed `?include_subs=false`.
+   * Active SubPrograms (public shape — no internal timestamps, INV-PUB-1).
+   * `null` when the caller passed `?include_subs=false`. v0.69.0+: was
+   * `SubProgramV2[]`, which incorrectly advertised createdAt/updatedAt/deletedAt.
    */
-  sub_programs: SubProgramV2[] | null;
+  sub_programs: SubProgramV2Public[] | null;
   /** Per-field applied locale. v0.48.0+. See {@link ProgramV2.currentLang}. */
   currentLang?: ProgramCurrentLang | null;
 }
