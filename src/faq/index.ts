@@ -475,6 +475,8 @@ export interface FAQSearchSuggestV2Request {
 /** GET `/api/v2/faq/search/suggest` response payload. */
 export interface FAQSearchSuggestV2Response {
   items: FAQSearchSuggestItemV2[];
+  /** Count of returned suggestions (== items.length; capped at the suggest limit). */
+  total: number;
 }
 
 // ─────────────────────────────────────────────────────────────────────
