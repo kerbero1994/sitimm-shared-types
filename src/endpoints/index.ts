@@ -252,6 +252,16 @@ export const V2_ENDPOINTS = {
   MAGAZINE_DELETE: "/magazines/{uuid}",
   /** POST → V2Response<MagazineDetailV2Response>. Sets is_published=true. Requires magazines:update. */
   MAGAZINE_PUBLISH: "/magazines/{uuid}/publish",
+  // ── Magazine comments (engagement subject adapter @ /api/v2/magazines) ──
+  // Magazine-named mirror of BLOG_V2_ENDPOINTS.BLOG_POST_COMMENTS*. Served by
+  // the generic engagement comment routes (`attach_factory.py`); equivalent to
+  // engagementSubjectEndpoints("/api/v2/magazines").{COMMENTS_LIST,COMMENTS_CREATE,COMMENT_DELETE_OWN}.
+  /** GET → V2Response<MagazineCommentListResponseV2>. Auth optional (read public). Query: limit, offset. */
+  MAGAZINE_COMMENTS: "/magazines/{uuid}/comments",
+  /** POST → Body: MagazineCommentCreateRequestV2. Returns V2Response<MagazineCommentV2>. Status 201. Auth required. Rate-limited 3/min per (user, subject). */
+  MAGAZINE_COMMENTS_CREATE: "/magazines/{uuid}/comments",
+  /** DELETE → 204. Path: comment_uuid (UUID v4). Soft-delete the caller's own comment. Auth: owner only. Admin moderation deletes live under /api/v2/engagement/admin/comments/{comment_uuid}. */
+  MAGAZINE_COMMENT_DELETE: "/magazines/comments/{comment_uuid}",
   /** POST → V2Response<MagazineLikeResponse>. Toggle like. Auth required. */
   MAGAZINE_LIKE: "/magazines/{uuid}/like",
   /** DELETE → V2Response<MagazineLikeResponse>. Remove like. Auth required. */

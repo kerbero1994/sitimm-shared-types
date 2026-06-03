@@ -357,6 +357,105 @@ export interface MagazineDownloadResponse {
   downloadCountReal?: number;
 }
 
+// ── Comments (2026-06-03) ───────────────────────────────────────────
+//
+// Magazine comments are served by the generic engagement subsystem via the
+// magazine subject adapter (`magazine_engagement_adapter.py`,
+// base_prefix `/api/v2/magazines`). The types below are the magazine-named
+// mirror of the blog comment family (`BlogCommentV2` & co. in
+// `src/blogPosts/types.ts`) so app/web can import a feature-scoped name
+// instead of duplicating the shapes locally or reaching for the generic
+// `EngagementComment*` types.
+//
+// They are structurally identical to `src/engagement` `EngagementComment*`
+// — the magazine subject reuses the engagement comment schemas verbatim:
+//   - `MagazineCommentV2`              ≡ EngagementComment / BE EngagementCommentV2
+//   - `MagazineCommentCreateRequestV2` ≡ EngagementCommentCreateRequest / BE EngagementCommentCreateRequestV2
+//   - `MagazineCommentListResponseV2`  ≡ EngagementCommentListResponse / BE EngagementCommentListResponseV2
+//
+// IMPORTANT: the author shape is the engagement author
+// (`user_id` / `name` / `avatar_url`), NOT `BlogAuthorV2` — magazine comment
+// authors carry no `bio` / `is_primary`.
+//
+// Routes: `V2_ENDPOINTS.MAGAZINE_COMMENTS` (GET list),
+// `V2_ENDPOINTS.MAGAZINE_COMMENTS_CREATE` (POST), and
+// `V2_ENDPOINTS.MAGAZINE_COMMENT_DELETE` (DELETE own). Equivalent generic
+// keys live in `src/engagement` (`engagementSubjectEndpoints("/api/v2/magazines")`
+// → COMMENTS_LIST / COMMENTS_CREATE / COMMENT_DELETE_OWN).
+
+/**
+ * Comment author reference returned on magazine comments. `name` and
+ * `avatar_url` are nullable because author hydration is handled by a
+ * downstream service that isn't always wired; the FE falls back to
+ * "Anonymous" / initials when either is absent.
+ *
+ * Backend: `app/engagement/presentation/schemas/comments.py ::
+ * EngagementCommentAuthorV2`. Distinct from `BlogAuthorV2` — no
+ * `bio` / `is_primary`.
+ */
+export interface MagazineCommentAuthorV2 {
+  user_id: number;
+  name: string | null;
+  avatar_url: string | null;
+}
+
+/**
+ * A single magazine comment row, returned by create or list.
+ * Backend: `app/engagement/presentation/schemas/comments.py ::
+ * EngagementCommentV2`.
+ */
+export interface MagazineCommentV2 {
+  id: number;
+  /** UUID v4. */
+  uuid: string;
+  /**
+   * Parent comment id for threaded replies. `null` for top-level comments.
+   * Threading depth is enforced server-side (currently 1 level).
+   */
+  parent_id: number | null;
+  body_md: string;
+  /** Server-sanitized HTML, safe to render verbatim. */
+  body_html_sanitized: string;
+  author: MagazineCommentAuthorV2;
+  /** ISO 8601 UTC. */
+  created_at: string;
+  /**
+   * ISO 8601 UTC. Non-null when the comment has been soft-deleted (by the
+   * owner via `DELETE /magazines/comments/{comment_uuid}` or by an admin).
+   * Clients should hide soft-deleted rows or render a "Comment deleted"
+   * placeholder.
+   */
+  deleted_at: string | null;
+  /** True when the caller authored the comment (drives delete affordance). */
+  is_author_self: boolean;
+}
+
+/**
+ * POST `/api/v2/magazines/{uuid}/comments` request body.
+ * Backend: `app/engagement/presentation/schemas/comments.py ::
+ * EngagementCommentCreateRequestV2`.
+ */
+export interface MagazineCommentCreateRequestV2 {
+  /**
+   * Markdown body. 1–5000 chars (`min_length=1`, `max_length=5000` enforced
+   * server-side). Whitespace-only payloads are rejected with 422.
+   */
+  body_md: string;
+  /**
+   * Optional parent comment id for threaded replies. `null` (or omitted) =
+   * top-level comment.
+   */
+  parent_id?: number | null;
+}
+
+/** GET `/api/v2/magazines/{uuid}/comments` response payload. */
+export interface MagazineCommentListResponseV2 {
+  items: MagazineCommentV2[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 // ── Multi-lang CMS (2026-04-21) ─────────────────────────────────────
 
 export type MagazineTranslationSource = "machine" | "human" | "fallback";

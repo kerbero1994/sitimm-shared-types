@@ -5,6 +5,34 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.71.0] - 2026-06-03
+
+### Added
+- `magazines` module: magazine-named comment contract mirroring the
+  blog comment family (`src/blogPosts/types.ts`) so app/web can import a
+  feature-scoped name instead of duplicating shapes or reaching for the
+  generic `EngagementComment*` types:
+  - `MagazineCommentV2`, `MagazineCommentCreateRequestV2`,
+    `MagazineCommentListResponseV2`, `MagazineCommentAuthorV2`.
+  - The author shape is the engagement author
+    (`user_id` / `name` / `avatar_url`), **not** `BlogAuthorV2`
+    (no `bio` / `is_primary`).
+- `endpoints` module (`V2_ENDPOINTS`): `MAGAZINE_COMMENTS`,
+  `MAGAZINE_COMMENTS_CREATE` (`/magazines/{uuid}/comments`) and
+  `MAGAZINE_COMMENT_DELETE` (`/magazines/comments/{comment_uuid}`),
+  mirroring `BLOG_V2_ENDPOINTS.BLOG_POST_COMMENTS*` naming.
+
+### Why
+- Magazine comments are served by the generic engagement subsystem via the
+  magazine subject adapter (`magazine_engagement_adapter.py`,
+  base_prefix `/api/v2/magazines`; routes in
+  `app/engagement/presentation/routes/attach_factory.py`). The new types are
+  structurally identical to the backend
+  `app/engagement/presentation/schemas/comments.py` schemas
+  (`EngagementCommentV2` / `EngagementCommentCreateRequestV2` /
+  `EngagementCommentListResponseV2`) and to the existing `src/engagement`
+  `EngagementComment*` types — this just exposes a magazine-scoped alias.
+
 ## [0.66.0] - 2026-05-27
 
 ### Changed
