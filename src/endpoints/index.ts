@@ -272,7 +272,7 @@ export const V2_ENDPOINTS = {
   MAGAZINE_VIEW: "/magazines/{uuid}/view",
   /** POST → V2Response<MagazineShareResponse>. Record a share (optional channel). Anonymous allowed, IP rate-limited. */
   MAGAZINE_SHARE: "/magazines/{uuid}/share",
-  /** POST → V2Response<MagazineDownloadResponse>. Record a download + return pdfUrl. Anonymous allowed, IP rate-limited. */
+  /** POST → V2Response<MagazineDownloadResponse>. Record a download — returns counters only (download_count_real/_vanity), NOT a pdfUrl; read the PDF URL from MagazineDetailV2.pdfUrl. Anonymous allowed, IP rate-limited. */
   MAGAZINE_DOWNLOAD: "/magazines/{uuid}/download",
   /** POST → V2Response. Toggle a useful/not_useful/neutral reaction. Auth required. */
   MAGAZINE_REACTIONS: "/magazines/{uuid}/reactions",

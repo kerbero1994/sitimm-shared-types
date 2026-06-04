@@ -833,23 +833,14 @@ export interface BlogBookmarkResponseV2 {
   user_bookmarked: boolean;
 }
 
-/** Row in `GET /api/v2/me/blog/bookmarks`. */
-export interface BlogBookmarkListItemV2 {
-  uuid: string;
-  slug: string | null;
-  title: string | null;
-  cover_url: string | null;
-  /** ISO 8601 UTC. */
-  bookmarked_at: string;
-}
-
-/** GET `/api/v2/me/blog/bookmarks` response payload. */
-export interface BlogBookmarkListResponseV2 {
-  items: BlogBookmarkListItemV2[];
-  total: number;
-  limit: number;
-  offset: number;
-}
+// NOTE: `BlogBookmarkListItemV2` + `BlogBookmarkListResponseV2` were REMOVED
+// in 0.75.0. They described `GET /api/v2/me/blog/bookmarks`, a route that no
+// longer exists in mini-back — the caller's cross-subject bookmark list moved
+// to the generic engagement subsystem at `/api/v2/me/engagement/bookmarks`
+// (`ENGAGEMENT_ENDPOINTS.ME_BOOKMARKS`). Use `EngagementBookmarkItem` /
+// `EngagementBookmarkListResponse` from `@kerbero1994/shared-types/engagement`
+// instead. `BlogBookmarkResponseV2` (the per-post toggle response) is
+// unaffected and still current.
 
 /**
  * POST `/api/v2/blog/posts/{uuid}/comments` request body.
@@ -871,6 +862,24 @@ export interface BlogCommentCreateRequestV2 {
 }
 
 /**
+ * Comment author reference returned on blog comments. `name` and
+ * `avatar_url` are nullable because author hydration is handled by a
+ * downstream service that isn't always wired (moderation feed returns raw
+ * rows); the FE falls back to "Anonymous" / initials when either is absent.
+ *
+ * Backend: `app/engagement/presentation/schemas/comments.py ::
+ * EngagementCommentAuthorV2`. Distinct from {@link BlogAuthorV2} — comment
+ * authors carry NO `bio` / `is_primary` / `role`. Structurally identical to
+ * the generic `EngagementCommentAuthor` (`../engagement`) and the
+ * magazine-named `MagazineCommentAuthorV2` (`../magazines`).
+ */
+export interface BlogCommentAuthorV2 {
+  user_id: number;
+  name: string | null;
+  avatar_url: string | null;
+}
+
+/**
  * Single comment row returned by create or list.
  * Backend: `app/engagement/presentation/schemas/comments.py ::
  * EngagementCommentV2`.
@@ -886,7 +895,14 @@ export interface BlogCommentV2 {
   body_md: string;
   /** Server-sanitized HTML, safe to render verbatim. */
   body_html_sanitized: string;
-  author: BlogAuthorV2;
+  /**
+   * Comment author — the ENGAGEMENT author shape
+   * (`user_id` / `name` / `avatar_url`), NOT {@link BlogAuthorV2}. Blog
+   * comments are served by the generic engagement subsystem, which returns
+   * `EngagementCommentAuthorV2`. Fixed in 0.75.0 (was mistyped as
+   * `BlogAuthorV2`).
+   */
+  author: BlogCommentAuthorV2;
   /** ISO 8601 UTC. */
   created_at: string;
   /**
@@ -907,9 +923,17 @@ export interface BlogCommentListResponseV2 {
   offset: number;
 }
 
-/** POST `/api/v2/blog/posts/{uuid}/view` response payload. */
+/**
+ * POST `/api/v2/blog/posts/{uuid}/view` response payload.
+ * Backend: `app/engagement/presentation/schemas/common.py ::
+ * EngagementViewResponseV2`.
+ */
 export interface BlogViewResponseV2 {
   view_count_vanity: number;
+  /** Real (deduped-per-identity-per-day) view counter. Added 0.75.0. */
+  view_count_real: number;
+  /** ISO 8601 UTC — when the server recorded the view. Added 0.75.0. */
+  recorded_at: string;
 }
 
 /**
@@ -937,9 +961,17 @@ export interface BlogShareRequestV2 {
     | "external";
 }
 
-/** POST `/api/v2/blog/posts/{uuid}/share` response payload. */
+/**
+ * POST `/api/v2/blog/posts/{uuid}/share` response payload.
+ * Backend: `app/engagement/presentation/schemas/common.py ::
+ * EngagementShareResponseV2`.
+ */
 export interface BlogShareResponseV2 {
   share_count: number;
+  /** Channel the share was attributed to (defaults to `"external"`). Added 0.75.0. */
+  channel: string;
+  /** ISO 8601 UTC — when the share was recorded. Added 0.75.0. */
+  recorded_at: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────

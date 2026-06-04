@@ -5,6 +5,93 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.75.0] - 2026-06-04
+
+Engagement-cutover contract drift fixes. Several blog + magazine engagement
+shapes were stale against the post-cutover wire (the engagement subsystem now
+serves like/view/share/download/report/stats/comments for both features via
+`make_engagement_router`, returning generic snake_case schemas). This release
+re-points those shapes to match the actual wire.
+
+### Added
+- `engagement` module (`src/engagement/types.ts`): generic extended-interaction
+  response/request types that were missing — `EngagementLikeResponse`
+  (`user_liked?` / `like_count_real` / `like_count_vanity`),
+  `EngagementLikePublicResponse` (`like_count_vanity`),
+  `EngagementDownloadResponse` (`download_count_real` / `download_count_vanity`),
+  `EngagementReportRequest` (`reason` / `comment?`), and `EngagementReportAck`
+  (`status`). Backend: `app/engagement/presentation/schemas/extended.py`.
+- `blogPosts` module (`src/blogPosts/types.ts`): `BlogCommentAuthorV2`
+  (`user_id` / `name: string | null` / `avatar_url: string | null`) — the
+  engagement comment-author shape (mirror of `EngagementCommentAuthorV2`).
+
+### Changed
+- **(breaking vs old camelCase, but the old shapes were WRONG vs the wire — kept
+  minor)** `magazines` module: the magazine engagement responses are now aliases
+  of the generic snake_case engagement shapes instead of stale camelCase
+  magazine-named interfaces:
+  - `MagazineLikeResponse` → `EngagementLikeResponse`
+    (was `{ liked, likeCount, likeCountReal? }`).
+  - `MagazineShareResponse` → `EngagementShareResponse`
+    (was `{ shareCount, shareCountReal?, shareUrl }`; `shareUrl` is GONE).
+  - `MagazineDownloadResponse` → `EngagementDownloadResponse`
+    (was `{ pdfUrl, downloadCount, downloadCountReal? }`; `pdfUrl` is GONE —
+    read it from `MagazineDetailV2.pdfUrl`).
+  - `MagazineReportResponseV2` → `EngagementReportAck`
+    (was the full row `{ uuid, magazineUuid, reason, status, comment, createdAt }`;
+    the report route surfaces only `{ status }`).
+  - `MagazineItemStatsV2Response` → `EngagementCounters`
+    (was `{ uuid, title, viewCount, downloadCount, likeCount, shareCount,
+    isPublished, isFeatured, publishedAt, createdAt }`; the engagement stats
+    route returns the snake_case counters envelope with no magazine metadata).
+- `blogPosts` module: `BlogCommentV2.author` re-pointed from `BlogAuthorV2` to
+  `BlogCommentAuthorV2` — blog comments are served by the engagement subsystem,
+  which returns the engagement author shape (`user_id` / `name` / `avatar_url`),
+  NOT the post-author shape (no `bio` / `is_primary` / `role`).
+- `blogPosts` module: `BlogViewResponseV2` gained `view_count_real: number` +
+  `recorded_at: string`; `BlogShareResponseV2` gained `channel: string` +
+  `recorded_at: string` (backend `EngagementViewResponseV2` /
+  `EngagementShareResponseV2`).
+- `magazines` module: `MagazinePageTextResponseV2` gained
+  `format: "plain" | "markdown"` (always emitted by the BE, default `"plain"`).
+- `endpoints` module: `MAGAZINE_DOWNLOAD` JSDoc corrected — the download route
+  returns counters only, NOT a `pdfUrl`.
+
+### Removed
+- `blogPosts` module: `BlogBookmarkListItemV2` + `BlogBookmarkListResponseV2`
+  (types) and `BLOG_ME_BOOKMARKS` (`/api/v2/me/blog/bookmarks`, endpoints) —
+  the route no longer exists in mini-back. The caller's cross-subject bookmark
+  list moved to the generic engagement subsystem at
+  `/api/v2/me/engagement/bookmarks` (`ENGAGEMENT_ENDPOINTS.ME_BOOKMARKS` →
+  `EngagementBookmarkListResponse`). `BlogBookmarkResponseV2` (per-post toggle)
+  is unaffected. Nothing else in the package referenced the removed symbols.
+
+### FE-impact / migration
+- **Magazine field renames that can break FE consumers** (camelCase → snake_case,
+  plus dropped fields):
+  - `/like`, `/like` DELETE, `/like/public`: `{ liked, likeCount, likeCountReal? }`
+    → `{ user_liked?, like_count_real, like_count_vanity }`.
+  - `/share`: `{ shareCount, shareCountReal?, shareUrl }`
+    → `{ share_count, channel, recorded_at }`. **`shareUrl` removed** — any FE
+    handing the share deep-link to an OS share sheet must build it client-side
+    (or read a canonical magazine URL) instead.
+  - `/download`: `{ pdfUrl, downloadCount, downloadCountReal? }`
+    → `{ download_count_real, download_count_vanity }`. **`pdfUrl` removed** —
+    FE must read the PDF URL from `MagazineDetailV2.pdfUrl`, not the download
+    response.
+  - `/report`: full row → `{ status }`.
+  - `/{uuid}/stats`: magazine-metadata row → snake_case `EngagementCounters`
+    envelope (`view_count_real`/`view_count_vanity`/`useful_count`/
+    `not_useful_count`/`share_count`/`bookmark_count`/`comment_count` +
+    `settings`); `uuid`/`title`/`isPublished`/`isFeatured`/`publishedAt`/
+    `createdAt` are gone — read them from `MagazineDetailV2`.
+- These are technically breaking for any FE still reading the old camelCase
+  magazine fields, but kept as a **minor** bump because the old shapes were
+  already wrong vs the post-cutover wire (any FE relying on them was already
+  broken at runtime — this fixes the contract to match reality).
+- Blog FE: `BlogCommentV2.author` no longer types `bio`/`is_primary`/`role` (it
+  never carried them on the wire); reading those was always `undefined`.
+
 ## [0.74.0] - 2026-06-04
 
 ### Added
