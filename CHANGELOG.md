@@ -5,6 +5,25 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.74.0] - 2026-06-04
+
+### Added
+- `blogPosts` module (`src/blogPosts/types.ts`): new exported interface
+  `BlogBlockResourceResolved` (`url` required; `url_variants`, `width`,
+  `height`, `mime_type`, `size_bytes`, `caption`, `alt_text` all nullable).
+- `resolved: BlogBlockResourceResolved | null` field added to
+  `BlogBlockImage`, `BlogBlockPdfCard`, and `BlogBlockVideo`.
+
+### Why
+- The mini-back blog enricher now attaches an inline `resolved` payload to
+  `image` / `pdf_card` / `video` body blocks, resolved from the
+  `GalleryV2Item` referenced by the block's `resource_uuid` (null when the
+  item is missing or soft-deleted). This mirrors how `embed_youtube`
+  (`BlogEmbedResolved`) and `gallery_embed` (`BlogGalleryEmbedResolved`)
+  already carry an inline `resolved` field — NOT a top-level `resources[]`
+  array like FAQ. Additive minor bump; `BlogBlockResourceResolved` is
+  re-exported through the package index via the `blogPosts` barrel.
+
 ## [0.71.0] - 2026-06-03
 
 ### Added

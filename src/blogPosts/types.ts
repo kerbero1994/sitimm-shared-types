@@ -218,6 +218,29 @@ export interface BlogBlockCallout {
   title: string | null;
 }
 
+/**
+ * Server-attached media metadata for resource-backed body blocks
+ * (`image` / `pdf_card` / `video`). The blog enricher resolves this from
+ * the `GalleryV2Item` referenced by the block's `resource_uuid` and inlines
+ * it on the block — mirroring how `embed_youtube`/`gallery_embed` carry an
+ * inline `resolved` field (NOT a top-level `resources[]` array like FAQ).
+ *
+ * `null` when the referenced item is missing or soft-deleted.
+ * Backend: blog block enricher (mini-back).
+ */
+export interface BlogBlockResourceResolved {
+  /** Canonical asset URL. Always present when the item resolves. */
+  url: string;
+  /** Named derivative URLs (`thumb`, `card`, …) keyed by variant name. */
+  url_variants: Record<string, string> | null;
+  width: number | null;
+  height: number | null;
+  mime_type: string | null;
+  size_bytes: number | null;
+  caption: string | null;
+  alt_text: string | null;
+}
+
 export interface BlogBlockVideo {
   type: "video";
   /**
@@ -228,6 +251,8 @@ export interface BlogBlockVideo {
   resource_uuid: string;
   autoplay: boolean;
   caption: string | null;
+  /** Server-resolved media metadata — null when the item is missing/deleted. */
+  resolved: BlogBlockResourceResolved | null;
 }
 
 export interface BlogBlockImage {
@@ -237,6 +262,8 @@ export interface BlogBlockImage {
   alt: string;
   caption: string | null;
   align: BlogImageAlign;
+  /** Server-resolved media metadata — null when the item is missing/deleted. */
+  resolved: BlogBlockResourceResolved | null;
 }
 
 export interface BlogBlockPdfCard {
@@ -244,6 +271,8 @@ export interface BlogBlockPdfCard {
   resource_uuid: string;
   /** Whether the renderer should show the inline first-page preview. */
   show_preview: boolean;
+  /** Server-resolved media metadata — null when the item is missing/deleted. */
+  resolved: BlogBlockResourceResolved | null;
 }
 
 export interface BlogBlockTable {
