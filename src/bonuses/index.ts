@@ -142,23 +142,31 @@ export interface BonusV2CityRef {
 /**
  * Full BonusV2 record — used for detail and admin views.
  * Backend: bonus_v2.py :: BonusV2Response
+ *          bonus_serializers.py :: _serialize_bonus (actual wire shape)
  *
  * ``translation`` carries the locale-specific overrides selected by ?lang=,
  * or null when no translation exists for that locale.
  * ``logoUrl`` and ``coverUrl`` are flattened from the ``media`` list by the
  * service layer for fast client rendering.
+ * ``city`` is always emitted (CityId is NOT NULL; ``_city_dict`` always returns
+ * an object), though its ``name`` may be null when no city relation is loaded.
+ *
+ * NOTE: ``phone`` is intentionally NOT on this response — the serializer omits
+ * it (PII threat model, see BA1) and only accepts it on the create/update
+ * request input. ``notifyOnPublish`` is a write-only admin intent flag (fires an
+ * FCM on publish) and is never echoed back on any response — it lives only on
+ * BonusV2CreateInput / BonusV2UpdateInput.
  */
 export interface BonusV2 {
   id: number;
   uuid: string;
   BonusCategoryId: number;
   CityId: number;
-  city: BonusV2CityRef | null;
+  city: BonusV2CityRef;
   business: string;
   address?: string | null;
   latitude?: number | null;
   longitude?: number | null;
-  phone?: string | null;
   website?: string | null;
   hours?: string | null;
   discountType: BonusDiscountType;
@@ -176,7 +184,6 @@ export interface BonusV2 {
   isActive: boolean;
   sortOrder: number;
   badge: BonusBadge | null;
-  notifyOnPublish: boolean;
   createdAt: string;
   updatedAt: string;
   // Resolved relations
@@ -193,19 +200,24 @@ export interface BonusV2 {
 /**
  * Lightweight BonusV2 row for list endpoints.
  * Backend: bonus_v2.py :: BonusV2ListItemResponse
+ *          bonus_serializers.py :: _serialize_list_item (actual wire shape)
  *
  * Excludes subcategories, amenities, paymentMethods, and translation.
  * Media is flattened to primary logo/cover URLs for fast rendering.
+ * ``city`` is always emitted (``_city_dict`` always returns an object), though
+ * its ``name`` may be null when no city relation is loaded.
+ *
+ * NOTE: ``phone`` is intentionally NOT on this surface (PII, see BA1) and
+ * ``updatedAt`` is not emitted by the list serializer — both were removed.
  */
 export interface BonusV2ListItem {
   id: number;
   uuid: string;
   BonusCategoryId: number;
   CityId: number;
-  city: BonusV2CityRef | null;
+  city: BonusV2CityRef;
   business: string;
   address?: string | null;
-  phone?: string | null;
   discountType: BonusDiscountType;
   discountValueMin?: number | null;
   discountValueMax?: number | null;
@@ -219,7 +231,6 @@ export interface BonusV2ListItem {
   sortOrder: number;
   badge: BonusBadge | null;
   createdAt: string;
-  updatedAt: string;
   // Resolved relations (lightweight)
   category: BonusCategory;
   logoUrl: string | null;
@@ -418,6 +429,98 @@ export interface BonusV2MediaResponse {
 }
 
 /**
+ * Data payload of POST /api/v2/bonuses (create bonus).
+ * Full envelope: { status: "success", data: BonusV2DetailResponse }
+ *
+ * Create and update both return the full detail shape, so this is an alias of
+ * BonusV2DetailResponse — kept named for call-site clarity.
+ */
+export type BonusV2CreateResponse = BonusV2DetailResponse;
+
+/**
+ * Data payload of PATCH /api/v2/bonuses/{uuid} (update bonus).
+ * Full envelope: { status: "success", data: BonusV2DetailResponse }
+ */
+export type BonusV2UpdateResponse = BonusV2DetailResponse;
+
+/**
+ * Data payload of DELETE /api/v2/bonuses/{uuid} (cascade soft-delete).
+ * Full envelope: { status: "success", data: BonusV2DeleteResponse }
+ * Backend: bonus_admin_routes.py :: delete_bonus →
+ *          success_response({"deleted": True, "uuid": str(uuid)})
+ */
+export interface BonusV2DeleteResponse {
+  deleted: boolean;
+  uuid: string;
+}
+
+/**
+ * Data payload of DELETE on any bonus catalog row
+ * (category / subcategory / amenity / payment-method).
+ * Full envelope: { status: "success", data: BonusCatalogDeleteResponse }
+ * Backend: bonus_catalog_routes.py :: delete_category / delete_subcategory /
+ *          delete_amenity / delete_payment_method →
+ *          success_response({"deleted": True, "id": <id>})
+ */
+export interface BonusCatalogDeleteResponse {
+  deleted: boolean;
+  id: number;
+}
+
+/**
+ * Data payload of DELETE /api/v2/bonuses/{uuid}/media/{media_uuid} and
+ * DELETE /api/v2/bonuses/{uuid}/translations/{locale}.
+ * Full envelope: { status: "success", data: BonusDeletedResponse }
+ * Backend: bonus_media_routes.py :: delete_media and
+ *          bonus_translation_routes.py :: delete_translation →
+ *          success_response({"deleted": True})
+ */
+export interface BonusDeletedResponse {
+  deleted: boolean;
+}
+
+/**
+ * Data payload of POST /api/v2/bonuses/categories (create category).
+ * Full envelope: { status: "success", data: BonusCategoryCreateResponse }
+ * Backend: bonus_catalog_routes.py :: create_category / update_category →
+ *          success_response({"category": <serialized>})
+ */
+export interface BonusCategoryCreateResponse {
+  category: BonusCategory;
+}
+
+/**
+ * Data payload of POST /api/v2/bonuses/subcategories (create subcategory).
+ * Full envelope: { status: "success", data: BonusSubcategoryCreateResponse }
+ * Backend: bonus_catalog_routes.py :: create_subcategory / update_subcategory →
+ *          success_response({"subcategory": <serialized>})
+ */
+export interface BonusSubcategoryCreateResponse {
+  subcategory: BonusSubcategory;
+}
+
+/**
+ * Data payload of POST /api/v2/bonuses/amenities (create amenity).
+ * Full envelope: { status: "success", data: BonusAmenityCreateResponse }
+ * Backend: bonus_catalog_routes.py :: create_amenity / update_amenity →
+ *          success_response({"amenity": <serialized>})
+ */
+export interface BonusAmenityCreateResponse {
+  amenity: BonusAmenity;
+}
+
+/**
+ * Data payload of POST /api/v2/bonuses/payment-methods (create payment method).
+ * Full envelope: { status: "success", data: BonusPaymentMethodCreateResponse }
+ * Backend: bonus_catalog_routes.py :: create_payment_method /
+ *          update_payment_method →
+ *          success_response({"paymentMethod": <serialized>})
+ */
+export interface BonusPaymentMethodCreateResponse {
+  paymentMethod: BonusPaymentMethod;
+}
+
+/**
  * Data payload of GET /api/v2/bonuses/categories.
  * Full envelope: { status: "success", data: BonusCategoryListResponse }
  */
@@ -480,19 +583,19 @@ export const BONUSES_V2_ENDPOINTS = {
   AMENITIES: "/api/v2/bonuses/amenities",
   /** GET → BonusPaymentMethodListResponse. Public. */
   PAYMENT_METHODS: "/api/v2/bonuses/payment-methods",
-  /** POST → BonusV2DetailResponse. Requires bonuses:create. */
+  /** POST → BonusV2DetailResponse (alias BonusV2CreateResponse). Requires bonuses:create. */
   CREATE: "/api/v2/bonuses",
-  /** PATCH → BonusV2DetailResponse. Requires bonuses:update. */
+  /** PATCH → BonusV2DetailResponse (alias BonusV2UpdateResponse). Requires bonuses:update. */
   UPDATE: "/api/v2/bonuses/{uuid}",
-  /** DELETE → { message }. Requires bonuses:delete. Soft delete. */
+  /** DELETE → BonusV2DeleteResponse ({ deleted, uuid }). Requires bonuses:delete. Soft delete. */
   DELETE: "/api/v2/bonuses/{uuid}",
   /** POST multipart/form-data → BonusV2MediaResponse. Requires bonuses:update. */
   MEDIA_UPLOAD: "/api/v2/bonuses/{uuid}/media",
-  /** DELETE → { message }. Requires bonuses:update. */
+  /** DELETE → BonusDeletedResponse ({ deleted }). Requires bonuses:update. */
   MEDIA_DELETE: "/api/v2/bonuses/{uuid}/media/{media_uuid}",
   /** PUT → BonusTranslationResponse. Requires bonuses:update. */
   TRANSLATION_UPSERT: "/api/v2/bonuses/{uuid}/translations/{locale}",
-  /** DELETE → { message }. Requires bonuses:update. */
+  /** DELETE → BonusDeletedResponse ({ deleted }). Requires bonuses:update. */
   TRANSLATION_DELETE: "/api/v2/bonuses/{uuid}/translations/{locale}",
 } as const;
 

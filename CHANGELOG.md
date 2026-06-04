@@ -5,6 +5,52 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.76.0] - 2026-06-04
+
+Bonuses contract drift fixes against the mini-back source of truth
+(`app/presentation/api/v2/bonus_serializers.py` and `bonus_admin_routes.py` /
+`bonus_catalog_routes.py` — the actual wire shapes, not just the Pydantic
+response models). The DTO response models declared fields the serializers never
+emit; this release re-points the response types to what the endpoints actually
+return.
+
+### Removed
+- **(technically breaking, but these fields never existed on the wire — kept
+  minor)** `bonuses` module response interfaces:
+  - `BonusV2.phone` — `_serialize_bonus` intentionally omits `phone` (PII threat
+    model, BA1). `phone` remains on `BonusV2CreateInput` / `BonusV2UpdateInput`
+    (request only).
+  - `BonusV2.notifyOnPublish` — write-only admin intent flag (fires an FCM on
+    publish); never echoed on any response. Kept on the create/update request
+    inputs.
+  - `BonusV2ListItem.phone` — same PII omission as the detail surface.
+  - `BonusV2ListItem.updatedAt` — `_serialize_list_item` does not emit it.
+
+### Changed
+- `bonuses` module: tightened over-nullable `city` on both response shapes —
+  `BonusV2.city` and `BonusV2ListItem.city` are now `BonusV2CityRef`
+  (non-null) instead of `BonusV2CityRef | null`. `CityId` is NOT NULL and
+  `_city_dict` always returns an object; only the inner `name` can be null.
+- `bonuses` module: corrected the `BONUSES_V2_ENDPOINTS` doc comments for the
+  DELETE routes — bonus DELETE returns `{ deleted, uuid }`, catalog DELETEs
+  return `{ deleted, id }`, and media/translation DELETEs return `{ deleted }`
+  (previously all documented as `{ message }`, which was never the wire shape).
+
+### Added
+- `bonuses` module: previously-undocumented response wrappers, matching the
+  actual `success_response(...)` payloads:
+  - `BonusV2CreateResponse` / `BonusV2UpdateResponse` — aliases of
+    `BonusV2DetailResponse` (`{ bonus }`).
+  - `BonusV2DeleteResponse` — `{ deleted, uuid }` (bonus cascade soft-delete).
+  - `BonusCatalogDeleteResponse` — `{ deleted, id }` (category / subcategory /
+    amenity / payment-method delete).
+  - `BonusDeletedResponse` — `{ deleted }` (media / translation delete).
+  - `BonusCategoryCreateResponse` (`{ category }`),
+    `BonusSubcategoryCreateResponse` (`{ subcategory }`),
+    `BonusAmenityCreateResponse` (`{ amenity }`),
+    `BonusPaymentMethodCreateResponse` (`{ paymentMethod }`) — the catalog
+    create/update response shapes.
+
 ## [0.75.0] - 2026-06-04
 
 Engagement-cutover contract drift fixes. Several blog + magazine engagement
