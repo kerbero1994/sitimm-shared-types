@@ -250,8 +250,8 @@ export const V2_ENDPOINTS = {
   MAGAZINE_UPDATE: "/magazines/{uuid}",
   /** DELETE → V2Response<{message}>. Requires magazines:delete. */
   MAGAZINE_DELETE: "/magazines/{uuid}",
-  /** POST → V2Response<MagazineDetailV2Response>. Sets is_published=true. Requires magazines:update. */
-  MAGAZINE_PUBLISH: "/magazines/{uuid}/publish",
+  // NOTE: there is NO POST /magazines/{uuid}/publish route — publishing is done
+  // via PATCH /magazines/{uuid} with { is_published: true }. (drift cleanup)
   // ── Magazine comments (engagement subject adapter @ /api/v2/magazines) ──
   // Magazine-named mirror of BLOG_V2_ENDPOINTS.BLOG_POST_COMMENTS*. Served by
   // the generic engagement comment routes (`attach_factory.py`); equivalent to
@@ -262,12 +262,22 @@ export const V2_ENDPOINTS = {
   MAGAZINE_COMMENTS_CREATE: "/magazines/{uuid}/comments",
   /** DELETE → 204. Path: comment_uuid (UUID v4). Soft-delete the caller's own comment. Auth: owner only. Admin moderation deletes live under /api/v2/engagement/admin/comments/{comment_uuid}. */
   MAGAZINE_COMMENT_DELETE: "/magazines/comments/{comment_uuid}",
-  /** POST → V2Response<MagazineLikeResponse>. Toggle like. Auth required. */
+  /** POST → V2Response<MagazineLikeResponse>. Authed like (toggle). Requires magazines:engage. */
   MAGAZINE_LIKE: "/magazines/{uuid}/like",
-  /** DELETE → V2Response<MagazineLikeResponse>. Remove like. Auth required. */
+  /** DELETE → V2Response<MagazineLikeResponse>. Remove authed like. */
   MAGAZINE_UNLIKE: "/magazines/{uuid}/like",
-  /** POST → V2Response<{message}>. Record a view (debounced 1h server-side). Auth required. */
+  /** POST → V2Response<MagazineLikeResponse>. Anonymous like — append-only vanity bump, IP rate-limited. No anonymous unlike exists. */
+  MAGAZINE_LIKE_PUBLIC: "/magazines/{uuid}/like/public",
+  /** POST → V2Response<ViewMagazineV2Response>. Record a view (deduped per X-Device-Id + calendar day). Anonymous allowed. */
   MAGAZINE_VIEW: "/magazines/{uuid}/view",
+  /** POST → V2Response<MagazineShareResponse>. Record a share (optional channel). Anonymous allowed, IP rate-limited. */
+  MAGAZINE_SHARE: "/magazines/{uuid}/share",
+  /** POST → V2Response<MagazineDownloadResponse>. Record a download + return pdfUrl. Anonymous allowed, IP rate-limited. */
+  MAGAZINE_DOWNLOAD: "/magazines/{uuid}/download",
+  /** POST → V2Response. Toggle a useful/not_useful/neutral reaction. Auth required. */
+  MAGAZINE_REACTIONS: "/magazines/{uuid}/reactions",
+  /** POST (add) / DELETE (remove) → bookmark this magazine. Auth required. */
+  MAGAZINE_BOOKMARK: "/magazines/{uuid}/bookmark",
 
   // ── Headquarters ───────────────────────────────────────────
 

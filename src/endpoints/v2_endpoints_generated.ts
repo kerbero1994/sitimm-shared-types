@@ -4,9 +4,9 @@
  *   cd <mini-back> && make dump-v2-routes
  *   cd <sitimm-shared-types> && ./scripts/import-v2-endpoints.sh
  *
- * Source version : abee96b7
- * Generated at   : 2026-05-27T23:20:07.169872+00:00
- * Route count    : 412 (412 method-rows across 27 feature groups)
+ * Source version : 4ad29b67
+ * Generated at   : 2026-06-04T19:03:59.523102+00:00
+ * Route count    : 421 (421 method-rows across 27 feature groups)
  *
  * Path params (e.g. {uuid}, {id}, {slug}) are emitted as
  * arrow-function builders: ``(uuid: string) => string``.
@@ -66,53 +66,53 @@ export const V2_ENDPOINTS_GENERATED = {
     VERIFY_RESET_V2: "/api/v2/auth/verify-reset",
   },
   blog: {
-    /** POST — Blogs Admin */
+    /** POST — Blogs Admin, Blogs Admin */
     CREATE_CATEGORY: "/api/v2/blog/admin/categories",
-    /** DELETE — Blogs Admin */
+    /** DELETE — Blogs Admin, Blogs Admin */
     DELETE_CATEGORY: (category_id: string | number) => `/api/v2/blog/admin/categories/${category_id}`,
-    /** PATCH — Blogs Admin */
+    /** PATCH — Blogs Admin, Blogs Admin */
     UPDATE_CATEGORY: (category_id: string | number) => `/api/v2/blog/admin/categories/${category_id}`,
-    /** GET — Blogs Admin */
+    /** GET — Blogs Admin, Blogs Admin */
     LIST_ADMIN_POSTS: "/api/v2/blog/admin/posts",
-    /** POST — Blogs Admin */
+    /** POST — Blogs Admin, Blogs Admin */
     CREATE_POST: "/api/v2/blog/admin/posts",
-    /** DELETE — Blogs Admin */
+    /** DELETE — Blogs Admin, Blogs Admin */
     DELETE_POST: (post_uuid: string | number) => `/api/v2/blog/admin/posts/${post_uuid}`,
-    /** GET — Blogs Admin */
+    /** GET — Blogs Admin, Blogs Admin */
     GET_ADMIN_POST: (post_uuid: string | number) => `/api/v2/blog/admin/posts/${post_uuid}`,
-    /** PATCH — Blogs Admin */
+    /** PATCH — Blogs Admin, Blogs Admin */
     UPDATE_POST: (post_uuid: string | number) => `/api/v2/blog/admin/posts/${post_uuid}`,
-    /** GET — Blogs Admin */
+    /** GET — Blogs Admin, Blogs Admin */
     POST_ANALYTICS: (post_uuid: string | number) => `/api/v2/blog/admin/posts/${post_uuid}/analytics`,
-    /** POST — Blogs Admin */
+    /** POST — Blogs Admin, Blogs Admin */
     ARCHIVE_POST: (post_uuid: string | number) => `/api/v2/blog/admin/posts/${post_uuid}/archive`,
-    /** GET — Blogs Admin */
+    /** GET — Blogs Admin, Blogs Admin */
     GET_POST_AUDIT_TRAIL: (post_uuid: string | number) => `/api/v2/blog/admin/posts/${post_uuid}/audit-trail`,
-    /** POST — Blogs Admin */
+    /** POST — Blogs Admin, Blogs Admin */
     RETRIGGER_TRANSLATION: (post_uuid: string | number, locale: string | number) => `/api/v2/blog/admin/posts/${post_uuid}/translate/${locale}`,
-    /** PATCH — Blogs Admin */
+    /** PATCH — Blogs Admin, Blogs Admin */
     UPDATE_TRANSLATION: (post_uuid: string | number, locale: string | number) => `/api/v2/blog/admin/posts/${post_uuid}/translations/${locale}`,
-    /** POST — Blogs Admin */
+    /** POST — Blogs Admin, Blogs Admin */
     UNARCHIVE_POST: (post_uuid: string | number) => `/api/v2/blog/admin/posts/${post_uuid}/unarchive`,
-    /** POST — Blogs Admin */
+    /** POST — Blogs Admin, Blogs Admin */
     BULK_POST_ACTION: "/api/v2/blog/admin/posts/bulk",
-    /** POST — Blogs Admin */
+    /** POST — Blogs Admin, Blogs Admin */
     IMPORT_POSTS: "/api/v2/blog/admin/posts/import",
-    /** GET — Blogs Admin */
+    /** GET — Blogs Admin, Blogs Admin */
     SEARCH_GAPS: "/api/v2/blog/admin/search-gaps",
-    /** POST — Blogs Admin */
+    /** POST — Blogs Admin, Blogs Admin */
     CREATE_TAG: "/api/v2/blog/admin/tags",
-    /** DELETE — Blogs Admin */
+    /** DELETE — Blogs Admin, Blogs Admin */
     DELETE_TAG: (tag_id: string | number) => `/api/v2/blog/admin/tags/${tag_id}`,
-    /** PATCH — Blogs Admin */
+    /** PATCH — Blogs Admin, Blogs Admin */
     UPDATE_TAG: (tag_id: string | number) => `/api/v2/blog/admin/tags/${tag_id}`,
-    /** GET — V2 Blogs */
+    /** GET — V2 Blogs, V2 Blogs */
     LIST_CATEGORIES: "/api/v2/blog/categories",
-    /** GET — V2 Blogs */
+    /** GET — V2 Blogs, V2 Blogs */
     LIST_POSTS: "/api/v2/blog/posts",
-    /** GET — V2 Blogs */
+    /** GET — V2 Blogs, V2 Blogs */
     GET_POST_RELATED: (post_uuid: string | number) => `/api/v2/blog/posts/${post_uuid}/related`,
-    /** GET — V2 Blogs */
+    /** GET — V2 Blogs, V2 Blogs */
     GET_POST_BY_SLUG: (slug: string | number) => `/api/v2/blog/posts/${slug}`,
     /** POST — Engagement — blog_post */
     ADMIN_PAUSE_COMMENTS: (subject_uuid: string | number) => `/api/v2/blog/posts/${subject_uuid}/admin/comments/pause`,
@@ -144,11 +144,11 @@ export const V2_ENDPOINTS_GENERATED = {
     RECORD_VIEW: (subject_uuid: string | number) => `/api/v2/blog/posts/${subject_uuid}/view`,
     /** DELETE — Engagement — blog_post */
     DELETE_OWN_COMMENT: (comment_uuid: string | number) => `/api/v2/blog/posts/comments/${comment_uuid}`,
-    /** GET — V2 Blogs */
+    /** GET — V2 Blogs, V2 Blogs */
     SEARCH_POSTS: "/api/v2/blog/search",
-    /** GET — V2 Blogs */
+    /** GET — V2 Blogs, V2 Blogs */
     SEARCH_SUGGEST: "/api/v2/blog/search/suggest",
-    /** GET — V2 Blogs */
+    /** GET — V2 Blogs, V2 Blogs */
     LIST_TAGS: "/api/v2/blog/tags",
   },
   bonuses: {
@@ -736,72 +736,90 @@ export const V2_ENDPOINTS_GENERATED = {
     ALL_HQ_METRICS: "/api/v2/headquarters/metrics",
   },
   magazines: {
-    /** GET — V2 Magazines */
+    /** GET — V2 Magazines, V2 Magazines */
     LIST_MAGAZINES: "/api/v2/magazines",
-    /** POST — V2 Magazines */
+    /** POST — V2 Magazines, V2 Magazines */
     CREATE_MAGAZINE: "/api/v2/magazines",
-    /** POST — V2 Magazines */
+    /** POST — V2 Magazines, V2 Magazines */
     ADMIN_BACKFILL_TOC: "/api/v2/magazines/_admin/backfill-toc",
-    /** GET — V2 Magazines */
+    /** GET — V2 Magazines, V2 Magazines */
     ADMIN_NON_TOC_HASH: "/api/v2/magazines/_admin/non-toc-hash",
-    /** DELETE — V2 Magazines */
+    /** POST — Engagement — magazine */
+    ADMIN_PAUSE_COMMENTS: (subject_uuid: string | number) => `/api/v2/magazines/${subject_uuid}/admin/comments/pause`,
+    /** POST — Engagement — magazine */
+    ADMIN_RESUME_COMMENTS: (subject_uuid: string | number) => `/api/v2/magazines/${subject_uuid}/admin/comments/resume`,
+    /** POST — Engagement — magazine */
+    ADMIN_PAUSE_REACTIONS: (subject_uuid: string | number) => `/api/v2/magazines/${subject_uuid}/admin/reactions/pause`,
+    /** POST — Engagement — magazine */
+    ADMIN_RESUME_REACTIONS: (subject_uuid: string | number) => `/api/v2/magazines/${subject_uuid}/admin/reactions/resume`,
+    /** GET — Engagement — magazine */
+    ADMIN_GET_SETTINGS: (subject_uuid: string | number) => `/api/v2/magazines/${subject_uuid}/admin/settings`,
+    /** PATCH — Engagement — magazine */
+    ADMIN_PATCH_SETTINGS: (subject_uuid: string | number) => `/api/v2/magazines/${subject_uuid}/admin/settings`,
+    /** GET — Engagement — magazine */
+    ADMIN_LIST_SUSPENSION_LOG: (subject_uuid: string | number) => `/api/v2/magazines/${subject_uuid}/admin/suspension-log`,
+    /** DELETE — Engagement — magazine */
+    REMOVE_BOOKMARK: (subject_uuid: string | number) => `/api/v2/magazines/${subject_uuid}/bookmark`,
+    /** POST — Engagement — magazine */
+    ADD_BOOKMARK: (subject_uuid: string | number) => `/api/v2/magazines/${subject_uuid}/bookmark`,
+    /** GET — Engagement — magazine */
+    LIST_COMMENTS: (subject_uuid: string | number) => `/api/v2/magazines/${subject_uuid}/comments`,
+    /** POST — Engagement — magazine */
+    CREATE_COMMENT: (subject_uuid: string | number) => `/api/v2/magazines/${subject_uuid}/comments`,
+    /** POST — Engagement — magazine */
+    DOWNLOAD: (subject_uuid: string | number) => `/api/v2/magazines/${subject_uuid}/download`,
+    /** DELETE — Engagement — magazine */
+    UNLIKE: (subject_uuid: string | number) => `/api/v2/magazines/${subject_uuid}/like`,
+    /** POST — Engagement — magazine */
+    LIKE: (subject_uuid: string | number) => `/api/v2/magazines/${subject_uuid}/like`,
+    /** POST — Engagement — magazine */
+    LIKE_PUBLIC: (subject_uuid: string | number) => `/api/v2/magazines/${subject_uuid}/like/public`,
+    /** POST — Engagement — magazine */
+    TOGGLE_REACTION: (subject_uuid: string | number) => `/api/v2/magazines/${subject_uuid}/reactions`,
+    /** POST — Engagement — magazine */
+    REPORT: (subject_uuid: string | number) => `/api/v2/magazines/${subject_uuid}/report`,
+    /** POST — Engagement — magazine */
+    RECORD_SHARE: (subject_uuid: string | number) => `/api/v2/magazines/${subject_uuid}/share`,
+    /** GET — Engagement — magazine */
+    STATS: (subject_uuid: string | number) => `/api/v2/magazines/${subject_uuid}/stats`,
+    /** POST — Engagement — magazine */
+    RECORD_VIEW: (subject_uuid: string | number) => `/api/v2/magazines/${subject_uuid}/view`,
+    /** DELETE — V2 Magazines, V2 Magazines */
     DELETE_MAGAZINE: (uuid: string | number) => `/api/v2/magazines/${uuid}`,
-    /** GET — V2 Magazines */
+    /** GET — V2 Magazines, V2 Magazines */
     GET_MAGAZINE: (uuid: string | number) => `/api/v2/magazines/${uuid}`,
-    /** PATCH — V2 Magazines */
+    /** PATCH — V2 Magazines, V2 Magazines */
     UPDATE_MAGAZINE: (uuid: string | number) => `/api/v2/magazines/${uuid}`,
-    /** POST — V2 Magazines */
-    REGISTER_DOWNLOAD: (uuid: string | number) => `/api/v2/magazines/${uuid}/download`,
-    /** DELETE — V2 Magazines */
-    UNLIKE_MAGAZINE: (uuid: string | number) => `/api/v2/magazines/${uuid}/like`,
-    /** POST — V2 Magazines */
-    LIKE_MAGAZINE: (uuid: string | number) => `/api/v2/magazines/${uuid}/like`,
-    /** GET — V2 Magazines */
+    /** GET — V2 Magazines, V2 Magazines */
     LIST_MAGAZINE_PAGES: (uuid: string | number) => `/api/v2/magazines/${uuid}/pages`,
-    /** GET — V2 Magazines */
+    /** GET — V2 Magazines, V2 Magazines */
     GET_MAGAZINE_PAGE_TEXT: (uuid: string | number, page_number: string | number) => `/api/v2/magazines/${uuid}/pages/${page_number}/text`,
-    /** POST — V2 Magazines */
-    REPORT_MAGAZINE: (uuid: string | number) => `/api/v2/magazines/${uuid}/report`,
-    /** POST — V2 Magazines */
+    /** POST — V2 Magazines, V2 Magazines */
     RETRANSLATE_MAGAZINE: (uuid: string | number) => `/api/v2/magazines/${uuid}/retranslate`,
-    /** POST — V2 Magazines */
-    REGISTER_SHARE: (uuid: string | number) => `/api/v2/magazines/${uuid}/share`,
-    /** GET — V2 Magazines */
-    MAGAZINE_ITEM_STATS: (uuid: string | number) => `/api/v2/magazines/${uuid}/stats`,
-    /** GET — V2 Magazines */
+    /** GET — V2 Magazines, V2 Magazines */
     LIST_MAGAZINE_TRANSLATIONS: (uuid: string | number) => `/api/v2/magazines/${uuid}/translations`,
-    /** PUT — V2 Magazines */
+    /** PUT — V2 Magazines, V2 Magazines */
     UPSERT_MAGAZINE_TRANSLATION: (uuid: string | number, lang: string | number) => `/api/v2/magazines/${uuid}/translations/${lang}`,
-    /** POST — V2 Magazines */
-    REGISTER_VIEW: (uuid: string | number) => `/api/v2/magazines/${uuid}/view`,
-    /** POST — V2 Magazines */
+    /** POST — V2 Magazines, V2 Magazines */
     BULK_MAGAZINES: "/api/v2/magazines/bulk",
-    /** POST — V2 Magazines */
+    /** POST — V2 Magazines, V2 Magazines */
     BULK_IMPORT_MAGAZINES: "/api/v2/magazines/bulk-import",
-    /** GET — V2 Magazines */
+    /** GET — V2 Magazines, V2 Magazines */
     LIST_CATEGORIES: "/api/v2/magazines/categories",
-    /** GET — V2 Magazines */
+    /** DELETE — Engagement — magazine */
+    DELETE_OWN_COMMENT: (comment_uuid: string | number) => `/api/v2/magazines/comments/${comment_uuid}`,
+    /** GET — V2 Magazines, V2 Magazines */
     LIST_LIKED_MAGAZINES: "/api/v2/magazines/liked",
-    /** GET — V2 Magazines */
+    /** GET — V2 Magazines, V2 Magazines */
     LIST_MAGAZINES_PUBLIC: "/api/v2/magazines/public",
-    /** GET — V2 Magazines */
+    /** GET — V2 Magazines, V2 Magazines */
     GET_MAGAZINE_PUBLIC: (uuid: string | number) => `/api/v2/magazines/public/${uuid}`,
-    /** POST — V2 Magazines */
-    REGISTER_DOWNLOAD_PUBLIC: (uuid: string | number) => `/api/v2/magazines/public/${uuid}/download`,
-    /** DELETE — V2 Magazines */
-    UNLIKE_MAGAZINE_PUBLIC: (uuid: string | number) => `/api/v2/magazines/public/${uuid}/like`,
-    /** POST — V2 Magazines */
-    LIKE_MAGAZINE_PUBLIC: (uuid: string | number) => `/api/v2/magazines/public/${uuid}/like`,
-    /** GET — V2 Magazines */
+    /** GET — V2 Magazines, V2 Magazines */
     LIST_MAGAZINE_PAGES_PUBLIC: (uuid: string | number) => `/api/v2/magazines/public/${uuid}/pages`,
-    /** POST — V2 Magazines */
-    REGISTER_SHARE_PUBLIC: (uuid: string | number) => `/api/v2/magazines/public/${uuid}/share`,
-    /** POST — V2 Magazines */
-    REGISTER_VIEW_PUBLIC: (uuid: string | number) => `/api/v2/magazines/public/${uuid}/view`,
-    /** GET — V2 Magazines */
+    /** GET — V2 Magazines, V2 Magazines */
     ADMIN_STATS: "/api/v2/magazines/stats",
-    /** GET — V2 Magazines */
-    EXPORT_DOWNLOADS_CSV: "/api/v2/magazines/stats/downloads.csv",
+    /** GET — Engagement — magazine */
+    DOWNLOADS_CSV: "/api/v2/magazines/stats/downloads.csv",
   },
   meEngagement: {
     /** GET — Engagement Me */
