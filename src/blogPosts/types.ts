@@ -436,6 +436,12 @@ export type BlogBlock =
 // ─────────────────────────────────────────────────────────────────────
 
 /**
+ * Contribution role of an author on a post.
+ * Backend: `blog/public.py :: BlogAuthorRole`.
+ */
+export type BlogAuthorRole = "author" | "editor" | "translator" | "reviewer";
+
+/**
  * Author projection on list and detail responses.
  * Backend: `blog/public.py :: BlogAuthorV2`.
  */
@@ -446,6 +452,8 @@ export interface BlogAuthorV2 {
   bio: string | null;
   /** True only for sort_order = 0 (the primary author). */
   is_primary: boolean;
+  /** Default "author". */
+  role: BlogAuthorRole;
 }
 
 /**
@@ -596,7 +604,7 @@ export interface BlogPostListItemV2 {
   summary: string | null;
   cover_url: string | null;
   /** Variants (`thumb`, `card`, `hero`, `og`, …) emitted by the image pipeline. */
-  cover_url_variants: Record<string, unknown> | null;
+  cover_url_variants: import("../programs").ImageVariants | null;
   authors: BlogAuthorV2[];
   categories: BlogCategoryV2[];
   tags: BlogTagV2[];
@@ -606,6 +614,9 @@ export interface BlogPostListItemV2 {
   view_count_vanity: number;
   useful_count: number;
   share_count: number;
+  is_featured: boolean;
+  /** ISO 8601 UTC — null when not time-boxed. */
+  featured_until: string | null;
 }
 
 /**
@@ -617,6 +628,17 @@ export interface BlogPostListResponseV2 {
   total: number;
   limit: number;
   offset: number;
+}
+
+/**
+ * Per-locale alternate link for a post — drives `<link rel="alternate"
+ * hreflang>` tags and locale switchers.
+ * Backend: `blog/public.py :: BlogLocaleAlternateV2`.
+ */
+export interface BlogLocaleAlternateV2 {
+  locale: BlogLocale;
+  slug: string;
+  url: string;
 }
 
 /**
@@ -636,17 +658,26 @@ export interface BlogPostDetailV2 {
   /** Server-side rendered HTML for SSR/SEO. */
   body_html_sanitized: string | null;
   cover_url: string | null;
-  cover_url_variants: Record<string, unknown> | null;
+  cover_url_variants: import("../programs").ImageVariants | null;
   authors: BlogAuthorV2[];
   categories: BlogCategoryV2[];
   tags: BlogTagV2[];
+  /** Available translations for hreflang + locale switcher. */
+  locale_alternates: BlogLocaleAlternateV2[];
   /** ISO 8601 UTC. */
   published_at: string;
   /** ISO 8601 UTC — null when never edited after create. */
   updated_at: string | null;
   reading_minutes: number | null;
   seo: BlogSeoV2;
-  engagement: BlogEngagementV2;
+  /** JSON-LD structured data (Article schema) — always present. */
+  structured_data: Record<string, unknown>;
+  /** Canonical URL for this post — null when not overridden. */
+  canonical_url: string | null;
+  is_featured: boolean;
+  /** ISO 8601 UTC — null when not time-boxed. */
+  featured_until: string | null;
+  engagement: import("../engagement").EngagementCounters;
   comments_enabled: boolean;
 }
 
@@ -675,6 +706,27 @@ export interface BlogSearchHitV2 {
 }
 
 /**
+ * Single facet bucket — a distinct value and how many hits carry it.
+ * Backend: `blog/public.py :: BlogSearchFacetCountV2`.
+ */
+export interface BlogSearchFacetCountV2 {
+  value: string;
+  count: number;
+}
+
+/**
+ * Aggregated facet buckets over the current result set, grouped by
+ * dimension. Drives the search refinement sidebar.
+ * Backend: `blog/public.py :: BlogSearchFacetsV2`.
+ */
+export interface BlogSearchFacetsV2 {
+  categories: BlogSearchFacetCountV2[];
+  tags: BlogSearchFacetCountV2[];
+  authors: BlogSearchFacetCountV2[];
+  years: BlogSearchFacetCountV2[];
+}
+
+/**
  * GET `/api/v2/blog/search` response payload.
  * Backend: `blog/public.py :: BlogSearchResponse`.
  *
@@ -686,6 +738,8 @@ export interface BlogSearchResponseV2 {
   matched_via: "tsvector" | "trigram_fallback" | "mixed" | "none";
   items: BlogSearchHitV2[];
   total: number;
+  /** Present only when requested via ?include_facets=true. */
+  facets?: BlogSearchFacetsV2;
 }
 
 /**

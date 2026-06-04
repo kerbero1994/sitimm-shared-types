@@ -26,7 +26,7 @@ export const BLOG_V2_ENDPOINTS = {
   BLOG_CATEGORIES: "/api/v2/blog/categories",
   /** GET → V2Response<{items: BlogTagV2[]}>. Public catalog. */
   BLOG_TAGS: "/api/v2/blog/tags",
-  /** GET → V2Response<BlogSearchResponseV2>. Query: q (≥2 chars), locale, limit, offset. Public. */
+  /** GET → V2Response<BlogSearchResponseV2>. Query: q (≥2 chars), locale, limit, offset, include_facets?. Public. */
   BLOG_SEARCH: "/api/v2/blog/search",
   /** GET → V2Response<BlogSearchSuggestResponseV2>. Query: q (≥2 chars), locale, limit (≤10, default 6). Public. */
   BLOG_SEARCH_SUGGEST: "/api/v2/blog/search/suggest",
