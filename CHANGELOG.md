@@ -5,6 +5,34 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.77.0] - 2026-06-04
+
+FAQ contract drift fixes against the mini-back source of truth. These are
+documentation/enum corrections only — no field shapes changed, so it is a minor
+bump. Verified against `app/infrastructure/database/models/faq_resource.py`
+(`RESOURCE_KIND_VALUES`, `ENRICHMENT_STATUS_VALUES`),
+`app/application/services/faq_resource_enrichment.py`,
+`app/application/dtos/faq/errors.py`, and the `.pdf` route in
+`app/presentation/api/v2/faq_public_v2.py`.
+
+### Added
+- `faq` module: `FAQErrorCode` gains `"FAQ_PDF_RENDER_TIMEOUT"` (504). The PDF
+  export route `GET /faq/articles/{slug}.pdf` raises it when reportlab rendering
+  exceeds its 15s deadline (`faq_public_v2.py:177`); the union previously omitted
+  it.
+
+### Changed
+- `faq` module: `FAQResourceV2.kind` JSDoc example values were wrong. Aligned to
+  the real `RESOURCE_KIND_VALUES`: `"video_youtube"`, `"video_vimeo"`, `"pdf"`,
+  `"image"`, `"infographic"`, `"document_drive"`, `"official_link"`,
+  `"external_form"` (there is no bare `"video"` kind).
+- `faq` module: `FAQArticleSummaryV2.media_kinds` JSDoc example `["video", "pdf"]`
+  corrected to `["video_youtube", "pdf"]` — these values are drawn from the same
+  `RESOURCE_KIND_VALUES` set.
+- `faq` module: `FAQResourceV2.enrichment_status` JSDoc listed `"pending"`, which
+  is NOT an allowed value. Aligned to the real `ENRICHMENT_STATUS_VALUES`:
+  `"ok"`, `"failed"`, `"manual"`.
+
 ## [0.76.0] - 2026-06-04
 
 Bonuses contract drift fixes against the mini-back source of truth
