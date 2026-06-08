@@ -62,15 +62,15 @@ export const V2_ENDPOINTS = {
   /** DELETE → V2Response<AvatarV2Response>. Removes profile picture. Auth required. */
   USERS_ME_AVATAR_DELETE: "/users/me/avatar",
 
-  // ── Social Auth ───────────────────────────────────────────
+  // ── Social Auth (served on the V1 base: /api/v1, NOT /api/v2) ──
 
-  /** POST → Body: SocialLoginRequest. Returns V2Response<SocialLoginResponse>. No auth. */
-  AUTH_SOCIAL_LOGIN: "/auth/social/login",
-  /** POST → Body: VerifyIdentityRequest. Returns V2Response<VerifyIdentityResponse>. No auth. */
+  /** POST → Body: SocialLoginRequest. NO auth. Served on V1: /api/v1/auth/social (no "/login" suffix). */
+  AUTH_SOCIAL_LOGIN: "/auth/social",
+  /** POST → Body: VerifyIdentityRequest. NO auth. Served on V1: /api/v1/auth/social/verify. */
   AUTH_SOCIAL_VERIFY: "/auth/social/verify",
-  /** POST → Body: GuestLoginRequest. Returns V2Response<GuestLoginResponse>. No auth. */
+  /** POST → Body: GuestLoginRequest. NO auth. Served on V1: /api/v1/auth/social/guest. */
   AUTH_SOCIAL_GUEST: "/auth/social/guest",
-  /** GET → V2Response<SocialAccountListResponse>. Auth required. */
+  /** GET → V2Response<SocialAccountListResponse>. Auth required. Served on V1: /api/v1/auth/social/accounts. */
   AUTH_SOCIAL_ACCOUNTS: "/auth/social/accounts",
 
   // ── Events ───────────────────────────────────────────────
@@ -89,6 +89,16 @@ export const V2_ENDPOINTS = {
   EVENT_CLONE: "/events/{uuid}/clone",
   /** GET → V2Response<MyEventsV2Response>. Returns user's registered events. Auth required. */
   EVENTS_MY: "/events/my-events",
+  /** POST → Body: ParticipantRegisterV2 (modality, campus_id, is_alternative, ...). Returns
+      V2Response<EventParticipantV2> (201). Auth required (get_user_context). THE canonical authed
+      self-registration route (event_participants_v2.py). NOTE: EVENT_PARTICIPANTS_REGISTER below is stale. */
+  EVENT_REGISTER: "/events/{uuid}/register",
+  /** POST → Body: RegisterPublicV2Request. NO auth. IP rate-limited. Returns
+      V2Response<RegisterPublicV2Response> (202). Anonymous registration; sends double-opt-in email. */
+  EVENT_REGISTER_PUBLIC: "/events/{uuid}/register-public",
+  /** POST → Body: ConfirmRegistrationV2Request. NO auth. IP rate-limited. Returns
+      V2Response<ConfirmRegistrationV2Response>. Consumes the one-time email token, creates the participant. */
+  EVENT_REGISTRATION_CONFIRM: "/events/registration/confirm",
 
   // ── Event Participants ───────────────────────────────────
 
