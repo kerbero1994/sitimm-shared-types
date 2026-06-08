@@ -480,6 +480,49 @@ export interface ConfirmParticipantV2Request {
 }
 
 /**
+ * POST /api/v2/events/{uuid}/register-public — body.
+ * Public (NO auth) anonymous event registration. The server creates the
+ * participant only after the email double-opt-in is confirmed (a pending
+ * payload lives in Redis keyed by the confirmation token until then).
+ */
+export interface RegisterPublicV2Request {
+  /** Full name. 3–120 chars (FIELD_LIMITS.FULL_NAME_MIN..FULL_NAME_MAX). */
+  name: string;
+  /** Contact email; the confirmation link is sent here. Max 100 chars. */
+  email: string;
+  /** MX phone, 10 digits (PHONE_MX_PATTERN after cleanDigits). */
+  phone: string;
+  /** Attendance modality. Defaults to "presencial" server-side. */
+  modality?: EventModality;
+}
+
+/**
+ * POST /api/v2/events/{uuid}/register-public — response (HTTP 202).
+ * Never reveals whether the email already exists; always "pending_confirmation".
+ */
+export interface RegisterPublicV2Response {
+  status: "pending_confirmation";
+  /** User-facing message, e.g. "Revisa tu correo para confirmar el registro." */
+  message: string;
+}
+
+/**
+ * POST /api/v2/events/registration/confirm — body.
+ * Consumes the one-time email token and creates the participant row.
+ */
+export interface ConfirmRegistrationV2Request {
+  /** Signed JWT from the confirmation email link (type "event_reg_confirm"). */
+  token: string;
+}
+
+/** POST /api/v2/events/registration/confirm — response (HTTP 200/201). */
+export interface ConfirmRegistrationV2Response {
+  status: "registered";
+  eventUuid: string;
+  eventTitle: string;
+}
+
+/**
  * Paginated participant list response.
  * Backend: event_v2.py :: ParticipantListV2Response
  */
