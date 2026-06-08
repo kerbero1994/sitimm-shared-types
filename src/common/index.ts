@@ -138,3 +138,17 @@ export const PAGINATION_DEFAULTS = {
   /** Maximum items per page (enforced server-side). Backend: ge=1, le=100. */
   MAX_PER_PAGE: 100,
 } as const;
+
+/**
+ * Shape of a 429 Too Many Requests body from rate-limited endpoints
+ * (public event registration, social login). Mirrors the backend envelope
+ * `{ "detail": { "code": "rate_limited", "message": ... } }`.
+ */
+export interface RateLimitError {
+  detail: {
+    code: "rate_limited";
+    message?: string;
+  };
+  /** Seconds the client should wait before retrying, if the server provided it. */
+  retryAfter?: number;
+}
