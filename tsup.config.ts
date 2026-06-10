@@ -31,6 +31,7 @@ export default defineConfig({
     "src/censusStats/index.ts",
     "src/emailCensusIngestion/index.ts",
     "src/notificationsContent/index.ts",
+    "src/home/index.ts",
   ],
   format: ["cjs", "esm"],
   dts: true,

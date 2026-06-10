@@ -289,6 +289,17 @@ export const V2_ENDPOINTS = {
   /** POST (add) / DELETE (remove) → bookmark this magazine. Auth required. */
   MAGAZINE_BOOKMARK: "/magazines/{uuid}/bookmark",
 
+  // ── Home CMS ─────────────────────────────────────────────
+
+  /** GET → V2Response<ListHomeSectionsV2Response>. Public, no auth. Query: lang (unknown → es). Enabled sections, ordered, merged structure+text, image refs resolved to URLs. */
+  HOME_SECTIONS_PUBLIC: "/home/sections",
+  /** GET → V2Response<AdminListHomeSectionsV2Response>. All 9 sections incl. disabled, raw trees + per-lang translation status. Requires content:read. */
+  HOME_SECTIONS_ADMIN: "/home/sections/admin",
+  /** PATCH → Body: PatchHomeSectionV2Request. Returns V2Response<PatchHomeSectionV2Response>. Errors: 404 section_not_found, 409 not_editable_yet (Fase-2 key), 422 shape_mismatch. Requires content:update. Rate-limited 60/min per user. */
+  HOME_SECTION_PATCH: "/home/sections/{key}",
+  /** POST → Body: ReorderHomeSectionsV2Request (all 9 keys exactly once, else 422 invalid_order). Returns V2Response<ReorderHomeSectionsV2Response>. Requires content:update. Rate-limited 60/min per user. */
+  HOME_SECTIONS_REORDER: "/home/sections/reorder",
+
   // ── Headquarters ───────────────────────────────────────────
 
   /** GET → V2Response<AllHQMetricsResponse>. Real-time metrics for all HQs. Admin+ only. */
