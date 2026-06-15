@@ -46,12 +46,23 @@ export const HOME_SECTION_KEYS = [
 export type HomeSectionKey = (typeof HOME_SECTION_KEYS)[number];
 
 /**
- * Keys whose content/text shapes exist in Fase 1 — the only keys that accept
- * PATCH `content`/`text_es`. Mirrors `EDITABLE_KEYS` on the backend.
+ * Keys whose content/text shapes exist and accept PATCH `content`/`text_es`.
+ * After Fase 2 all 9 sections are editable. Mirrors `EDITABLE_KEYS` on the
+ * backend (the BE enables PATCH for these keys in lockstep).
  */
-export const EDITABLE_HOME_SECTION_KEYS = ["hero_carousel", "about", "programs"] as const;
+export const EDITABLE_HOME_SECTION_KEYS = [
+  "hero_carousel",
+  "about",
+  "programs",
+  "discounts",
+  "social_proof",
+  "mvv",
+  "callout",
+  "app_download",
+  "org",
+] as const;
 
-/** A Fase-1 editable section key. */
+/** An editable section key (all 9 after Fase 2). */
 export type EditableHomeSectionKey = (typeof EDITABLE_HOME_SECTION_KEYS)[number];
 
 /**
@@ -263,11 +274,148 @@ export interface ProgramsTextV2 {
   items: HomeProgramItemText[];
 }
 
-/** Any Fase-1 structural tree — the PATCH `content` union. */
-export type HomeSectionContentV2 = HeroCarouselContentV2 | AboutContentV2 | ProgramsContentV2;
+// ── discounts ────────────────────────────────────────────────────────────────
 
-/** Any Fase-1 text tree — the PATCH `text_es` union. */
-export type HomeSectionTextV2 = HeroCarouselTextV2 | AboutTextV2 | ProgramsTextV2;
+/** discounts structural tree (PATCH `content`). Backend: DiscountsContent. */
+export interface DiscountsContentV2 {
+  logo_image: HomeImageRef;
+  stats: HomeStatContent[];
+  cta_href: string;
+}
+
+/** discounts text tree (PATCH `text_es`). Backend: DiscountsText. */
+export interface DiscountsTextV2 {
+  top_badge: string;
+  title: HomeSplitTitle;
+  subtitle: string;
+  /** Bold/brand fragment rendered inside the subtitle. */
+  subtitle_brand: string;
+  cta_label: string;
+  stats: HomeStatText[];
+}
+
+// ── social_proof ─────────────────────────────────────────────────────────────
+
+/** social_proof structural tree (PATCH `content`). Backend: SocialProofContent. */
+export interface SocialProofContentV2 {
+  /** Stats have no icon; `value` like "70,000+" is parsed by CountUp. */
+  stats: HomeStatContent[];
+}
+
+/** social_proof text tree (PATCH `text_es`). Backend: SocialProofText. */
+export interface SocialProofTextV2 {
+  title: HomeSplitTitle;
+  stats: HomeStatText[];
+}
+
+// ── mvv (mission / vision / values) ──────────────────────────────────────────
+
+/** mvv structural tree (PATCH `content`). Backend: MvvContent. */
+export interface MvvContentV2 {
+  cards: HomeCardContent[];
+}
+
+/** mvv text tree (PATCH `text_es`). Backend: MvvText. */
+export interface MvvTextV2 {
+  title: HomeSplitTitle;
+  cards: HomeCardText[];
+}
+
+// ── callout (join-SITIMM CTA) ────────────────────────────────────────────────
+
+/** callout structural tree (PATCH `content`). Backend: CalloutContent. */
+export interface CalloutContentV2 {
+  cta_href: string;
+}
+
+/** callout text tree (PATCH `text_es`). Backend: CalloutText. */
+export interface CalloutTextV2 {
+  title: HomeSplitTitle;
+  description: string;
+  cta_label: string;
+}
+
+// ── app_download ─────────────────────────────────────────────────────────────
+
+/** app_download structural tree (PATCH `content`). Backend: AppDownloadContent. */
+export interface AppDownloadContentV2 {
+  phone_image: HomeImageRef;
+  app_store_url: string;
+  play_store_url: string;
+  qr_appstore: HomeImageRef;
+  qr_playstore: HomeImageRef;
+  benefits: HomeBenefitContent[];
+}
+
+/** app_download text tree (PATCH `text_es`). Backend: AppDownloadText. */
+export interface AppDownloadTextV2 {
+  badge: string;
+  title: string;
+  subtitle: string;
+  benefits: HomeBenefitText[];
+  phone_alt: string;
+  qr_appstore_alt: string;
+  qr_playstore_alt: string;
+}
+
+// ── org (section-level; rosters stay in the FE's local JSON) ──────────────────
+
+/** org → one structure row, non-translatable. Opens the matching roster modal. */
+export interface HomeOrgRowContent {
+  /** Stable id aligning this row with its text. */
+  id: string;
+  icon: string;
+  /** Which local roster modal this row opens. */
+  modal_type: "executives" | "companies" | "advisors";
+}
+
+/** org structural tree (PATCH `content`). Backend: OrgContent. */
+export interface OrgContentV2 {
+  rows: HomeOrgRowContent[];
+  /** Downloadable structure PDF. */
+  doc: HomeImageRef;
+}
+
+/** org → one row, translatable. */
+export interface OrgRowText {
+  /** Stable id matching `HomeOrgRowContent.id`. */
+  id: string;
+  title: string;
+  description: string;
+  /** Count badge label, e.g. "35 integrantes". */
+  metric: string;
+}
+
+/** org text tree (PATCH `text_es`). Backend: OrgText. */
+export interface OrgTextV2 {
+  title: HomeSplitTitle;
+  description: string;
+  rows: OrgRowText[];
+}
+
+/** Any structural tree — the PATCH `content` union (all 9 sections). */
+export type HomeSectionContentV2 =
+  | HeroCarouselContentV2
+  | AboutContentV2
+  | ProgramsContentV2
+  | DiscountsContentV2
+  | SocialProofContentV2
+  | MvvContentV2
+  | CalloutContentV2
+  | AppDownloadContentV2
+  | OrgContentV2;
+
+/** Any text tree — the PATCH `text_es` union (all 9 sections). */
+export type HomeSectionTextV2 =
+  | HeroCarouselTextV2
+  | AboutTextV2
+  | ProgramsTextV2
+  | DiscountsTextV2
+  | SocialProofTextV2
+  | MvvTextV2
+  | CalloutTextV2
+  | AppDownloadTextV2
+  | OrgTextV2;
 
 // ── public read (merged + image-resolved) ────────────────────────────────────
 
@@ -333,6 +481,83 @@ export interface ProgramsPublicV2 {
   know_more_label?: string | null;
 }
 
+/** One flattened stat in the public read (content `value` + text `label` merged by id). */
+interface HomePublicStat {
+  id: string;
+  icon: string | null;
+  value: string;
+  label: string;
+}
+
+/** discounts as served by the PUBLIC read (merged + image-resolved). */
+export interface DiscountsPublicV2 {
+  logo_image: HomeResolvedImage;
+  stats: HomePublicStat[];
+  cta_href: string;
+  top_badge: string;
+  title: HomeSplitTitle;
+  subtitle: string;
+  subtitle_brand: string;
+  cta_label: string;
+}
+
+/** social_proof as served by the PUBLIC read (merged). */
+export interface SocialProofPublicV2 {
+  stats: HomePublicStat[];
+  title: HomeSplitTitle;
+}
+
+/** mvv as served by the PUBLIC read (merged + image-resolved). */
+export interface MvvPublicV2 {
+  cards: Array<{
+    id: string;
+    image: HomeResolvedImage;
+    title: string;
+    description: string;
+    image_alt: string;
+  }>;
+  title: HomeSplitTitle;
+}
+
+/** callout as served by the PUBLIC read (merged). */
+export interface CalloutPublicV2 {
+  cta_href: string;
+  title: HomeSplitTitle;
+  description: string;
+  cta_label: string;
+}
+
+/** app_download as served by the PUBLIC read (merged + image-resolved). */
+export interface AppDownloadPublicV2 {
+  phone_image: HomeResolvedImage;
+  app_store_url: string;
+  play_store_url: string;
+  qr_appstore: HomeResolvedImage;
+  qr_playstore: HomeResolvedImage;
+  benefits: Array<{ id: string; icon: string; title: string; description: string }>;
+  badge: string;
+  title: string;
+  subtitle: string;
+  phone_alt: string;
+  qr_appstore_alt: string;
+  qr_playstore_alt: string;
+}
+
+/** org as served by the PUBLIC read (merged + image-resolved; rosters NOT included). */
+export interface OrgPublicV2 {
+  rows: Array<{
+    id: string;
+    icon: string;
+    modal_type: "executives" | "companies" | "advisors";
+    title: string;
+    description: string;
+    metric: string;
+  }>;
+  doc: HomeResolvedImage;
+  title: HomeSplitTitle;
+  description: string;
+}
+
 /** Common fields of every section item in the public read. */
 interface HomeSectionPublicBase {
   /** Section position on the page (0-based; payload is already sorted by it). */
@@ -346,19 +571,21 @@ interface HomeSectionPublicBase {
 }
 
 /**
- * One section in the PUBLIC read — discriminated union on `key`.
- * Fase-2 keys (`discounts`, `social_proof`, `mvv`, `callout`, `app_download`,
- * `org`) currently serve an EMPTY content object — the FE keeps rendering
- * them statically until Fase 2 seeds their shapes.
+ * One section in the PUBLIC read — discriminated union on `key`. All 9 sections
+ * now serve typed content (Fase 2 completed the 6 remaining shapes). A section
+ * whose row was never seeded still degrades safely: the FE adapter returns null
+ * and the static V1 render is used.
  */
 export type HomeSectionPublicV2 =
   | (HomeSectionPublicBase & { key: "hero_carousel"; content: HeroCarouselPublicV2 })
   | (HomeSectionPublicBase & { key: "about"; content: AboutPublicV2 })
   | (HomeSectionPublicBase & { key: "programs"; content: ProgramsPublicV2 })
-  | (HomeSectionPublicBase & {
-      key: Exclude<HomeSectionKey, EditableHomeSectionKey>;
-      content: Record<string, never>;
-    });
+  | (HomeSectionPublicBase & { key: "discounts"; content: DiscountsPublicV2 })
+  | (HomeSectionPublicBase & { key: "social_proof"; content: SocialProofPublicV2 })
+  | (HomeSectionPublicBase & { key: "mvv"; content: MvvPublicV2 })
+  | (HomeSectionPublicBase & { key: "callout"; content: CalloutPublicV2 })
+  | (HomeSectionPublicBase & { key: "app_download"; content: AppDownloadPublicV2 })
+  | (HomeSectionPublicBase & { key: "org"; content: OrgPublicV2 });
 
 /**
  * GET /home/sections response payload.
