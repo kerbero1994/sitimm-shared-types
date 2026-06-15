@@ -105,6 +105,38 @@ export interface HomeStatText {
   label: string;
 }
 
+/** A card's non-translatable half: id + image (mvv mission/vision/values). */
+export interface HomeCardContent {
+  /** Stable id linking this card to its text. */
+  id: string;
+  image: HomeImageRef;
+}
+
+/** A card's translatable half. */
+export interface HomeCardText {
+  /** Stable id matching `HomeCardContent.id`. */
+  id: string;
+  title: string;
+  description: string;
+  image_alt: string;
+}
+
+/** A benefit row's non-translatable half: id + icon (app_download). */
+export interface HomeBenefitContent {
+  /** Stable id linking this benefit to its text. */
+  id: string;
+  /** Icon name (FE icon registry). */
+  icon: string;
+}
+
+/** A benefit row's translatable half. */
+export interface HomeBenefitText {
+  /** Stable id matching `HomeBenefitContent.id`. */
+  id: string;
+  title: string;
+  description: string;
+}
+
 /** Three-part split title (leading / accent / trailing) used by about + programs headings. */
 export interface HomeSplitTitle {
   leading: string;
