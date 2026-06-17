@@ -40,6 +40,37 @@ export type EventParticipantStatus =
   | "rejected";
 
 /**
+ * Error `code` values returned by the event self-registration endpoint
+ * `POST /api/v2/events/{uuid}/register` inside a structured detail object
+ * `{ "code": <value>, "message": <human string> }`. Frontends key on the
+ * `code` (not the message, which is English/internal) to show a localized,
+ * case-specific error. Status 409 is shared by several cases (`event_full`,
+ * `already_registered`, `already_rejected`), so the `code` — not the HTTP
+ * status — is the disambiguator.
+ *
+ * Source of truth: mini-back `event_registration_service.py` +
+ * `event_eligibility_service.py`. The private-event guard intentionally returns
+ * a bare 404 "Event not found" with NO code (it must not reveal that a private
+ * event exists), so it is absent here.
+ */
+export const EVENT_REGISTRATION_ERROR_CODES = [
+  "event_full", // 409 — capacity reached, waitlist disabled
+  "event_disabled", // 400 — event not enabled
+  "event_ended", // 400 — eventDate already passed
+  "registration_disabled", // 400 — `register` flag off; event accepts no registrations
+  "already_registered", // 409 — caller already has an active registration
+  "already_rejected", // 409 — caller was previously rejected for this event
+  "venue_not_found", // 404 — selected venue/stop is invalid
+  "guest_forbidden", // 403 — guest policy forbids non-affiliated callers
+  "audience_not_eligible", // 403 — audience rules reject the caller
+  "transport_stop_full", // 409 — chosen transport stop is at capacity
+  "transport_stop_closed", // 410 — chosen transport stop is closed
+] as const;
+
+export type EventRegistrationErrorCode =
+  (typeof EVENT_REGISTRATION_ERROR_CODES)[number];
+
+/**
  * Event media role.
  * - `"cover"` — Hero/cover image (max 1 per event).
  * - `"gallery"` — Additional gallery images (max 20 per event).
