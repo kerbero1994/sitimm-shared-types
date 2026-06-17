@@ -58,6 +58,7 @@ export const EVENT_REGISTRATION_ERROR_CODES = [
   "event_disabled", // 400 — event not enabled
   "event_ended", // 400 — eventDate already passed
   "registration_disabled", // 400 — `register` flag off; event accepts no registrations
+  "registration_closed", // 400 — registration deadline (registrationEndDate) has passed
   "already_registered", // 409 — caller already has an active registration
   "already_rejected", // 409 — caller was previously rejected for this event
   "venue_not_found", // 404 — selected venue/stop is invalid
@@ -99,6 +100,8 @@ export interface EventV2 {
   title: string;
   /** ISO-8601 datetime of the event. Null if date not set. */
   eventDate: string | null;
+  /** Registration deadline (Cierre de inscripción), ISO-8601. Null = open until eventDate. Once passed, registration returns `registration_closed`. */
+  registrationEndDate: string | null;
   /** ISO-8601 end datetime of the event. Null = single-moment event ending at eventDate. */
   endDate?: string | null;
   /** Short description. Max 2,000 chars. */
@@ -253,6 +256,8 @@ export interface CreateEventV2Request {
   eventDate: string;
   /** ISO-8601 end datetime. Must be strictly after eventDate when provided. */
   endDate?: string | null;
+  /** Registration deadline (Cierre de inscripción), ISO-8601. Omit → backend defaults to eventDate − 1 day when register=true. Must be on or before eventDate. */
+  registrationEndDate?: string | null;
   /** Event type catalog ID. Required. */
   EventTypeId: number;
   /** Rich HTML content. Max 100,000 chars. */
@@ -314,6 +319,8 @@ export interface UpdateEventV2Request {
   eventDate?: string;
   /** ISO-8601 end datetime. Must be strictly after eventDate when provided. */
   endDate?: string | null;
+  /** Registration deadline (Cierre de inscripción), ISO-8601. Must be on or before eventDate. */
+  registrationEndDate?: string | null;
   /** Event type catalog ID. */
   EventTypeId?: number;
   /** Rich HTML content. Max 100,000 chars. */
