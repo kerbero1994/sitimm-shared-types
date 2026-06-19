@@ -170,6 +170,10 @@ export interface EventV2 {
   updatedAt: string;
   /** Transport mode for the event. "none" when no transport is configured. */
   transportMode?: TransportMode;
+  /** IANA timezone the event's wall-clock times are expressed in. Default "America/Mexico_City". */
+  timeZone: string;
+  /** True when this is a QA-harness event: time-gate bypass + hidden from non-privileged callers. Default false. */
+  qaHarnessEvent: boolean;
   /** Resolved locale applied to translatable fields. Present on i18n GET responses. */
   currentLang?: string;
   /** Origin of the translation (machine/human/fallback). Fallback = native Spanish. */
@@ -224,6 +228,23 @@ export interface EventParticipantStats {
   confirmed: number;
   cancelled: number;
   waitlisted: number;
+}
+
+// ── QA Harness ──
+
+/**
+ * Re-minted pending-confirmation token for a QA-harness event registration.
+ * Returned by GET /api/v2/events/{uuid}/qa/pending-confirm?email= (harness-only,
+ * unrestricted callers) so QA can drive the email-confirm step without inbox access.
+ * Backend: event_qa_v2.py :: pending-confirm — raw dict, NOT success_response-wrapped.
+ */
+export interface QAPendingConfirmV2Response {
+  /** JWT ID (jti) of the pending registration. */
+  jti: string;
+  /** Freshly-minted signed confirmation JWT. */
+  token: string;
+  /** Frontend deep-link path: `/es/eventos/confirmar-registro?token=...`. */
+  confirmUrl: string;
 }
 
 /**

@@ -73,6 +73,8 @@ export interface EventSession {
   /** null when capacity is null (uncapped). */
   available: number | null;
   sortOrder: number;
+  /** ISO 8601 calendar date (YYYY-MM-DD) grouping this session under an agenda day. Null = ungrouped. */
+  dayDate: string | null;
   speakers: EventSessionSpeaker[];
 }
 
@@ -86,6 +88,69 @@ export interface AgendaSummary {
   tracks: EventTrack[];
   sessions: EventSession[];
   speakers: EventSpeaker[];
+  /** Per-day grouping of the agenda (authored headers + days derived from sessions). */
+  days: EventDayResponse[];
+}
+
+/**
+ * A day entry in the agenda grouping (header-or-derived).
+ * `uuid`/`title`/`description` are null for a derived-only day (sessions exist
+ * on a date with no authored header). `dayNumber` is display-only (unstable).
+ * Backend: EventDayResponse
+ */
+export interface EventDayResponse {
+  /** Day-header UUID. Null for a derived-only day (no authored header). */
+  uuid: string | null;
+  /** ISO 8601 calendar date (YYYY-MM-DD). */
+  date: string;
+  /** Display-only 1-based rank within the agenda. Unstable — do not persist. */
+  dayNumber: number;
+  title: string | null;
+  description: string | null;
+}
+
+/**
+ * Single day-header row (POST/PATCH response). No `dayNumber` — that rank is an
+ * agenda-view concern exposed only in AgendaSummary.days.
+ * Backend: EventDayHeaderResponse
+ */
+export interface EventDayHeaderResponse {
+  id: number;
+  uuid: string;
+  eventId: number;
+  /** ISO 8601 calendar date (YYYY-MM-DD). */
+  date: string;
+  title: string | null;
+  description: string | null;
+  /** ISO 8601 creation timestamp. */
+  createdAt: string;
+  /** ISO 8601 last-update timestamp. */
+  updatedAt: string;
+}
+
+/**
+ * Create a per-day header for an event agenda.
+ * Backend: EventDayHeaderCreate
+ */
+export interface EventDayHeaderCreateRequest {
+  /** ISO 8601 calendar date (YYYY-MM-DD). */
+  date: string;
+  /** Max 128 chars. */
+  title?: string | null;
+  description?: string | null;
+}
+
+/**
+ * Partial update for a day header (PATCH). All fields optional; `title`/
+ * `description` set explicitly to null CLEAR the stored value.
+ * Backend: EventDayHeaderUpdate
+ */
+export interface EventDayHeaderUpdateRequest {
+  /** ISO 8601 calendar date (YYYY-MM-DD). */
+  date?: string;
+  /** Max 128 chars. */
+  title?: string | null;
+  description?: string | null;
 }
 
 // ── Requests ─────────────────────────────────────────────────────────
