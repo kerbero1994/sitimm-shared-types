@@ -27,3 +27,5 @@ export * from "./ask";
 export * from "./censusStats";
 export * from "./emailCensusIngestion";
 export * from "./notificationsContent";
+
+export * from "./recognition";

@@ -331,3 +331,61 @@ export interface ResetPasswordV2Request {
   /** New password. 8+ chars, 1 uppercase, 1 lowercase, 1 digit. */
   newPassword: string;
 }
+
+// ────────────────────────────────────────────────────────────────────
+// Account lifecycle — step-up reauth + GDPR self-service deletion (V2)
+//
+// Backend: mini-back account-gdpr-recognition (PR mini-back#94).
+//   POST /api/v2/auth/reauth     → single-use reauthToken (5-min)
+//   DELETE /api/v2/users/me      → soft-delete + grace; needs reauthToken
+//   POST /api/v2/users/me/restore → cancel during grace
+// ────────────────────────────────────────────────────────────────────
+
+/** Account deletion lifecycle state (User.accountStatus). */
+export type AccountStatus = "active" | "pending_deletion" | "deleted";
+
+/**
+ * Body for POST /api/v2/auth/reauth.
+ * Step-up proof: a password user re-verifies their password; a social-only user
+ * presents a fresh provider id_token bound to their linked social account.
+ */
+export interface ReauthV2Request {
+  /** Current password (password accounts). */
+  password?: string;
+  /** OAuth provider (social-only accounts). */
+  provider?: SocialProvider;
+  /** Fresh provider ID token (social-only accounts). */
+  idToken?: string;
+}
+
+/** Response from POST /api/v2/auth/reauth (unwrapped from success_response). */
+export interface ReauthV2Response {
+  /** Single-use, short-lived JWT (type="reauth", ~5-min TTL). */
+  reauthToken: string;
+  /** Seconds until it expires. */
+  expiresIn: number;
+}
+
+/**
+ * Body for DELETE /api/v2/users/me.
+ * Requires a single-use reauthToken from POST /api/v2/auth/reauth.
+ */
+export interface DeleteAccountV2Request {
+  /** One-time token from /auth/reauth. */
+  reauthToken: string;
+}
+
+/**
+ * Response from DELETE /api/v2/users/me (202, unwrapped).
+ * Soft-deletes with a grace window; PII is anonymized at `purgeAfter`.
+ */
+export interface DeleteAccountV2Response {
+  /** ISO-8601 instant when PII is purged after the grace window. */
+  purgeAfter: string | null;
+}
+
+/** Response from POST /api/v2/users/me/restore (unwrapped). */
+export interface RestoreAccountV2Response {
+  /** Always "active" on success. */
+  accountStatus: AccountStatus;
+}

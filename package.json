@@ -295,6 +295,16 @@
         "types": "./dist/notificationsContent/index.d.ts",
         "default": "./dist/notificationsContent/index.js"
       }
+    },
+    "./recognition": {
+      "import": {
+        "types": "./dist/recognition/index.d.mts",
+        "default": "./dist/recognition/index.mjs"
+      },
+      "require": {
+        "types": "./dist/recognition/index.d.ts",
+        "default": "./dist/recognition/index.js"
+      }
     }
   },
   "files": [

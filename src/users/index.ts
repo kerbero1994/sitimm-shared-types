@@ -476,6 +476,13 @@ export interface UserMeV2Response {
   employment: EmploymentV2 | null;
   /** Per-field permission map for rendering forms. */
   fieldPermissions: FieldPermissions;
+  /**
+   * GDPR deletion lifecycle (see `AccountStatus` in the auth module). The FE
+   * shows a pending-deletion banner + restore CTA when not "active".
+   */
+  accountStatus?: import("../auth").AccountStatus;
+  /** ISO-8601 instant when PII is purged, when accountStatus is pending_deletion. */
+  purgeAfter?: string | null;
 }
 
 /**
