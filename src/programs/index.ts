@@ -117,6 +117,14 @@ export interface SubProgramCurrentLang {
 export interface GalleryItemV2 {
   /** Public image URL (absolute or relative). */
   url: string;
+  /** Coarse media kind derived from mimeType. v0.85.0+. */
+  type?: "image" | "video" | "file";
+  /** Per-item title shown above the media. v0.85.0+. */
+  title?: string | null;
+  /** Body text under the media — alias of `caption`. v0.85.0+. */
+  text?: string | null;
+  /** External URL served when the internal MinIO object is unavailable. v0.85.0+. */
+  fallbackUrl?: string | null;
   /** Optional human caption rendered under the photo. */
   caption?: string | null;
   /** Optional responsive variants for this gallery item. */
