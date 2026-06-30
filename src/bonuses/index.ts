@@ -109,6 +109,15 @@ export interface BonusV2Media {
   mimeType?: string | null;
   sizeBytes?: number | null;
   createdAt: string;
+  /**
+   * On-demand responsive variant bundle (avif/webp + blurhash) for singleton
+   * media (logo/cover), same wire shape as `magazines.coverVariants` /
+   * `programs.ImageVariants`. v0.86.0+. `null` for gallery items, non-image
+   * media, or when on-demand transforms are not configured — the FE then falls
+   * back to the flat `url`.
+   * Backend: bonus_v2.py :: BonusV2MediaResponse.urlVariants (JSONB).
+   */
+  urlVariants?: import("../programs").ImageVariants | null;
 }
 
 /**
