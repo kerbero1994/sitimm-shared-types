@@ -106,8 +106,17 @@ export interface EventV2 {
   endDate?: string | null;
   /** Short description. Max 2,000 chars. */
   description: string | null;
-  /** Image URL (presigned S3 or relative path). Max 2,048 chars. */
+  /** Image URL (presigned S3 or relative path). Max 2,048 chars. After
+   * on-demand ingest this is the durable MinIO URL. */
   img: string | null;
+  /**
+   * On-demand responsive variant bundle (avif/webp + blurhash) for the cover,
+   * same shape as `programs.ImageVariants`. v0.87.0+. `null` until the external
+   * cover is ingested (SITIMM-12) or when on-demand transforms are not
+   * configured — the FE then falls back to the flat `img`.
+   * Backend: events_v2_serializers.py :: img_variants.
+   */
+  imgVariants?: import("../programs").ImageVariants | null;
   /** Physical location/venue. Max 500 chars. */
   place: string | null;
   /** Whether participant registration is enabled. Default: false. */

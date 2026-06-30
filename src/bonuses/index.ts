@@ -204,6 +204,13 @@ export interface BonusV2 {
   translation: BonusTranslation | null;
   logoUrl: string | null;
   coverUrl: string | null;
+  /**
+   * On-demand variant bundles (avif/webp + blurhash) for the logo/cover,
+   * derived by the BE from the cover/logo media's urlVariants (SITIMM-19).
+   * v0.87.0+. `null` until on-demand is active → FE falls back to the flat URL.
+   */
+  coverVariants?: import("../programs").ImageVariants | null;
+  logoVariants?: import("../programs").ImageVariants | null;
 }
 
 /**
@@ -244,6 +251,13 @@ export interface BonusV2ListItem {
   category: BonusCategory;
   logoUrl: string | null;
   coverUrl: string | null;
+  /**
+   * On-demand variant bundles for the grid card (SITIMM-19). Emitted by the BE
+   * list serializer from the cover/logo media's urlVariants. v0.87.0+. `null`
+   * until on-demand is active → FE falls back to the flat coverUrl/logoUrl.
+   */
+  coverVariants?: import("../programs").ImageVariants | null;
+  logoVariants?: import("../programs").ImageVariants | null;
 }
 
 // ── Request Inputs ────────────────────────────────────────────────────────
