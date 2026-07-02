@@ -1,0 +1,70 @@
+# =============================================================================
+# Security Scanning — secret detection (SITIMM-111; org-wide baseline SITIMM-25)
+#
+# secret-scan runs on every push/PR (can't be done locally). Daily cron +
+# manual dispatch run a full-history verified scan.
+# =============================================================================
+
+name: Security Scanning
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write # gitleaks-action posts a PR summary on pull_request events
+
+jobs:
+  secret-scan:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The account-wide artifact quota is shared and tight — the leak result
+          # is enforced via exit code, the SARIF artifact is a nice-to-have only.
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+
+      # TruffleHog needs a real base..head range per event: a static
+      # default-branch base breaks on pushes to the default branch itself
+      # (BASE == HEAD → hard error). Same design as mini-back PR #175.
+      - name: Run TruffleHog (pull request)
+        if: github.event_name == 'pull_request'
+        uses: trufflesecurity/trufflehog@30d5bb91af1a771378349dbbb0c82129392acf70 # v3.95.6
+        with:
+          path: ./
+          base: ${{ github.event.pull_request.base.sha }}
+          head: ${{ github.event.pull_request.head.sha }}
+          extra_args: --only-verified
+
+      - name: Run TruffleHog (push)
+        if: >-
+          github.event_name == 'push' &&
+          github.event.before != '0000000000000000000000000000000000000000' &&
+          github.event.before != github.event.after
+        uses: trufflesecurity/trufflehog@30d5bb91af1a771378349dbbb0c82129392acf70 # v3.95.6
+        with:
+          path: ./
+          base: ${{ github.event.before }}
+          head: ${{ github.event.after }}
+          extra_args: --only-verified
+
+      - name: Run TruffleHog (full scan)
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        uses: trufflesecurity/trufflehog@30d5bb91af1a771378349dbbb0c82129392acf70 # v3.95.6
+        with:
+          path: ./
+          extra_args: --only-verified
