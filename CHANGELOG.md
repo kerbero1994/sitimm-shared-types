@@ -5,6 +5,91 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.89.0] - 2026-07-02
+
+`galleries` module gains the Phase B member-contribution + moderation
+contract (SITIMM-46), matching the shipped SITIMM-45 backend
+(`app/presentation/api/v2/galleries_contribute.py`, mini-back branch
+`SITIMM-45-member-contribute`) field-by-field. Minor bump: additive only —
+no existing exported type shape changed.
+
+### Added
+- `galleries` module: `GalleryScanStatus` (`"clean" | "unscanned" |
+  "infected"`); `GalleryContributeRequest`, `GalleryContributionItem`,
+  `GalleryModerationPendingListResponse`, `GalleryMyContributionsResponse`,
+  `GalleryModerationActionBody`, `GalleryContributionPreviewUrlResponse`,
+  `GalleryContributionMetadataUpdateInput`.
+- `GalleryV2ErrorCode` gains 11 Phase B codes: `contributions_disabled`,
+  `gallery_contributions_full`, `file_not_found`, `file_not_staged`,
+  `file_not_uploaded`, `unexpected_bucket`, `not_an_image`,
+  `invalid_image`, `file_too_large`, `scan_not_clean`, `not_pending`,
+  `cannot_withdraw_approved`, `use_gallery_contribution` (13 total — see
+  the type's JSDoc for the exact list); `rate_limited`'s doc comment
+  extended to note it now also covers the authed `.../contribute`
+  per-user rate limit, not just anonymous public routes.
+- `endpoints` module: `V2_ENDPOINTS_GENERATED.galleries` gains
+  `CONTRIBUTE_TO_GALLERY`, `LIST_MODERATION_PENDING`,
+  `LIST_MY_CONTRIBUTIONS`; `galleryItems` gains `APPROVE_CONTRIBUTION`,
+  `REJECT_CONTRIBUTION`, `GET_CONTRIBUTION_PREVIEW_URL`,
+  `WITHDRAW_CONTRIBUTION`, `UPDATE_CONTRIBUTION_METADATA` (8 rows,
+  hand-patched ahead of the next `make dump-v2-routes` full regen — the
+  source backend branch isn't merged to `main` yet).
+
+### Changed
+- `GalleryV2` (authed), `GalleryV2CreateInput`, `GalleryV2UpdateInput` gain
+  `allowsContributions: boolean` (Create: optional, default `false`;
+  Update: `boolean | null` optional) — the opt-in gate backing
+  `contributions_disabled`. Backend added this to `GalleryV2Base` itself
+  (shared by Create/Update/Response), so all three input/output shapes
+  pick it up, not just the response.
+- `GalleryV2ActionResponse`'s JSDoc extended to note `DELETE
+  .../withdraw` returns the identical `{message, uuid}` shape — no new
+  type needed for that endpoint.
+- Module-level doc block gains a "Phase B — member contributions +
+  moderation" section documenting the `quarantine://`/`rejected://` `url`
+  sentinel states (a client MUST branch on `moderationStatus`, never
+  blindly render `url` as `<img src>`) and the two-step upload leg
+  (`POST /files/upload?category=gallery` -> `fileId` -> `POST
+  .../contribute`; the generic `/files/{id}/confirm` is blocked for a
+  non-manager's `category=gallery` file with 409
+  `use_gallery_contribution`).
+
+### Resolved contract ambiguities / deviations from the SITIMM-46 task brief
+(see PR / session notes for full BE evidence — every field below was
+verified against the actual Pydantic schema / router code on mini-back
+branch `SITIMM-45-member-contribute`, not assumed from the ticket brief)
+- **`fileId` is a `string` (a `File.uuid`, 1-36 chars), NOT a `number`.**
+  The brief's sketch (`ContributeBody { fileId: number; ... }`) does not
+  match `GalleryContributeRequest.fileId: str` on the backend.
+- **The normal authed item shape (`GalleryItemV2`) was NOT extended** with
+  `contributedBy` / `reviewedBy` / `reviewedAt` / `reviewNote` /
+  `scanStatus`, contrary to the brief's suggestion. Verified against
+  `GalleryItemV2Response` in `galleries_v2.py`, which gained zero new
+  fields in the SITIMM-45 diff — those 5 fields exist ONLY on the new
+  `GalleryContributionItem` (backend: `GalleryContributionItemResponse`),
+  the dedicated shape for the contribute/moderation-queue/me-contributions
+  surfaces.
+- **One schema, not two, backs `MyContributionItem` and
+  `ModerationQueueItem`.** The backend's `GalleryContributionItemResponse`
+  is reused verbatim across the contribute response, the moderation
+  queue, and `/me/contributions` — typed here as the single
+  `GalleryContributionItem`, matching this module's existing
+  backend-schema-mirroring naming convention rather than inventing two
+  parallel shapes for one wire contract.
+- **`RejectBody` is shared with approve.** Backend's
+  `GalleryModerationActionBody` (`{note?: string}`, max 280 chars) is the
+  body for BOTH `POST .../approve` and `POST .../reject` — typed here
+  under its backend name rather than a reject-only `RejectBody`.
+- **Preview URL response field is `expires_in: number | null` (a TTL in
+  seconds), NOT `expiresAt: string` (an ISO timestamp)** as the brief
+  sketched. Verified against the raw dict literally returned by
+  `get_contribution_preview_url()` — `{"url": ..., "expires_in": 300 |
+  None}`.
+- **No richer "contributor info" or nested "gallery ref" object** on the
+  moderation queue item — `contributedBy`/`reviewedBy` are raw `User.id`
+  integers and the only gallery reference is `gallery_uuid`; there is no
+  profile-expansion or nested gallery object on the wire.
+
 ## [0.88.0] - 2026-07-01
 
 New dedicated `galleries` module (SITIMM-41), matching the SITIMM-40 backend

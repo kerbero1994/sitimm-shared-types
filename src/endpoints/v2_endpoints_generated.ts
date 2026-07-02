@@ -17,6 +17,13 @@
  * (`.../translations[/{lang}]`) routes did not exist on mini-back at the
  * `4ad29b67` source version above. Safe to overwrite on the next
  * `make dump-v2-routes` once that backend branch ships.
+ *
+ * MANUAL PATCH (SITIMM-46, 2026-07-02): 8 more rows hand-added to the
+ * `galleries` / `galleryItems` groups for the Phase B member-contribution
+ * + moderation surface (`app/presentation/api/v2/galleries_contribute.py`,
+ * shipped on mini-back branch `SITIMM-45-member-contribute`, not yet
+ * merged to `main` at this source version). Safe to overwrite on the next
+ * `make dump-v2-routes` once that backend branch ships.
  */
 
 export const V2_ENDPOINTS_GENERATED = {
@@ -727,6 +734,12 @@ export const V2_ENDPOINTS_GENERATED = {
     LIST_GALLERY_TRANSLATIONS: (gallery_uuid: string | number) => `/api/v2/galleries/${gallery_uuid}/translations`,
     /** PUT — V2 Galleries. Admin (galleries:update). Body: GalleryTranslationBodyV2. SITIMM-40. */
     UPSERT_GALLERY_TRANSLATION: (gallery_uuid: string | number, lang: string | number) => `/api/v2/galleries/${gallery_uuid}/translations/${lang}`,
+    /** POST — V2 Galleries — Contributions. `galleries:contribute` (EMPLOYEE+) + visibility gate. Body: GalleryContributeRequest. 201. SITIMM-45/46. */
+    CONTRIBUTE_TO_GALLERY: (gallery_uuid: string | number) => `/api/v2/galleries/${gallery_uuid}/contribute`,
+    /** GET — V2 Galleries — Contributions. `galleries:moderate` (ADMIN_COMMUNICATION+). Query: gallery_uuid?, page, page_size. SITIMM-45/46. */
+    LIST_MODERATION_PENDING: "/api/v2/galleries/moderation/pending",
+    /** GET — V2 Galleries — Contributions. Any authed caller (self-scoped, contributedBy === caller.id). Query: page, page_size. SITIMM-45/46. */
+    LIST_MY_CONTRIBUTIONS: "/api/v2/galleries/me/contributions",
   },
   galleryItems: {
     /** DELETE — V2 Galleries */
@@ -737,6 +750,16 @@ export const V2_ENDPOINTS_GENERATED = {
     LIST_GALLERY_ITEM_TRANSLATIONS: (item_uuid: string | number) => `/api/v2/gallery-items/${item_uuid}/translations`,
     /** PUT — V2 Galleries. Admin (galleries:update). Body: GalleryItemTranslationBodyV2. SITIMM-40. */
     UPSERT_GALLERY_ITEM_TRANSLATION: (item_uuid: string | number, lang: string | number) => `/api/v2/gallery-items/${item_uuid}/translations/${lang}`,
+    /** POST — V2 Galleries — Contributions. `galleries:moderate`. Body: GalleryModerationActionBody. Refuses (409 scan_not_clean) unless scanStatus="clean". SITIMM-45/46. */
+    APPROVE_CONTRIBUTION: (item_uuid: string | number) => `/api/v2/gallery-items/${item_uuid}/approve`,
+    /** POST — V2 Galleries — Contributions. `galleries:moderate`. Body: GalleryModerationActionBody (same shape as approve). SITIMM-45/46. */
+    REJECT_CONTRIBUTION: (item_uuid: string | number) => `/api/v2/gallery-items/${item_uuid}/reject`,
+    /** GET — V2 Galleries — Contributions. Any authed caller — gated to contributor OR `galleries:moderate` (404, not 403, for anyone else). Short-TTL (~300s) presigned preview of quarantined bytes. SITIMM-45/46. */
+    GET_CONTRIBUTION_PREVIEW_URL: (item_uuid: string | number) => `/api/v2/gallery-items/${item_uuid}/preview-url`,
+    /** DELETE — V2 Galleries — Contributions. Any authed caller (ownership-checked). Own pending/rejected only — 403 on an approved item. SITIMM-45/46. */
+    WITHDRAW_CONTRIBUTION: (item_uuid: string | number) => `/api/v2/gallery-items/${item_uuid}/withdraw`,
+    /** PATCH — V2 Galleries — Contributions. Any authed caller (ownership + pending-only checked). Body: GalleryContributionMetadataUpdateInput. SITIMM-45/46. */
+    UPDATE_CONTRIBUTION_METADATA: (item_uuid: string | number) => `/api/v2/gallery-items/${item_uuid}/contribution`,
   },
   headquarters: {
     /** GET — V2 Headquarters */

@@ -62,6 +62,53 @@
  *   .../translations/{lang}` 400s with `empty_translation` when the body
  *   is `{}` or every supplied field is explicitly `null` — a translation
  *   PUT must carry at least one non-null field.
+ *
+ * ── Phase B — member contributions + moderation (SITIMM-45/46) ──────────
+ *
+ * Backend: `app/presentation/api/v2/galleries_contribute.py` +
+ * `GalleryContribute*`/`GalleryModeration*`/`GalleryMyContributions*`
+ * schemas in `galleries_v2.py`. Design doc §8.2-§8.4.
+ *
+ * - **`url` sentinel values — NEVER render as `<img src>`.** A normal
+ *   {@link GalleryItemV2.url} / {@link GalleryContributionItem.url} is a
+ *   real fetchable CDN URL for an `"approved"` item. But a `"pending"`
+ *   item's `url` is the INERT placeholder `` `quarantine://${storageKey}` ``
+ *   (bytes sit in a private quarantine prefix — this string is never a
+ *   working link), and a `"rejected"` item's `url` is the INERT
+ *   placeholder `` `rejected://${uuid}` `` (tombstone — bytes purged,
+ *   row kept for audit). Both schemes are structurally `string`
+ *   (`url` never changes TS type across states) — a client MUST branch on
+ *   `moderationStatus` and render pending/rejected as explicit UI states,
+ *   never blindly pass `url` to an `<img>`/`<video>` tag. To actually
+ *   preview a still-quarantined item's bytes (as its contributor, or as a
+ *   moderator), call `GET .../preview-url` — see
+ *   {@link GalleryContributionPreviewUrlResponse}.
+ * - **Upload leg — `fileId`, not a raw URL.** A member contribution is a
+ *   TWO-step flow: (1) `POST /api/v1/files/upload?category=gallery` to
+ *   stage the bytes and obtain a `fileId` (a `File.uuid` string, NOT the
+ *   `GalleryItemV2` numeric-looking id), THEN (2) `POST
+ *   /galleries/{uuid}/contribute` with that `fileId` in the body (see
+ *   {@link GalleryContributeRequest}). There is no `/imgs` upload path for
+ *   this flow, and the generic `POST /api/v1/files/{id}/confirm` endpoint
+ *   is structurally BLOCKED for a `category=gallery` staged file when the
+ *   caller is not a gallery manager — 409 `use_gallery_contribution` (see
+ *   {@link GalleryV2ErrorCode}) — the contribute endpoint is the only
+ *   legitimate confirm path for a non-manager's gallery upload.
+ * - **`allowsContributions` gate.** `POST .../contribute` 409s
+ *   `contributions_disabled` unless the target gallery has
+ *   {@link GalleryV2.allowsContributions} `=== true`. Every pre-existing
+ *   and newly-created gallery defaults to `false` (admin-curated-only)
+ *   until an ADMIN_COMMUNICATION+ caller explicitly opts it in via
+ *   `PATCH /galleries/{uuid}`.
+ * - **`GalleryItemV2` (the normal authed item shape) intentionally does
+ *   NOT carry `scanStatus` / `contributedBy` / `reviewedBy` / `reviewedAt`
+ *   / `reviewNote`.** Those 5 fields exist ONLY on
+ *   {@link GalleryContributionItem} — the dedicated shape returned by the
+ *   contribute response, the moderation queue, and `/me/contributions`.
+ *   The normal item list/detail response (`GalleryItemV2Response` on the
+ *   backend) was NOT extended with them — verified against
+ *   `_to_item_response`/`GalleryItemV2Response` in `galleries_v2.py`,
+ *   which gained no new fields in the SITIMM-45 diff.
  */
 
 import type { AudienceSpec } from "../events/eligibility";
@@ -118,6 +165,25 @@ export type GalleryAudience = AudienceSpec;
  * non-manager authed caller.
  */
 export type GalleryModerationStatus = "approved" | "pending" | "rejected";
+
+/**
+ * Fail-closed antivirus scan outcome for a member-contributed item's
+ * stripped bytes (design §8.3, Phase B/SITIMM-45). Backend:
+ * `GalleryScanStatus` literal (`galleries_v2.py`).
+ *
+ * - `"clean"` — a real ClamAV daemon scanned the bytes and found nothing.
+ * - `"unscanned"` — AV was disabled or the scan errored; NEVER treated as
+ *   clean.
+ * - `"infected"` — a real threat was found; the item is auto-rejected
+ *   immediately (`moderationStatus` -> `"rejected"`, `reviewedBy: null`).
+ *
+ * `GalleryModerationService.approve` REFUSES (409 `scan_not_clean`) any
+ * item whose `scanStatus !== "clean"` — human moderation is the CONTENT
+ * backstop here, never the malware backstop. Only ever present on
+ * {@link GalleryContributionItem} (the moderator/contributor-facing shape)
+ * — never on the normal {@link GalleryItemV2} response.
+ */
+export type GalleryScanStatus = "clean" | "unscanned" | "infected";
 
 /**
  * Supported translation languages for the gallery i18n sidecar overlay
@@ -276,6 +342,11 @@ export interface GalleryV2CreateInput {
    * A non-null `audience` combined with `visibility: "public"` -> 422
    * `public_audience_conflict`. */
   audience?: GalleryAudience | null;
+  /** Phase B (SITIMM-45/46, design §8.1/§8.4) — opt-in: only albums with
+   * this set may accept member uploads via `POST .../contribute`. Default
+   * `false` — every new album stays admin-curated-only unless explicitly
+   * flipped. */
+  allowsContributions?: boolean;
   /** Optional inline items created in the same transaction. Default `[]`. */
   items?: GalleryItemV2CreateInput[];
 }
@@ -308,6 +379,8 @@ export interface GalleryV2UpdateInput {
    * `"public"` (from this payload OR the existing row) -> 422
    * `public_audience_conflict`. Explicit `null` clears a stored audience. */
   audience?: GalleryAudience | null;
+  /** Phase B (SITIMM-45/46) — see {@link GalleryV2CreateInput.allowsContributions}. */
+  allowsContributions?: boolean | null;
   /** Optimistic lock — pass the `updatedAt` value last observed by the
    * client. Mismatch -> 409 `stale_write`. */
   if_match_updated_at?: string | null;
@@ -332,6 +405,11 @@ export interface GalleryV2 {
   visibility: GalleryVisibility;
   audience: GalleryAudience | null;
   created_by: number | null;
+  /** Phase B (SITIMM-45/46, design §8.1/§8.4) — opt-in gate for member
+   * uploads via `POST .../contribute`. `false` on every pre-existing
+   * album (server-default) until an ADMIN_COMMUNICATION+ caller opts it
+   * in. See the module-level "Phase B" semantics note above. */
+  allowsContributions: boolean;
   items: GalleryItemV2[];
   /** ISO-8601 datetime. */
   createdAt: string;
@@ -444,12 +522,185 @@ export interface ReorderGalleryItemsResponse {
 /**
  * Response shape shared by the soft-delete / detach action endpoints
  * (`DELETE /galleries/{uuid}`, `DELETE /gallery-items/{uuid}`, `DELETE
- * /galleries/{uuid}/attach/{entity_type}/{entity_uuid}`). Backend: raw
- * `{"message": "ok", "uuid": ...}` dict — not a declared Pydantic schema.
+ * /galleries/{uuid}/attach/{entity_type}/{entity_uuid}`) AND `DELETE
+ * /gallery-items/{uuid}/withdraw` (Phase B, SITIMM-45/46 — same raw
+ * `{"message": "ok", "uuid": ...}` shape, no dedicated schema). Backend:
+ * raw dict — not a declared Pydantic schema.
  */
 export interface GalleryV2ActionResponse {
   message: string;
   uuid: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Member contributions + moderation (Phase B, SITIMM-45/46)
+// ─────────────────────────────────────────────────────────────────────
+//
+// Backend: app/presentation/api/v2/galleries_contribute.py (8 routes) +
+// the `GalleryContribute*`/`GalleryModeration*`/`GalleryMyContributions*`
+// schemas appended to galleries_v2.py. Design doc §8.2-§8.4. See the
+// module-level "Phase B" doc block above for the `url` sentinel + upload-leg
+// + `allowsContributions` gate semantics every consumer of these types
+// needs to know before rendering a contributed item.
+
+/**
+ * Body for `POST /api/v2/galleries/{gallery_uuid}/contribute`.
+ * Backend: `GalleryContributeRequest` (`galleries_v2.py`, `extra="forbid"`).
+ */
+export interface GalleryContributeRequest {
+  /**
+   * The `File.uuid` (a UUID STRING, NOT a numeric id) of an already
+   * `POST /api/v1/files/upload?category=gallery`-staged, owner-bound,
+   * not-yet-confirmed image. 1-36 chars. Structurally the ONLY accepted
+   * media source — this schema has no `url`/`storageKey` field, so an
+   * arbitrary external URL can never be submitted here.
+   */
+  fileId: string;
+  /** Max 255 chars. */
+  title?: string | null;
+  /** Max 500 chars. */
+  caption?: string | null;
+  /** Max 500 chars. */
+  altText?: string | null;
+}
+
+/**
+ * A member-contributed item — the shape returned by the contribute
+ * response, the moderation queue (`GET /galleries/moderation/pending`),
+ * and the contributor's own view (`GET /galleries/me/contributions`).
+ * Backend: `GalleryContributionItemResponse` (`galleries_v2.py`) — ONE
+ * schema backs all three surfaces (verified against
+ * `_to_contribution_response`/`_contribution_body` in
+ * `galleries_contribute.py`).
+ *
+ * Safe to expose `moderationStatus` / `scanStatus` / `reviewNote` /
+ * `contributedBy` / `reviewedBy` / `reviewedAt` here — never on the
+ * normal {@link GalleryItemV2} response (every call site returning this
+ * shape is either the contributor's own item or a moderator's queue
+ * view). `gallery_uuid` is the ONLY gallery reference carried — there is
+ * no nested gallery/contributor object (`contributedBy`/`reviewedBy` are
+ * raw `User.id` integers, not expanded profiles).
+ */
+export interface GalleryContributionItem {
+  uuid: string;
+  gallery_uuid: string;
+  /**
+   * See the module-level "Phase B" doc block: a real CDN URL when
+   * `moderationStatus === "approved"`; an INERT `quarantine://<key>`
+   * placeholder while `"pending"`; an INERT `rejected://<uuid>`
+   * placeholder while `"rejected"`. Branch on `moderationStatus` before
+   * rendering — never assume `url` is fetchable.
+   */
+  url: string;
+  title: string | null;
+  caption: string | null;
+  altText: string | null;
+  width: number | null;
+  height: number | null;
+  sizeBytes: number | null;
+  mimeType: string | null;
+  moderationStatus: GalleryModerationStatus;
+  scanStatus: GalleryScanStatus;
+  /** `User.id` of the contributor. Always non-null on a contributed row
+   * (this whole surface only ever returns `contributedBy != null` rows). */
+  contributedBy: number | null;
+  /** `User.id` of the moderator who approved/rejected. `null` while
+   * `"pending"`, and stays `null` on a SYSTEM auto-reject (infected scan
+   * result) even once `moderationStatus === "rejected"`. */
+  reviewedBy: number | null;
+  /** ISO-8601 datetime. `null` until a moderation decision is made. */
+  reviewedAt: string | null;
+  /** Moderator-supplied note (max 280 chars), or the fixed system string
+   * `"Auto-rejected: malware detected by antivirus scan"` on an infected
+   * auto-reject. */
+  reviewNote: string | null;
+  /** ISO-8601 datetime. */
+  createdAt: string;
+  /** ISO-8601 datetime. */
+  updatedAt: string;
+}
+
+/**
+ * Response from `GET /api/v2/galleries/moderation/pending`.
+ * Backend: `GalleryModerationPendingListResponse` (`galleries_v2.py`).
+ * Optional `gallery_uuid` query param scopes to one gallery; otherwise
+ * every pending item across all galleries is returned.
+ */
+export interface GalleryModerationPendingListResponse {
+  items: GalleryContributionItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+/**
+ * Response from `GET /api/v2/galleries/me/contributions`.
+ * Backend: `GalleryMyContributionsResponse` (`galleries_v2.py`). Self-scoped
+ * (`contributedBy === caller.id`) — returns items of ANY
+ * `moderationStatus` (approved/pending/rejected), unlike every other
+ * item-list surface in this module, which is approved-only.
+ */
+export interface GalleryMyContributionsResponse {
+  items: GalleryContributionItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+/**
+ * Optional moderator note body for BOTH `POST
+ * /api/v2/gallery-items/{item_uuid}/approve` AND `POST
+ * /api/v2/gallery-items/{item_uuid}/reject` — the backend uses the exact
+ * same schema for both actions (not a separate approve/reject body pair).
+ * Backend: `GalleryModerationActionBody` (`galleries_v2.py`).
+ */
+export interface GalleryModerationActionBody {
+  /** Max 280 chars. */
+  note?: string | null;
+}
+
+/**
+ * Response from a short-TTL presigned preview of a still-quarantined
+ * (`"pending"`/`"rejected"`) contributed item's bytes:
+ * `GET /api/v2/gallery-items/{item_uuid}/preview-url`. Backend: raw dict
+ * returned by `get_contribution_preview_url()` (`galleries_contribute.py`)
+ * — not a declared Pydantic schema.
+ *
+ * Gated to the item's own contributor OR a `galleries:moderate` holder —
+ * 404 (not 403) for anyone else, so the endpoint cannot be used as an
+ * existence oracle. A `"rejected"` item, or a `"pending"` item whose
+ * `scanStatus === "infected"`, is NEVER previewable here (404) even for
+ * the owner/moderator.
+ */
+export interface GalleryContributionPreviewUrlResponse {
+  /** For an `"approved"` item, this just echoes the durable public
+   * `url` (no TTL). For a still-`"pending"` item, a fresh MinIO
+   * presigned URL into the private quarantine prefix. */
+  url: string;
+  /** Seconds until the URL expires — NOT an ISO-8601 timestamp. `null`
+   * when `url` is the durable public URL of an already-`"approved"`
+   * item (no expiry). `300` (5 min) for a quarantine preview — see
+   * `_QUARANTINE_PREVIEW_TTL_SECONDS` (`galleries_contribute.py`). */
+  expires_in: number | null;
+}
+
+/**
+ * Body for `PATCH /api/v2/gallery-items/{item_uuid}/contribution`.
+ * Backend: `GalleryContributionMetadataUpdate` (`galleries_v2.py`,
+ * `extra="forbid"`). Title/caption/altText ONLY — never the bytes, and
+ * only while the item is still `"pending"` (409 `not_pending` once
+ * approved or rejected). Omitted fields are unchanged; supplying zero
+ * fields -> 400 `no_fields`. Unlike the other `*UpdateInput` shapes in
+ * this module, an explicit `null` here simply clears the field (none of
+ * the 3 fields back a NOT NULL column) — no `invalid_null` case applies.
+ */
+export interface GalleryContributionMetadataUpdateInput {
+  /** Max 255 chars. */
+  title?: string | null;
+  /** Max 500 chars. */
+  caption?: string | null;
+  /** Max 500 chars. */
+  altText?: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -688,5 +939,44 @@ export type GalleryV2ErrorCode =
   | "assignment_not_found"
   /** 403 — caller lacks the target entity's own write permission for attach/detach. */
   | "forbidden"
-  /** 429 — anonymous public-route rate limit exceeded. */
-  | "rate_limited";
+  /** 429 — anonymous public-route rate limit exceeded, OR (Phase B,
+   * SITIMM-45/46) an authed caller exceeded `POST .../contribute`'s
+   * per-user rate limit. */
+  | "rate_limited"
+  // ── Phase B — member contributions + moderation (SITIMM-45/46) ────────
+  /** 409 — `POST .../contribute` on a gallery whose
+   * {@link GalleryV2.allowsContributions} is `false`. */
+  | "contributions_disabled"
+  /** 409 — the target gallery already holds the max of 200 active
+   * (pending+approved) member-contributed items. */
+  | "gallery_contributions_full"
+  /** 404 — `fileId` does not resolve to an existing, owner-bound `File` row. */
+  | "file_not_found"
+  /** 409 — `fileId` is not a fresh staged upload (already confirmed/used
+   * elsewhere, or claimed by a concurrent request). */
+  | "file_not_staged"
+  /** 409 — the staged `File` row exists but its object is missing in storage. */
+  | "file_not_uploaded"
+  /** 400 — `fileId` was not uploaded under the `gallery` category/bucket. */
+  | "unexpected_bucket"
+  /** 400 — `fileId`'s declared MIME type is not jpeg/png/webp/gif. */
+  | "not_an_image"
+  /** 400 — uploaded bytes failed the magic-byte image-format check, or
+   * failed the mandatory EXIF-strip/decode-safety pass. */
+  | "invalid_image"
+  /** 413 — staged file exceeds the per-category gallery upload size cap. */
+  | "file_too_large"
+  /** 409 — `POST .../approve` refused: `scanStatus !== "clean"`. */
+  | "scan_not_clean"
+  /** 409 — `POST .../approve` / `POST .../reject` / `PATCH .../contribution`
+   * targeted an item that is no longer `"pending"` (already
+   * approved/rejected, or withdrawn by a racing/earlier call). */
+  | "not_pending"
+  /** 403 — `DELETE .../withdraw` targeted an already-`"approved"` item
+   * (live wherever the gallery is visible; withdrawing it is out of this
+   * endpoint's scope). */
+  | "cannot_withdraw_approved"
+  /** 409 — a non-gallery-manager called the generic
+   * `POST /api/v1/files/{id}/confirm` on a `category=gallery` staged
+   * file; must use `POST /galleries/{uuid}/contribute` instead. */
+  | "use_gallery_contribution";
