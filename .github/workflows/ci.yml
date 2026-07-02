@@ -1,0 +1,30 @@
+# CI mínimo — @kerbero1994/shared-types (SITIMM-105, item de SITIMM-27)
+# El paquete de contratos del ecosistema no tenía NINGÚN gate: un publish
+# roto rompe 3 frontends. typecheck + build en cada push a main y cada PR.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    name: Typecheck + Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
