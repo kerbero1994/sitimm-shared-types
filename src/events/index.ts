@@ -66,6 +66,9 @@ export const EVENT_REGISTRATION_ERROR_CODES = [
   "audience_not_eligible", // 403 — audience rules reject the caller
   "transport_stop_full", // 409 — chosen transport stop is at capacity
   "transport_stop_closed", // 410 — chosen transport stop is closed
+  "invalid_state", // 409 — confirm attempted on a non-registered participant (INV-CONF-3)
+  "confirmation_not_open", // 409 — confirm before confirmationOpensAt (INV-CONF-4)
+  "confirmation_window_closed", // 409 — confirm after confirmationDeadline (INV-CONF-5)
 ] as const;
 
 export type EventRegistrationErrorCode =
@@ -143,6 +146,12 @@ export interface EventV2 {
   waitlistCount: number;
   /** Remaining seats (`max(0, capacity - participantCount)`). Null if capacity is null. */
   seatsRemaining: number | null;
+  /** Opt-in attendance-confirmation gate. When true, participants confirm to keep their seat. Default: false. */
+  requiresConfirmation: boolean;
+  /** ISO-8601. Earliest a participant may confirm. Null when unset / confirmation not required. */
+  confirmationOpensAt: string | null;
+  /** ISO-8601. Latest a participant may confirm. Null when unset / confirmation not required. */
+  confirmationDeadline: string | null;
   /** Venue latitude (WGS84). Null if not set. */
   latitude: number | null;
   /** Venue longitude (WGS84). Null if not set. */
@@ -334,6 +343,15 @@ export interface CreateEventV2Request {
   streamingUrl?: string;
   /** Streaming provider tag. */
   streamingProvider?: string;
+  /**
+   * Opt-in attendance confirmation gate. When true, `POST /{uuid}/confirm` promotes a
+   * participant from `registered` → `confirmed` (subject to the window below). Default: false.
+   */
+  requiresConfirmation?: boolean;
+  /** ISO-8601. Earliest a participant may confirm. Must be `<= confirmationDeadline`. */
+  confirmationOpensAt?: string | null;
+  /** ISO-8601. Latest a participant may confirm. Must be `<= eventDate`. */
+  confirmationDeadline?: string | null;
   /** Venue slots to create alongside the event. */
   venues?: CreateEventCampusV2Request[] | null;
 }
@@ -397,6 +415,12 @@ export interface UpdateEventV2Request {
   streamingUrl?: string;
   /** Streaming provider tag. */
   streamingProvider?: string;
+  /** Opt-in attendance confirmation gate. When true, enables the confirm-to-attend flow. */
+  requiresConfirmation?: boolean;
+  /** ISO-8601. Earliest a participant may confirm. Must be `<= confirmationDeadline`. */
+  confirmationOpensAt?: string | null;
+  /** ISO-8601. Latest a participant may confirm. Must be `<= eventDate`. */
+  confirmationDeadline?: string | null;
 }
 
 // ── Participant Types ──
