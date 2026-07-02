@@ -23,6 +23,7 @@ export default defineConfig({
     "src/benefits/index.ts",
     "src/notifications/index.ts",
     "src/programs/index.ts",
+    "src/galleries/index.ts",
     "src/faq/index.ts",
     "src/bonuses/index.ts",
     "src/blogPosts/index.ts",

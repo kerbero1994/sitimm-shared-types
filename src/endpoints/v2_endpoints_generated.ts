@@ -10,6 +10,13 @@
  *
  * Path params (e.g. {uuid}, {id}, {slug}) are emitted as
  * arrow-function builders: ``(uuid: string) => string``.
+ *
+ * MANUAL PATCH (SITIMM-41, 2026-07-01): 7 rows hand-added to the
+ * `galleries` / `galleryItems` groups ahead of the next full regen —
+ * the SITIMM-40 public (`/galleries/public*`) + admin translation
+ * (`.../translations[/{lang}]`) routes did not exist on mini-back at the
+ * `4ad29b67` source version above. Safe to overwrite on the next
+ * `make dump-v2-routes` once that backend branch ships.
  */
 
 export const V2_ENDPOINTS_GENERATED = {
@@ -696,6 +703,12 @@ export const V2_ENDPOINTS_GENERATED = {
     LIST_GALLERIES: "/api/v2/galleries",
     /** POST — V2 Galleries */
     CREATE_GALLERY: "/api/v2/galleries",
+    /** GET — V2 Galleries. Anonymous, no JWT. Query: page, page_size, q?, tag?, lang?. SITIMM-40. */
+    LIST_PUBLIC_GALLERIES: "/api/v2/galleries/public",
+    /** GET — V2 Galleries. Anonymous, no JWT. NOTE explicit `/entity/` segment (disambiguates from the `{uuid_or_slug}` detail route below). Query: lang?. SITIMM-40. */
+    LIST_PUBLIC_ENTITY_GALLERIES: (entity_type: string | number, entity_uuid: string | number) => `/api/v2/galleries/public/entity/${entity_type}/${entity_uuid}`,
+    /** GET — V2 Galleries. Anonymous, no JWT. `uuid_or_slug`: tries UUID parse+lookup first, falls back to slug. Query: lang?. SITIMM-40. */
+    GET_PUBLIC_GALLERY: (uuid_or_slug: string | number) => `/api/v2/galleries/public/${uuid_or_slug}`,
     /** DELETE — V2 Galleries */
     DELETE_GALLERY: (gallery_uuid: string | number) => `/api/v2/galleries/${gallery_uuid}`,
     /** GET — V2 Galleries */
@@ -710,12 +723,20 @@ export const V2_ENDPOINTS_GENERATED = {
     ADD_ITEM: (gallery_uuid: string | number) => `/api/v2/galleries/${gallery_uuid}/items`,
     /** PATCH — V2 Galleries */
     REORDER_ITEMS: (gallery_uuid: string | number) => `/api/v2/galleries/${gallery_uuid}/items/reorder`,
+    /** GET — V2 Galleries. Admin (galleries:update). SITIMM-40. */
+    LIST_GALLERY_TRANSLATIONS: (gallery_uuid: string | number) => `/api/v2/galleries/${gallery_uuid}/translations`,
+    /** PUT — V2 Galleries. Admin (galleries:update). Body: GalleryTranslationBodyV2. SITIMM-40. */
+    UPSERT_GALLERY_TRANSLATION: (gallery_uuid: string | number, lang: string | number) => `/api/v2/galleries/${gallery_uuid}/translations/${lang}`,
   },
   galleryItems: {
     /** DELETE — V2 Galleries */
     DELETE_ITEM: (item_uuid: string | number) => `/api/v2/gallery-items/${item_uuid}`,
     /** PATCH — V2 Galleries */
     UPDATE_ITEM: (item_uuid: string | number) => `/api/v2/gallery-items/${item_uuid}`,
+    /** GET — V2 Galleries. Admin (galleries:update). SITIMM-40. */
+    LIST_GALLERY_ITEM_TRANSLATIONS: (item_uuid: string | number) => `/api/v2/gallery-items/${item_uuid}/translations`,
+    /** PUT — V2 Galleries. Admin (galleries:update). Body: GalleryItemTranslationBodyV2. SITIMM-40. */
+    UPSERT_GALLERY_ITEM_TRANSLATION: (item_uuid: string | number, lang: string | number) => `/api/v2/gallery-items/${item_uuid}/translations/${lang}`,
   },
   headquarters: {
     /** GET — V2 Headquarters */

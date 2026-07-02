@@ -5,6 +5,61 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.88.0] - 2026-07-01
+
+New dedicated `galleries` module (SITIMM-41), matching the SITIMM-40 backend
+contract in `app/presentation/schemas/galleries_v2.py` +
+`app/presentation/api/v2/galleries_{v2,public}.py` field-by-field. Minor bump:
+new module, no existing type shapes changed.
+
+### Added
+- `galleries` module (new). Exports: `GalleryEntityType`, `GalleryVisibility`,
+  `GalleryAudience` (alias of the re-exported Events `AudienceSpec`),
+  `GalleryModerationStatus`, `GalleryLang`, `GalleryTranslationSource`;
+  authed shapes `GalleryItemV2CreateInput`, `GalleryItemV2UpdateInput`,
+  `GalleryItemV2`, `GalleryV2CreateInput`, `GalleryV2UpdateInput`, `GalleryV2`,
+  `GalleryV2ListResponse`, `GalleryAssignmentV2CreateInput`,
+  `GalleryAssignmentV2`, `EntityGalleriesV2Response`,
+  `ReorderGalleryItemsRequest`, `ReorderGalleryItemsResponse`,
+  `GalleryV2ActionResponse`; public (scrubbed) shapes `GalleryItemV2Public`,
+  `GalleryV2Public`, `GalleryV2PublicListResponse`, `GalleryV2PublicDetail`,
+  `EntityGalleriesV2PublicResponse`; admin i18n `GalleryTranslationBodyV2`,
+  `GalleryTranslationResponseV2`, `GalleryTranslationsListResponse`,
+  `GalleryItemTranslationBodyV2`, `GalleryItemTranslationResponseV2`,
+  `GalleryItemTranslationsListResponse`; error catalogue
+  `GalleryV2ErrorCode`.
+- `endpoints` module: `V2_ENDPOINTS_GENERATED.galleries` gains
+  `LIST_PUBLIC_GALLERIES`, `LIST_PUBLIC_ENTITY_GALLERIES`,
+  `GET_PUBLIC_GALLERY`, `LIST_GALLERY_TRANSLATIONS`,
+  `UPSERT_GALLERY_TRANSLATION`; `galleryItems` gains
+  `LIST_GALLERY_ITEM_TRANSLATIONS`, `UPSERT_GALLERY_ITEM_TRANSLATION`
+  (hand-patched ahead of the next `make dump-v2-routes` full regen).
+
+### Changed
+- `programs` module: `GalleryItemV2` / `GalleryV2` (the small embedded
+  `ProgramServiceFieldsV2.gallery` blob types) gain `@deprecated` JSDoc
+  pointing at the new `galleries` module. Their field shape is UNCHANGED —
+  they are a genuinely different backend contract
+  (`programs_v2.py`'s own local `GalleryItemV2`/`GalleryV2` classes: only
+  `url`/`caption`/`img_variants`) from the new module's richer,
+  identically-named types, so they were intentionally NOT collapsed into a
+  re-export. Do not confuse the two when importing.
+
+### Resolved contract ambiguities (see PR / session notes for full BE evidence)
+- `GalleryItemV2` (authed): the backend's `_to_item_response()` dict builder
+  computes extra `type`/`text` keys for legacy FE compat, but
+  `GalleryItemV2Response` declares no such fields and has no
+  `extra="allow"` config, so Pydantic's default `extra="ignore"` silently
+  drops them before they reach the wire. Omitted from the TS shape
+  accordingly — use `mimeType`/`caption` instead.
+- `url_variants` / `cover_url_variants`: typed as `Record<string, unknown> | null`
+  (opaque JSONB, no fixed schema), NOT `ImageVariants` as the stale
+  pre-SITIMM-40 draft in `docs/v2/Galleries/types.md` speculated.
+- `currentLang` / `availableLangs` / `translationSource`: Pydantic types
+  them as bare `str`/`list[str]`, but runtime values are always drawn from
+  the fixed 8-lang / 3-source sets, so the TS shapes narrow them to
+  `GalleryLang` / `GalleryTranslationSource` for stronger DX.
+
 ## [0.77.0] - 2026-06-04
 
 FAQ contract drift fixes against the mini-back source of truth. These are

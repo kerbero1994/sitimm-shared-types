@@ -1,0 +1,692 @@
+/**
+ * Galleries V2 types — shared photo collections + polymorphic assignments.
+ *
+ * Backend schemas: app/presentation/schemas/galleries_v2.py
+ * Backend routes:
+ * - app/presentation/api/v2/galleries_v2.py    (authed CRUD + admin i18n)
+ * - app/presentation/api/v2/galleries_public.py (anonymous reads)
+ * Design doc: docs/superpowers/specs/2026-06-27-galleries-visibility-anchoring-design.md (v3.1)
+ *
+ * Galleries V2 is a shared photo-collection feature with polymorphic
+ * assignment to entity types: event, program, subprogram, bonus, magazine,
+ * faq, blog_post. A Gallery owns a list of GalleryItem records, and a
+ * GalleryAssignment row attaches a gallery to an entity (m:n — the same
+ * gallery can be attached to multiple entities).
+ *
+ * Sport tournaments are intentionally NOT a GalleryV2 target: `SportEvent`
+ * has no `uuid`/`deletedAt` column (legacy id-based table), so sport
+ * galleries keep using the dedicated legacy `SportEventGallery` /
+ * `SportEventGalleryElement` system.
+ *
+ * `GalleryV2` / `GalleryItemV2` used to live only inside the `programs`
+ * module (a narrow embed for the Programs use-case). This module is now
+ * the canonical home — `programs/index.ts` re-exports these names for
+ * back-compat (deprecated there; import from `galleries` instead).
+ *
+ * ── Semantics every consumer needs to know (SITIMM-40) ──────────────────
+ *
+ * - **Public detail resolution** (`GET /galleries/public/{uuid_or_slug}`):
+ *   the server tries a UUID parse + lookup FIRST; only on a parse failure
+ *   OR a UUID lookup miss does it fall back to a slug lookup. A
+ *   UUID-shaped slug therefore still resolves correctly via the fallback.
+ *   404 if neither resolves, or the gallery isn't `visibility: "public"`.
+ * - **`?lang=` precedence**: `?lang=` query param > `Accept-Language`
+ *   header > default (`"es"`). Unknown/unsupported codes silently fall
+ *   back to the default rather than erroring.
+ * - **Keep-native-ES fallback**: a missing translation for the resolved
+ *   lang does NOT cross-fall-back to another locale — the native `es`
+ *   text is kept as-is, and `translationSource` reports `"fallback"`.
+ * - **Tags are lowercase**: the server lower-cases + dedupes `tags` on
+ *   every write (gallery and item). The public list's `?tag=` filter is a
+ *   JSONB containment match against those lower-cased values, so clients
+ *   MUST send lowercase tag filters or they will silently never match.
+ * - **`visibility: "public"` auto-clears `audience`**: on `PATCH
+ *   /galleries/{uuid}`, if the resulting visibility (payload or existing
+ *   row) is `"public"`, any stored `audience` is cleared server-side
+ *   (public = ungated). Sending a non-null `audience` together with a
+ *   resulting `"public"` visibility — in either `POST` create or `PATCH`
+ *   update, same-payload or merged-state — is rejected with 422
+ *   `public_audience_conflict`.
+ * - **Explicit-null-clears semantics on `*UpdateInput` shapes**: `PATCH`
+ *   bodies use "only-supplied-fields-apply" semantics (mirrors Pydantic's
+ *   `model_fields_set`) — an OMITTED key leaves the column unchanged, an
+ *   EXPLICIT `null` clears a NULLABLE column. Fields backing a NOT
+ *   NULL-backed column (`name`, `visibility` on the gallery; `url`,
+ *   `sortOrder` on an item) reject an explicit `null` with 422
+ *   `invalid_null` BEFORE anything is persisted. TypeScript's structural
+ *   typing cannot distinguish "key omitted" from "key present with
+ *   `undefined`" — callers MUST literally include `"field": null` in the
+ *   serialized JSON body to trigger the clear, not merely leave a JS
+ *   property `undefined`.
+ * - **Translation upsert bodies reject "empty"**: `PUT
+ *   .../translations/{lang}` 400s with `empty_translation` when the body
+ *   is `{}` or every supplied field is explicitly `null` — a translation
+ *   PUT must carry at least one non-null field.
+ */
+
+import type { AudienceSpec } from "../events/eligibility";
+
+// Re-export so consumers don't have to reach into events/eligibility
+// directly for the audience-targeting vocabulary galleries reuse verbatim.
+export type {
+  AudienceSpec,
+  AudienceMode,
+  AudienceRule,
+  Combinator,
+  GuestPolicy,
+  RuleField,
+  RuleOp,
+} from "../events/eligibility";
+
+// ─────────────────────────────────────────────────────────────────────
+// Enums / literal unions
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Polymorphic target entity types a gallery may be attached to.
+ * Backend: `EntityType` literal + `ENTITY_TYPES` tuple (`gallery_v2.py`).
+ */
+export type GalleryEntityType =
+  | "event"
+  | "program"
+  | "subprogram"
+  | "bonus"
+  | "magazine"
+  | "faq"
+  | "blog_post";
+
+/**
+ * Gallery visibility gate.
+ * - `"public"` — world-readable via the anonymous `/galleries/public*`
+ *   routes. Cannot carry an `audience` (422 `public_audience_conflict`).
+ * - `"restricted"` (default) — gated by `audience`. A `null` `audience`
+ *   on a restricted gallery means "any authenticated user".
+ */
+export type GalleryVisibility = "public" | "restricted";
+
+/**
+ * Audience specification reused verbatim from the Events eligibility
+ * engine. Only meaningful when `visibility === "restricted"`.
+ */
+export type GalleryAudience = AudienceSpec;
+
+/**
+ * Per-item moderation state (design §8.1). Read-only on every wire shape
+ * that carries it — it only mutates via the (future) moderation service,
+ * never via `GalleryItemV2CreateInput` / `GalleryItemV2UpdateInput`. Only
+ * `"approved"` items are ever served on the public surface or to a
+ * non-manager authed caller.
+ */
+export type GalleryModerationStatus = "approved" | "pending" | "rejected";
+
+/**
+ * Supported translation languages for the gallery i18n sidecar overlay
+ * (design §7). Backend: `GalleryLang` StrEnum (`galleries_v2.py`). `"es"`
+ * is the source language — never a valid translation upsert target.
+ */
+export type GalleryLang = "es" | "en" | "fr" | "de" | "ja" | "ko" | "zh" | "hi";
+
+/**
+ * Translation row provenance.
+ * Backend: `GalleryTranslationSource` StrEnum (`galleries_v2.py`).
+ */
+export type GalleryTranslationSource = "machine" | "human" | "fallback";
+
+// ─────────────────────────────────────────────────────────────────────
+// GalleryItem — authed shapes
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Body for `POST /api/v2/galleries/{gallery_uuid}/items`.
+ * Backend: `GalleryItemV2Create` (`galleries_v2.py`).
+ */
+export interface GalleryItemV2CreateInput {
+  /** Required. Max 2048 chars. */
+  url: string;
+  /** Opaque JSONB blob — no fixed sub-schema on the backend (raw
+   * `dict[str, Any]`), unlike e.g. Blog's `BlogCoverVariantsV2`. Admins
+   * POST this verbatim; the server does not derive it. */
+  url_variants?: Record<string, unknown> | null;
+  /** Max 2048 chars. */
+  storageKey?: string | null;
+  /** External URL served when the internal MinIO object is unavailable. Max 2048 chars. */
+  fallbackUrl?: string | null;
+  /** Max 255 chars. */
+  title?: string | null;
+  /** Max 500 chars. */
+  caption?: string | null;
+  /** Max 500 chars. */
+  altText?: string | null;
+  /** Default `0`. Must be `>= 0`. */
+  sortOrder?: number;
+  width?: number | null;
+  height?: number | null;
+  sizeBytes?: number | null;
+  /** Max 100 chars. */
+  mimeType?: string | null;
+  /** ISO-8601 datetime. */
+  takenAt?: string | null;
+  /** Max 255 chars. */
+  photographer?: string | null;
+  /** Lower-cased + deduped server-side on write — send any case, the
+   * server normalizes. */
+  tags?: string[] | null;
+}
+
+/**
+ * Body for `PATCH /api/v2/gallery-items/{item_uuid}`.
+ * Backend: `GalleryItemV2Update` (`galleries_v2.py`).
+ *
+ * Every field is optional (omit = unchanged). `url` / `sortOrder` back
+ * NOT NULL columns — an explicit `null` on either is rejected with 422
+ * `invalid_null`. Every other field is nullable and an explicit `null`
+ * clears the stored value.
+ */
+export interface GalleryItemV2UpdateInput {
+  /** NOT NULL-backed — explicit `null` -> 422 `invalid_null`. */
+  url?: string | null;
+  url_variants?: Record<string, unknown> | null;
+  storageKey?: string | null;
+  fallbackUrl?: string | null;
+  title?: string | null;
+  caption?: string | null;
+  altText?: string | null;
+  /** NOT NULL-backed — explicit `null` -> 422 `invalid_null`. */
+  sortOrder?: number | null;
+  width?: number | null;
+  height?: number | null;
+  sizeBytes?: number | null;
+  mimeType?: string | null;
+  takenAt?: string | null;
+  photographer?: string | null;
+  tags?: string[] | null;
+}
+
+/**
+ * Authed gallery item — full internal shape, incl. `storageKey` and
+ * `moderationStatus`.
+ * Backend: `GalleryItemV2Response` (`galleries_v2.py`).
+ *
+ * NOTE (resolved contract ambiguity): the dict builder
+ * (`_to_item_response` in `galleries_v2.py`) also computes a `"type"`
+ * (derived-from-mimeType) and `"text"` (alias of `caption`) key for
+ * legacy FE compat, but `GalleryItemV2Response`/`GalleryItemV2Base`
+ * declare no such fields and carry no `extra="allow"` config — Pydantic's
+ * default `extra="ignore"` silently drops both keys during
+ * `model_validate(...).model_dump()`, so they never actually reach the
+ * wire on this endpoint. Do NOT add `type`/`text` here; use `mimeType`
+ * (derive the coarse kind client-side, mirroring `mediaType` on the
+ * public DTO below) and `caption` instead.
+ */
+export interface GalleryItemV2 {
+  uuid: string;
+  url: string;
+  url_variants: Record<string, unknown> | null;
+  storageKey: string | null;
+  fallbackUrl: string | null;
+  title: string | null;
+  caption: string | null;
+  altText: string | null;
+  sortOrder: number;
+  width: number | null;
+  height: number | null;
+  sizeBytes: number | null;
+  mimeType: string | null;
+  /** ISO-8601 datetime. */
+  takenAt: string | null;
+  photographer: string | null;
+  tags: string[] | null;
+  /** Read-only — mutated only via the moderation service, never via
+   * create/update. */
+  moderationStatus: GalleryModerationStatus | null;
+  /** ISO-8601 datetime. */
+  createdAt: string;
+  /** ISO-8601 datetime. */
+  updatedAt: string;
+  /** ISO-8601 datetime. `null` when active. */
+  deletedAt: string | null;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Gallery — authed shapes
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Body for `POST /api/v2/galleries`.
+ * Backend: `GalleryV2Create` (`galleries_v2.py`).
+ */
+export interface GalleryV2CreateInput {
+  /** Required. 1-255 chars. */
+  name: string;
+  /** Max 255 chars. */
+  slug?: string | null;
+  description?: string | null;
+  /** Max 2048 chars. */
+  cover_url?: string | null;
+  /** Opaque JSONB blob — see {@link GalleryItemV2CreateInput.url_variants}. */
+  cover_url_variants?: Record<string, unknown> | null;
+  tags?: string[] | null;
+  /** ISO-8601 datetime. */
+  taken_at?: string | null;
+  /** Max 255 chars. */
+  location?: string | null;
+  /** Default `"restricted"`. */
+  visibility?: GalleryVisibility;
+  /** Only meaningful when the resulting `visibility` is `"restricted"`.
+   * A non-null `audience` combined with `visibility: "public"` -> 422
+   * `public_audience_conflict`. */
+  audience?: GalleryAudience | null;
+  /** Optional inline items created in the same transaction. Default `[]`. */
+  items?: GalleryItemV2CreateInput[];
+}
+
+/**
+ * Body for `PATCH /api/v2/galleries/{gallery_uuid}`.
+ * Backend: `GalleryV2Update` (`galleries_v2.py`).
+ *
+ * Only-supplied-fields-apply semantics — see the module-level "Explicit
+ * null" note. `name` / `visibility` back NOT NULL columns (explicit
+ * `null` -> 422 `invalid_null`); every other field is nullable.
+ */
+export interface GalleryV2UpdateInput {
+  /** NOT NULL-backed — explicit `null` -> 422 `invalid_null`. */
+  name?: string | null;
+  slug?: string | null;
+  description?: string | null;
+  cover_url?: string | null;
+  cover_url_variants?: Record<string, unknown> | null;
+  tags?: string[] | null;
+  taken_at?: string | null;
+  location?: string | null;
+  /** NOT NULL-backed — explicit `null` -> 422 `invalid_null`. Setting (or
+   * already being) `"public"` auto-clears any stored `audience`
+   * server-side, regardless of what this payload sends for `audience`
+   * (unless the payload ALSO supplies a non-null `audience`, which is
+   * rejected — see below). */
+  visibility?: GalleryVisibility | null;
+  /** A non-null `audience` combined with a resulting `visibility` of
+   * `"public"` (from this payload OR the existing row) -> 422
+   * `public_audience_conflict`. Explicit `null` clears a stored audience. */
+  audience?: GalleryAudience | null;
+  /** Optimistic lock — pass the `updatedAt` value last observed by the
+   * client. Mismatch -> 409 `stale_write`. */
+  if_match_updated_at?: string | null;
+}
+
+/**
+ * Authed gallery — full internal shape, incl. `created_by` and
+ * `audience`.
+ * Backend: `GalleryV2Response` (`galleries_v2.py`).
+ */
+export interface GalleryV2 {
+  uuid: string;
+  name: string;
+  slug: string | null;
+  description: string | null;
+  cover_url: string | null;
+  cover_url_variants: Record<string, unknown> | null;
+  tags: string[] | null;
+  /** ISO-8601 datetime. */
+  taken_at: string | null;
+  location: string | null;
+  visibility: GalleryVisibility;
+  audience: GalleryAudience | null;
+  created_by: number | null;
+  items: GalleryItemV2[];
+  /** ISO-8601 datetime. */
+  createdAt: string;
+  /** ISO-8601 datetime. */
+  updatedAt: string;
+  /** ISO-8601 datetime. `null` when active. */
+  deletedAt: string | null;
+  /**
+   * `?lang=` overlay metadata (design §7). Populated ONLY by the authed
+   * detail endpoint `GET /galleries/{gallery_uuid}` when a non-default
+   * lang was resolved. Every other call site (create/update responses,
+   * entity-embeds, and each item nested inside
+   * {@link GalleryV2ListResponse}) OMITS these 3 keys entirely — treat
+   * their absence as "not applicable here", not as `null`.
+   */
+  currentLang?: GalleryLang | null;
+  availableLangs?: GalleryLang[] | null;
+  translationSource?: GalleryTranslationSource | null;
+}
+
+/**
+ * Response from `GET /api/v2/galleries`.
+ * Backend: `GalleryV2ListResponse` (`galleries_v2.py`).
+ */
+export interface GalleryV2ListResponse {
+  galleries: GalleryV2[];
+  total: number;
+  page: number;
+  page_size: number;
+  /** Always populated by the authed list endpoint (mirrors the public
+   * list's `currentLang`). Per-item galleries do NOT carry it. */
+  currentLang: GalleryLang;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// GalleryAssignment
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Body for `POST /api/v2/galleries/{gallery_uuid}/attach`.
+ * Backend: `GalleryAssignmentV2Create` (`galleries_v2.py`).
+ */
+export interface GalleryAssignmentV2CreateInput {
+  entity_type: GalleryEntityType;
+  entity_uuid: string;
+  /** Default `0`. */
+  sortOrder?: number;
+  /** Default `false`. Setting `true` clears any previous primary
+   * assignment for the same `(entity_type, entity_uuid)` target. */
+  isPrimary?: boolean;
+}
+
+/**
+ * Response from `POST /api/v2/galleries/{gallery_uuid}/attach`.
+ * Backend: `GalleryAssignmentV2Response` (`galleries_v2.py`) — field
+ * names below are the Pydantic ALIASES (`entityType`/`entityUuid`), which
+ * is what actually serializes on the wire.
+ */
+export interface GalleryAssignmentV2 {
+  uuid: string;
+  gallery_uuid: string;
+  entityType: GalleryEntityType;
+  entityUuid: string;
+  sortOrder: number;
+  isPrimary: boolean;
+  /** ISO-8601 datetime. */
+  createdAt: string;
+  /** ISO-8601 datetime. `null` when active. */
+  deletedAt: string | null;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Entity-scoped gallery lookups
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Response from `GET /api/v2/{entity_type}/{entity_uuid}/galleries`.
+ * Backend: `EntityGalleriesV2Response` (`galleries_v2.py`).
+ */
+export interface EntityGalleriesV2Response {
+  entity_type: GalleryEntityType;
+  entity_uuid: string;
+  galleries: GalleryV2[];
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Reorder + generic action responses
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Body for `PATCH /api/v2/galleries/{gallery_uuid}/items/reorder`.
+ * Backend: `ReorderGalleryItemsRequest` (`galleries_v2.py`).
+ */
+export interface ReorderGalleryItemsRequest {
+  /** 1-500 item UUIDs in the desired display order. Any UUID not
+   * belonging to the gallery -> 404 `gallery_item_not_found`. */
+  ordered_uuids: string[];
+}
+
+/**
+ * Response from `PATCH /api/v2/galleries/{gallery_uuid}/items/reorder`.
+ * Backend: raw dict returned by `reorder_items()` (`galleries_v2.py`) —
+ * not a declared Pydantic schema, but documented here for completeness.
+ */
+export interface ReorderGalleryItemsResponse {
+  ordered_uuids: string[];
+  count: number;
+}
+
+/**
+ * Response shape shared by the soft-delete / detach action endpoints
+ * (`DELETE /galleries/{uuid}`, `DELETE /gallery-items/{uuid}`, `DELETE
+ * /galleries/{uuid}/attach/{entity_type}/{entity_uuid}`). Backend: raw
+ * `{"message": "ok", "uuid": ...}` dict — not a declared Pydantic schema.
+ */
+export interface GalleryV2ActionResponse {
+  message: string;
+  uuid: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Public (anonymous) DTOs — scrubbed
+// ─────────────────────────────────────────────────────────────────────
+//
+// Served by galleries_public.py. These OMIT every internal/moderation
+// field the authed serializers expose: item `storageKey` /
+// `moderationStatus` / `deletedAt` / `sizeBytes` / `createdAt` /
+// `updatedAt`; gallery `created_by` / `deletedAt` / `audience` (design
+// §2.2 "public DTO scrub").
+
+/**
+ * Public gallery item.
+ * Backend: `GalleryItemV2PublicResponse` (`galleries_v2.py`). Scrubs
+ * `storageKey` / `moderationStatus` / `deletedAt` / `sizeBytes` / audit
+ * timestamps relative to {@link GalleryItemV2}.
+ */
+export interface GalleryItemV2Public {
+  uuid: string;
+  url: string;
+  url_variants: Record<string, unknown> | null;
+  fallbackUrl: string | null;
+  title: string | null;
+  caption: string | null;
+  altText: string | null;
+  sortOrder: number;
+  width: number | null;
+  height: number | null;
+  mimeType: string | null;
+  /** ISO-8601 datetime. */
+  takenAt: string | null;
+  photographer: string | null;
+  tags: string[] | null;
+  /** Coarse media kind derived server-side from `mimeType`. */
+  mediaType: "image" | "video" | "file";
+}
+
+/**
+ * Public gallery.
+ * Backend: `GalleryV2PublicResponse` (`galleries_v2.py`). Scrubs
+ * `created_by` / `deletedAt` / `audience` relative to {@link GalleryV2}.
+ * `cover_url` falls back to the first approved+active item's media (and
+ * its variants) when the gallery has no explicit cover (design §2.8).
+ */
+export interface GalleryV2Public {
+  uuid: string;
+  name: string;
+  slug: string | null;
+  description: string | null;
+  cover_url: string | null;
+  cover_url_variants: Record<string, unknown> | null;
+  tags: string[] | null;
+  /** ISO-8601 datetime. */
+  taken_at: string | null;
+  location: string | null;
+  /** Always `"public"` on these endpoints (kept for a stable FE contract
+   * — the field exists so a future mixed public+restricted public route
+   * wouldn't be a breaking shape change). */
+  visibility: "public";
+  /** ISO-8601 datetime. */
+  createdAt: string;
+  /** ISO-8601 datetime. */
+  updatedAt: string;
+  /** Approved + active items only, ordered `(sortOrder, createdAt)`. */
+  items: GalleryItemV2Public[];
+  item_count: number;
+}
+
+/**
+ * Response from `GET /api/v2/galleries/public`.
+ * Backend: `GalleryV2PublicListResponse` (`galleries_v2.py`). Same keys
+ * as the authed list (design §2.2).
+ */
+export interface GalleryV2PublicListResponse {
+  galleries: GalleryV2Public[];
+  total: number;
+  page: number;
+  page_size: number;
+  /** Always populated (unlike the optional {@link GalleryV2.currentLang}). */
+  currentLang: GalleryLang;
+}
+
+/**
+ * Response from `GET /api/v2/galleries/public/{uuid_or_slug}`.
+ * Backend: `GalleryV2PublicDetailResponse(GalleryV2PublicResponse)`
+ * (`galleries_v2.py`). Always carries locale metadata (design §7),
+ * mirroring the magazine public detail endpoint — unlike the authed
+ * detail endpoint, which only populates these 3 fields on a non-default
+ * `?lang=`.
+ */
+export interface GalleryV2PublicDetail extends GalleryV2Public {
+  currentLang: GalleryLang;
+  availableLangs: GalleryLang[];
+  translationSource: GalleryTranslationSource;
+}
+
+/**
+ * Response from `GET /api/v2/galleries/public/entity/{entity_type}/{entity_uuid}`.
+ * Backend: `EntityGalleriesV2PublicResponse` (`galleries_v2.py`).
+ *
+ * NOTE: this route is registered with an explicit `/entity/` path
+ * segment — `/public/entity/{entity_type}/{entity_uuid}` — NOT
+ * `/public/{entity_type}/{entity_uuid}`. The latter would be ambiguous
+ * with the detail route `/public/{uuid_or_slug}` (FastAPI can't reliably
+ * tell a slug from an entity type in a two-segment path), so the backend
+ * deliberately diverged from the original spec sketch here.
+ */
+export interface EntityGalleriesV2PublicResponse {
+  entity_type: GalleryEntityType;
+  entity_uuid: string;
+  galleries: GalleryV2Public[];
+  /** List semantics (like {@link GalleryV2PublicListResponse}) — only a
+   * single `currentLang`, no per-gallery `availableLangs`. */
+  currentLang: GalleryLang;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Translations (admin) — design §7
+// ─────────────────────────────────────────────────────────────────────
+//
+// Mechanical mirror of the magazine i18n admin surface. Field names match
+// the ORM column names directly (no snake<->camel alias remapping, unlike
+// magazine's badge_text/badgeText).
+
+/**
+ * Body for `PUT /api/v2/galleries/{gallery_uuid}/translations/{lang}`.
+ * Backend: `GalleryTranslationBodyV2` (`galleries_v2.py`, `extra="forbid"`
+ * — unknown keys are REJECTED, not silently dropped). Omitted fields keep
+ * the current stored value; at least one non-null field is required or
+ * the server 400s with `empty_translation`.
+ */
+export interface GalleryTranslationBodyV2 {
+  /** 1-255 chars when supplied. */
+  name?: string | null;
+  /** Max 2000 chars. */
+  description?: string | null;
+}
+
+/**
+ * Single-language gallery translation payload (admin view).
+ * Backend: `GalleryTranslationResponseV2` (`galleries_v2.py`).
+ */
+export interface GalleryTranslationResponseV2 {
+  lang: GalleryLang;
+  source: GalleryTranslationSource;
+  name: string | null;
+  description: string | null;
+  /** ISO-8601 datetime. */
+  updatedAt: string;
+}
+
+/**
+ * Response from `GET /api/v2/galleries/{gallery_uuid}/translations`.
+ * Backend: raw `{"items": [...]}` dict (`galleries_v2.py`
+ * `list_gallery_translations`) — not a declared Pydantic schema.
+ */
+export interface GalleryTranslationsListResponse {
+  items: GalleryTranslationResponseV2[];
+}
+
+/**
+ * Body for `PUT /api/v2/gallery-items/{item_uuid}/translations/{lang}`.
+ * Backend: `GalleryItemTranslationBodyV2` (`galleries_v2.py`,
+ * `extra="forbid"`). Same empty-body/all-null-fields rejection as
+ * {@link GalleryTranslationBodyV2} (400 `empty_translation`).
+ */
+export interface GalleryItemTranslationBodyV2 {
+  /** Max 255 chars. */
+  title?: string | null;
+  /** Max 500 chars. */
+  caption?: string | null;
+  /** Max 500 chars. */
+  altText?: string | null;
+}
+
+/**
+ * Single-language gallery-item translation payload (admin view).
+ * Backend: `GalleryItemTranslationResponseV2` (`galleries_v2.py`).
+ */
+export interface GalleryItemTranslationResponseV2 {
+  lang: GalleryLang;
+  source: GalleryTranslationSource;
+  title: string | null;
+  caption: string | null;
+  altText: string | null;
+  /** ISO-8601 datetime. */
+  updatedAt: string;
+}
+
+/**
+ * Response from `GET /api/v2/gallery-items/{item_uuid}/translations`.
+ * Backend: raw `{"items": [...]}` dict (`galleries_v2.py`
+ * `list_gallery_item_translations`) — not a declared Pydantic schema.
+ */
+export interface GalleryItemTranslationsListResponse {
+  items: GalleryItemTranslationResponseV2[];
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Error catalogue
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Machine-readable error codes returned by the V2 Galleries surface
+ * (authed + public). Frontends should branch on this value (carried as
+ * `detail.code`) and NEVER on the human-readable `detail.message`.
+ */
+export type GalleryV2ErrorCode =
+  /** 404 — gallery not found, soft-deleted, or not visible to the caller. */
+  | "gallery_not_found"
+  /** 404 — item not found, or its parent gallery is soft-deleted. */
+  | "gallery_item_not_found"
+  /** 400 — `PATCH` body supplied zero fields. */
+  | "no_fields"
+  /** 409 — `slug` collides with another active gallery. */
+  | "slug_conflict"
+  /** 409 — `if_match_updated_at` didn't match the row's current `updatedAt`. */
+  | "stale_write"
+  /** 422 — `visibility: "public"` combined with a non-null `audience`. */
+  | "public_audience_conflict"
+  /** 422 — explicit `null` sent for a NOT NULL-backed field (`name`,
+   * `visibility`, item `url`, item `sortOrder`). */
+  | "invalid_null"
+  /** 400 — translation `PUT` body was empty or every field was explicitly `null`. */
+  | "empty_translation"
+  /** 400 (attach) / 422 (public entity route) — `entity_type` not in
+   * {@link GalleryEntityType}. */
+  | "unsupported_entity_type"
+  /** 404 — `attach` target entity does not exist / is not active. */
+  | "entity_not_found"
+  /** 409 — gallery is already attached to this entity. */
+  | "assignment_conflict"
+  /** 404 — `detach` found no active assignment for this
+   * `(gallery, entity_type, entity_uuid)`. */
+  | "assignment_not_found"
+  /** 403 — caller lacks the target entity's own write permission for attach/detach. */
+  | "forbidden"
+  /** 429 — anonymous public-route rate limit exceeded. */
+  | "rate_limited";
