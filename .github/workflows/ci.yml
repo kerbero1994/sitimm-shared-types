@@ -28,3 +28,7 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # Después del build: exports-integrity valida los artefactos de dist.
+      - name: Test
+        run: npm test
