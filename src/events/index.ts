@@ -62,6 +62,7 @@ export const EVENT_REGISTRATION_ERROR_CODES = [
   "already_registered", // 409 — caller already has an active registration
   "already_rejected", // 409 — caller was previously rejected for this event
   "venue_not_found", // 404 — selected venue/stop is invalid
+  "venue_full", // 409 — chosen sede's per-sede seatsTotal is already full (§S2 L22)
   "guest_forbidden", // 403 — guest policy forbids non-affiliated callers
   "audience_not_eligible", // 403 — audience rules reject the caller
   "transport_stop_full", // 409 — chosen transport stop is at capacity
