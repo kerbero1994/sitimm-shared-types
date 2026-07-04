@@ -285,7 +285,11 @@ export interface FAQResourceV2 {
   uuid: string;
   /** Parent article UUID. */
   article_uuid: string;
-  /** Resource kind, e.g. `"video"`, `"image"`, `"pdf"`. */
+  /**
+   * Resource kind. One of the backend `RESOURCE_KIND_VALUES`:
+   * `"video_youtube"`, `"video_vimeo"`, `"pdf"`, `"image"`, `"infographic"`,
+   * `"document_drive"`, `"official_link"`, `"external_form"`.
+   */
   kind: string;
   /** Resolved URL (may be presigned). */
   url: string;
@@ -300,7 +304,10 @@ export interface FAQResourceV2 {
   sort_order: number;
   /** Provider-specific metadata (oEmbed payload, etc.). */
   metadata: Record<string, unknown>;
-  /** Enrichment pipeline status, e.g. `"pending"`, `"ok"`, `"failed"`. */
+  /**
+   * Enrichment pipeline status. One of the backend `ENRICHMENT_STATUS_VALUES`:
+   * `"ok"`, `"failed"`, `"manual"`.
+   */
   enrichment_status: string;
   enrichment_error: string | null;
   createdAt: string;
@@ -325,9 +332,11 @@ export interface FAQArticleSummaryV2 {
   /** True when the row was served from the Spanish fallback. */
   is_translation_fallback: boolean;
   /**
-   * Distinct resource kinds attached to the article (e.g. ``["video", "pdf"]``).
-   * Lets list cards surface multimedia presence without forcing a per-row
-   * detail fetch. Empty array for text-only articles. v0.57.0+.
+   * Distinct resource kinds attached to the article (e.g.
+   * ``["video_youtube", "pdf"]``) — drawn from the backend
+   * `RESOURCE_KIND_VALUES` (see {@link FAQResourceV2.kind}). Lets list cards
+   * surface multimedia presence without forcing a per-row detail fetch. Empty
+   * array for text-only articles. v0.57.0+.
    */
   media_kinds: string[];
 }
@@ -575,7 +584,8 @@ export interface FAQSubscriptionAddResponse {
 
 /**
  * Stable error codes returned in the `code` field of a V2 error envelope.
- * Mirrors `app/presentation/schemas/v2/faq/errors.py`.
+ * Mirrors `app/application/dtos/faq/errors.py`, plus route-level codes raised
+ * directly by handlers (`FAQ_PDF_RENDER_TIMEOUT`).
  */
 export type FAQErrorCode =
   | "FAQ_BLOCK_VALIDATION_FAILED"
@@ -587,6 +597,8 @@ export type FAQErrorCode =
   | "FAQ_FEEDBACK_DUPLICATE"
   | "FAQ_LEGAL_DISCLAIMER_REQUIRED"
   | "FAQ_NOT_FOUND"
+  /** 504 — PDF export render exceeded the 15s deadline (`GET /faq/articles/{slug}.pdf`). */
+  | "FAQ_PDF_RENDER_TIMEOUT"
   | "FAQ_RELATED_TARGET_INVALID"
   | "FAQ_RESOURCE_ENRICHMENT_FAILED"
   | "FAQ_RESOURCE_REF_INVALID"

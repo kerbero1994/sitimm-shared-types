@@ -10,6 +10,20 @@
  *
  * Path params (e.g. {uuid}, {id}, {slug}) are emitted as
  * arrow-function builders: ``(uuid: string) => string``.
+ *
+ * MANUAL PATCH (SITIMM-41, 2026-07-01): 7 rows hand-added to the
+ * `galleries` / `galleryItems` groups ahead of the next full regen —
+ * the SITIMM-40 public (`/galleries/public*`) + admin translation
+ * (`.../translations[/{lang}]`) routes did not exist on mini-back at the
+ * `4ad29b67` source version above. Safe to overwrite on the next
+ * `make dump-v2-routes` once that backend branch ships.
+ *
+ * MANUAL PATCH (SITIMM-46, 2026-07-02): 8 more rows hand-added to the
+ * `galleries` / `galleryItems` groups for the Phase B member-contribution
+ * + moderation surface (`app/presentation/api/v2/galleries_contribute.py`,
+ * shipped on mini-back branch `SITIMM-45-member-contribute`, not yet
+ * merged to `main` at this source version). Safe to overwrite on the next
+ * `make dump-v2-routes` once that backend branch ships.
  */
 
 export const V2_ENDPOINTS_GENERATED = {
@@ -696,6 +710,12 @@ export const V2_ENDPOINTS_GENERATED = {
     LIST_GALLERIES: "/api/v2/galleries",
     /** POST — V2 Galleries */
     CREATE_GALLERY: "/api/v2/galleries",
+    /** GET — V2 Galleries. Anonymous, no JWT. Query: page, page_size, q?, tag?, lang?. SITIMM-40. */
+    LIST_PUBLIC_GALLERIES: "/api/v2/galleries/public",
+    /** GET — V2 Galleries. Anonymous, no JWT. NOTE explicit `/entity/` segment (disambiguates from the `{uuid_or_slug}` detail route below). Query: lang?. SITIMM-40. */
+    LIST_PUBLIC_ENTITY_GALLERIES: (entity_type: string | number, entity_uuid: string | number) => `/api/v2/galleries/public/entity/${entity_type}/${entity_uuid}`,
+    /** GET — V2 Galleries. Anonymous, no JWT. `uuid_or_slug`: tries UUID parse+lookup first, falls back to slug. Query: lang?. SITIMM-40. */
+    GET_PUBLIC_GALLERY: (uuid_or_slug: string | number) => `/api/v2/galleries/public/${uuid_or_slug}`,
     /** DELETE — V2 Galleries */
     DELETE_GALLERY: (gallery_uuid: string | number) => `/api/v2/galleries/${gallery_uuid}`,
     /** GET — V2 Galleries */
@@ -710,12 +730,36 @@ export const V2_ENDPOINTS_GENERATED = {
     ADD_ITEM: (gallery_uuid: string | number) => `/api/v2/galleries/${gallery_uuid}/items`,
     /** PATCH — V2 Galleries */
     REORDER_ITEMS: (gallery_uuid: string | number) => `/api/v2/galleries/${gallery_uuid}/items/reorder`,
+    /** GET — V2 Galleries. Admin (galleries:update). SITIMM-40. */
+    LIST_GALLERY_TRANSLATIONS: (gallery_uuid: string | number) => `/api/v2/galleries/${gallery_uuid}/translations`,
+    /** PUT — V2 Galleries. Admin (galleries:update). Body: GalleryTranslationBodyV2. SITIMM-40. */
+    UPSERT_GALLERY_TRANSLATION: (gallery_uuid: string | number, lang: string | number) => `/api/v2/galleries/${gallery_uuid}/translations/${lang}`,
+    /** POST — V2 Galleries — Contributions. `galleries:contribute` (EMPLOYEE+) + visibility gate. Body: GalleryContributeRequest. 201. SITIMM-45/46. */
+    CONTRIBUTE_TO_GALLERY: (gallery_uuid: string | number) => `/api/v2/galleries/${gallery_uuid}/contribute`,
+    /** GET — V2 Galleries — Contributions. `galleries:moderate` (ADMIN_COMMUNICATION+). Query: gallery_uuid?, page, page_size. SITIMM-45/46. */
+    LIST_MODERATION_PENDING: "/api/v2/galleries/moderation/pending",
+    /** GET — V2 Galleries — Contributions. Any authed caller (self-scoped, contributedBy === caller.id). Query: page, page_size. SITIMM-45/46. */
+    LIST_MY_CONTRIBUTIONS: "/api/v2/galleries/me/contributions",
   },
   galleryItems: {
     /** DELETE — V2 Galleries */
     DELETE_ITEM: (item_uuid: string | number) => `/api/v2/gallery-items/${item_uuid}`,
     /** PATCH — V2 Galleries */
     UPDATE_ITEM: (item_uuid: string | number) => `/api/v2/gallery-items/${item_uuid}`,
+    /** GET — V2 Galleries. Admin (galleries:update). SITIMM-40. */
+    LIST_GALLERY_ITEM_TRANSLATIONS: (item_uuid: string | number) => `/api/v2/gallery-items/${item_uuid}/translations`,
+    /** PUT — V2 Galleries. Admin (galleries:update). Body: GalleryItemTranslationBodyV2. SITIMM-40. */
+    UPSERT_GALLERY_ITEM_TRANSLATION: (item_uuid: string | number, lang: string | number) => `/api/v2/gallery-items/${item_uuid}/translations/${lang}`,
+    /** POST — V2 Galleries — Contributions. `galleries:moderate`. Body: GalleryModerationActionBody. Refuses (409 scan_not_clean) unless scanStatus="clean". SITIMM-45/46. */
+    APPROVE_CONTRIBUTION: (item_uuid: string | number) => `/api/v2/gallery-items/${item_uuid}/approve`,
+    /** POST — V2 Galleries — Contributions. `galleries:moderate`. Body: GalleryModerationActionBody (same shape as approve). SITIMM-45/46. */
+    REJECT_CONTRIBUTION: (item_uuid: string | number) => `/api/v2/gallery-items/${item_uuid}/reject`,
+    /** GET — V2 Galleries — Contributions. Any authed caller — gated to contributor OR `galleries:moderate` (404, not 403, for anyone else). Short-TTL (~300s) presigned preview of quarantined bytes. SITIMM-45/46. */
+    GET_CONTRIBUTION_PREVIEW_URL: (item_uuid: string | number) => `/api/v2/gallery-items/${item_uuid}/preview-url`,
+    /** DELETE — V2 Galleries — Contributions. Any authed caller (ownership-checked). Own pending/rejected only — 403 on an approved item. SITIMM-45/46. */
+    WITHDRAW_CONTRIBUTION: (item_uuid: string | number) => `/api/v2/gallery-items/${item_uuid}/withdraw`,
+    /** PATCH — V2 Galleries — Contributions. Any authed caller (ownership + pending-only checked). Body: GalleryContributionMetadataUpdateInput. SITIMM-45/46. */
+    UPDATE_CONTRIBUTION_METADATA: (item_uuid: string | number) => `/api/v2/gallery-items/${item_uuid}/contribution`,
   },
   headquarters: {
     /** GET — V2 Headquarters */

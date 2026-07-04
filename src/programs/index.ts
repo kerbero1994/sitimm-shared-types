@@ -111,12 +111,34 @@ export interface SubProgramCurrentLang {
  * Backend: programs_v2.py :: SubProgramV2Response
  */
 /**
- * Single image in a Program/SubProgram event gallery. v0.57.0+.
- * Backend: programs_v2.py :: GalleryItemV2
+ * Single image in a Program/SubProgram embedded event gallery. v0.57.0+.
+ * Backend: `programs_v2.py :: GalleryItemV2` — a small LOCAL Pydantic
+ * class (`url` / `caption` / `img_variants` only) that backs
+ * `ProgramServiceFieldsV2.gallery`. It pre-dates, and is unrelated to,
+ * the shared polymorphic gallery feature below.
+ *
+ * @deprecated Naming collision, NOT the same type: `@kerbero1994/shared-types/galleries`
+ * (v0.88.0+) ships its OWN, unrelated `GalleryItemV2` backed by
+ * `app/presentation/schemas/galleries_v2.py` — a much richer shape
+ * (`uuid`, `moderationStatus`, `sortOrder`, `tags`, timestamps, etc.)
+ * used by the shared, entity-attachable Gallery V2 system (event /
+ * program / subprogram / bonus / magazine / faq / blog_post). This
+ * `programs` type is kept EXACTLY as-is (back-compat, zero shape change)
+ * because it maps to a genuinely different, still-live backend contract
+ * — `ProgramServiceFieldsV2.gallery` — do NOT swap it for the `galleries`
+ * module's type; the JSON shapes are not interchangeable.
  */
 export interface GalleryItemV2 {
   /** Public image URL (absolute or relative). */
   url: string;
+  /** Coarse media kind derived from mimeType. v0.85.0+. */
+  type?: "image" | "video" | "file";
+  /** Per-item title shown above the media. v0.85.0+. */
+  title?: string | null;
+  /** Body text under the media — alias of `caption`. v0.85.0+. */
+  text?: string | null;
+  /** External URL served when the internal MinIO object is unavailable. v0.85.0+. */
+  fallbackUrl?: string | null;
   /** Optional human caption rendered under the photo. */
   caption?: string | null;
   /** Optional responsive variants for this gallery item. */
@@ -124,8 +146,15 @@ export interface GalleryItemV2 {
 }
 
 /**
- * Program/SubProgram event gallery container. v0.57.0+.
- * Backend: programs_v2.py :: GalleryV2
+ * Program/SubProgram embedded event gallery container. v0.57.0+.
+ * Backend: `programs_v2.py :: GalleryV2` (LOCAL class — see the
+ * {@link GalleryItemV2} deprecation note; the same caveat applies here).
+ *
+ * @deprecated Naming collision, NOT the same type — see {@link GalleryItemV2}.
+ * For the shared, entity-attachable Gallery V2 system (admin CRUD,
+ * public anonymous reads, i18n, moderation), import `GalleryV2` from
+ * `@kerbero1994/shared-types/galleries` instead. This `programs` type is
+ * kept as-is for `ProgramServiceFieldsV2.gallery` back-compat.
  */
 export interface GalleryV2 {
   items: GalleryItemV2[];

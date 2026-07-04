@@ -6,11 +6,24 @@
  * - app/presentation/schemas/magazine_v2.py
  * - app/presentation/api/v2/magazines_v2.py
  *
- * Response fields: camelCase aliases matching JSON output.
+ * Response fields: camelCase aliases matching JSON output for the
+ * magazine CRUD/list/detail/translation shapes. EXCEPTION: the engagement
+ * surface (like/share/download/report/stats — `MagazineLikeResponse`,
+ * `MagazineShareResponse`, `MagazineDownloadResponse`,
+ * `MagazineReportResponseV2`, `MagazineItemStatsV2Response`) is served by
+ * the generic engagement subsystem and is snake_case — those names are now
+ * aliases of the generic `Engagement*` shapes from `../engagement`.
  * Request fields: snake_case matching Pydantic field names.
  */
 
 import type { LocaleCode } from "../locales/index.js";
+import type {
+  EngagementCounters,
+  EngagementDownloadResponse,
+  EngagementLikeResponse,
+  EngagementReportAck,
+  EngagementShareResponse,
+} from "../engagement/index.js";
 
 // ── Category / Sort ─────────────────────────────────────────────────
 
@@ -182,13 +195,18 @@ export interface MagazineListV2Response {
 
 // ── Like Response ───────────────────────────────────────────────────
 
-export interface MagazineLikeResponse {
-  liked: boolean;
-  /** Public vanity counter snapshot. */
-  likeCount: number;
-  /** Real (deduped) counter snapshot. Optional — added 2026-04-29. */
-  likeCountReal?: number;
-}
+/**
+ * Response for `POST/DELETE /api/v2/magazines/{uuid}/like`.
+ *
+ * Magazine engagement is served by the generic engagement subsystem via
+ * the magazine subject adapter (`magazine_engagement_adapter.py`), so the
+ * wire shape is the generic snake_case `EngagementLikeResponse`
+ * (`user_liked` / `like_count_real` / `like_count_vanity`) — NOT the old
+ * camelCase `{ liked, likeCount, likeCountReal? }`, which never matched the
+ * post-cutover wire. Backend: `EngagementLikeResponseV2`
+ * (`app/engagement/presentation/schemas/extended.py`).
+ */
+export type MagazineLikeResponse = EngagementLikeResponse;
 
 // ── Create / Update Requests ────────────────────────────────────────
 
@@ -279,20 +297,23 @@ export interface MagazineStatsV2Response {
 }
 
 /**
- * Per-magazine engagement snapshot (GET /{uuid}/stats).
+ * Per-magazine engagement snapshot (`GET /api/v2/magazines/{uuid}/stats`).
+ *
+ * Served by the generic engagement subsystem, so the wire shape is the
+ * generic snake_case counters envelope `EngagementCounters`
+ * (`view_count_real` / `view_count_vanity` / `useful_count` /
+ * `not_useful_count` / `share_count` / `bookmark_count` / `comment_count`
+ * + `settings`) — NOT the old camelCase magazine-named row
+ * `{ uuid, title, viewCount, downloadCount, likeCount, shareCount,
+ * isPublished, isFeatured, publishedAt, createdAt }`, which never matched
+ * the post-cutover wire. NOTE: this admin stats payload no longer carries
+ * magazine metadata (uuid/title/isPublished/…); read those from
+ * `MagazineDetailV2`. Backend: `EngagementCountersV2`
+ * (`app/engagement/presentation/schemas/common.py`), returned by the
+ * engagement `stats` route in
+ * `app/engagement/presentation/routes/extended_routes.py`.
  */
-export interface MagazineItemStatsV2Response {
-  uuid: string;
-  title: string;
-  viewCount: number;
-  downloadCount: number;
-  likeCount: number;
-  shareCount: number;
-  isPublished: boolean;
-  isFeatured: boolean;
-  publishedAt: string | null;
-  createdAt: string;
-}
+export type MagazineItemStatsV2Response = EngagementCounters;
 
 // ── Bulk actions (added 2026-04-20) ─────────────────────────────────
 
@@ -340,22 +361,35 @@ export interface MagazineBulkImportResultV2 {
 
 // ── Share response (POST /{uuid}/share) ─────────────────────────────
 
-export interface MagazineShareResponse {
-  shareCount: number;
-  /** Real (deduped) share counter. Optional — added 2026-04-29. */
-  shareCountReal?: number;
-  /** Canonical deep-link FE can hand to OS share sheet. Added 2026-04-21. */
-  shareUrl: string;
-}
+/**
+ * Response for `POST /api/v2/magazines/{uuid}/share`.
+ *
+ * Served by the generic engagement subsystem, so the wire shape is the
+ * generic snake_case `EngagementShareResponse`
+ * (`share_count` / `channel` / `recorded_at`) — NOT the old camelCase
+ * `{ shareCount, shareCountReal?, shareUrl }`. The legacy `shareUrl`
+ * deep-link is GONE from this response (the engagement share route does
+ * not emit it). Backend: `EngagementShareResponseV2`
+ * (`app/engagement/presentation/schemas/common.py`).
+ */
+export type MagazineShareResponse = EngagementShareResponse;
 
 // ── Download response (POST /{uuid}/download) ───────────────────────
 
-export interface MagazineDownloadResponse {
-  pdfUrl: string;
-  downloadCount: number;
-  /** Real (deduped) download counter. Optional — added 2026-04-29. */
-  downloadCountReal?: number;
-}
+/**
+ * Response for `POST /api/v2/magazines/{uuid}/download`.
+ *
+ * Served by the generic engagement subsystem, so the wire shape is the
+ * generic snake_case `EngagementDownloadResponse`
+ * (`download_count_real` / `download_count_vanity`) — NOT the old
+ * camelCase `{ pdfUrl, downloadCount, downloadCountReal? }`. The legacy
+ * `pdfUrl` is GONE from this response (the engagement download route
+ * returns only counters; clients read the PDF URL from the magazine
+ * detail (`MagazineDetailV2.pdfUrl`) instead). Backend:
+ * `EngagementDownloadResponseV2`
+ * (`app/engagement/presentation/schemas/extended.py`).
+ */
+export type MagazineDownloadResponse = EngagementDownloadResponse;
 
 // ── Comments (2026-06-03) ───────────────────────────────────────────
 //
@@ -492,6 +526,16 @@ export interface MagazinePageTextResponseV2 {
   lang: LocaleCode;
   source: MagazineTranslationSource;
   text: string | null;
+  /**
+   * Storage format hint for the page text. `"plain"` (default) → raw
+   * `\n\n`-separated paragraphs from pymupdf; `"markdown"` → CommonMark
+   * with semantic structure (headings, lists, bold stat spans) from the
+   * LLM-aided reformat pass. The FE switches its renderer accordingly.
+   * Always emitted by the BE (default `"plain"`). Backend:
+   * `MagazinePageTextResponseV2.format`
+   * (`app/presentation/schemas/magazine_v2.py`).
+   */
+  format: "plain" | "markdown";
 }
 
 export interface MagazinePagesResponseV2 {
@@ -521,14 +565,18 @@ export interface MagazineReportCreateV2Request {
   comment?: string;
 }
 
-export interface MagazineReportResponseV2 {
-  uuid: string;
-  magazineUuid: string;
-  reason: MagazineReportReason;
-  status: MagazineReportStatus;
-  comment: string | null;
-  createdAt: string;
-}
+/**
+ * Acknowledgement for `POST /api/v2/magazines/{uuid}/report`.
+ *
+ * Served by the generic engagement subsystem, so the wire shape is the
+ * generic snake_case `EngagementReportAck` (`{ status }`) — NOT the old
+ * camelCase full row `{ uuid, magazineUuid, reason, status, comment,
+ * createdAt }`, which never matched the post-cutover wire (the report
+ * route surfaces only the row status to the reporter; full report rows
+ * live behind the admin moderation surface). Backend:
+ * `EngagementReportAckV2` (`app/engagement/presentation/schemas/extended.py`).
+ */
+export type MagazineReportResponseV2 = EngagementReportAck;
 
 // ── Structured error detail (2026-04-21) ────────────────────────────
 

@@ -49,8 +49,11 @@ export const BLOG_V2_ENDPOINTS = {
   BLOG_POST_BOOKMARK: "/api/v2/blog/posts/{uuid}/bookmark",
   /** DELETE → 204. Removes the bookmark. Auth required. */
   BLOG_POST_BOOKMARK_DELETE: "/api/v2/blog/posts/{uuid}/bookmark",
-  /** GET → V2Response<BlogBookmarkListResponseV2>. Auth required. */
-  BLOG_ME_BOOKMARKS: "/api/v2/me/blog/bookmarks",
+  // NOTE: `BLOG_ME_BOOKMARKS` (`/api/v2/me/blog/bookmarks`) was REMOVED in
+  // 0.75.0 — the route no longer exists in mini-back. The caller's
+  // cross-subject bookmark list moved to the generic engagement subsystem:
+  // use `ENGAGEMENT_ENDPOINTS.ME_BOOKMARKS` (`/api/v2/me/engagement/bookmarks`)
+  // → `EngagementBookmarkListResponse` from `@kerbero1994/shared-types/engagement`.
   /** POST → Body: BlogCommentCreateRequestV2. Returns V2Response<BlogCommentV2>. Status 201. Auth required. INV-BP-5/INV-BP-6 enforced. */
   BLOG_POST_COMMENTS_CREATE: "/api/v2/blog/posts/{uuid}/comments",
   /** GET → V2Response<BlogCommentListResponseV2>. Auth optional (read public). */
