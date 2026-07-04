@@ -5,6 +5,22 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.91.0] - 2026-07-04
+
+`EVENT_REGISTRATION_ERROR_CODES` gains `venue_full` (409) — the per-sede capacity
+gate that mini-back's `_resolve_venue` / `_assert_sede_has_room` already raises
+(§S2 L22, shipped in the SITIMM-82 events remediation). Additive only; existing
+codes unchanged. Frontends that previously matched the raw `venue_full` string
+now get it in the typed union.
+
+## [0.90.0] - 2026-07-03
+
+Events attendance-confirmation contract (SITIMM-89). `EventV2` / `EventDetailV2`
+gain `requiresConfirmation` + `confirmationOpensAt` + `confirmationDeadline`;
+`CreateEventV2Request` / `UpdateEventV2Request` accept them (optional).
+`EVENT_REGISTRATION_ERROR_CODES` gains `invalid_state`, `confirmation_not_open`,
+`confirmation_window_closed`. Additive (retroactive changelog entry).
+
 ## [0.89.0] - 2026-07-02
 
 `galleries` module gains the Phase B member-contribution + moderation
