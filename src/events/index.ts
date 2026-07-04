@@ -40,6 +40,41 @@ export type EventParticipantStatus =
   | "rejected";
 
 /**
+ * Error `code` values returned by the event self-registration endpoint
+ * `POST /api/v2/events/{uuid}/register` inside a structured detail object
+ * `{ "code": <value>, "message": <human string> }`. Frontends key on the
+ * `code` (not the message, which is English/internal) to show a localized,
+ * case-specific error. Status 409 is shared by several cases (`event_full`,
+ * `already_registered`, `already_rejected`), so the `code` — not the HTTP
+ * status — is the disambiguator.
+ *
+ * Source of truth: mini-back `event_registration_service.py` +
+ * `event_eligibility_service.py`. The private-event guard intentionally returns
+ * a bare 404 "Event not found" with NO code (it must not reveal that a private
+ * event exists), so it is absent here.
+ */
+export const EVENT_REGISTRATION_ERROR_CODES = [
+  "event_full", // 409 — capacity reached, waitlist disabled
+  "event_disabled", // 400 — event not enabled
+  "event_ended", // 400 — eventDate already passed
+  "registration_disabled", // 400 — `register` flag off; event accepts no registrations
+  "registration_closed", // 400 — registration deadline (registrationEndDate) has passed
+  "already_registered", // 409 — caller already has an active registration
+  "already_rejected", // 409 — caller was previously rejected for this event
+  "venue_not_found", // 404 — selected venue/stop is invalid
+  "guest_forbidden", // 403 — guest policy forbids non-affiliated callers
+  "audience_not_eligible", // 403 — audience rules reject the caller
+  "transport_stop_full", // 409 — chosen transport stop is at capacity
+  "transport_stop_closed", // 410 — chosen transport stop is closed
+  "invalid_state", // 409 — confirm attempted on a non-registered participant (INV-CONF-3)
+  "confirmation_not_open", // 409 — confirm before confirmationOpensAt (INV-CONF-4)
+  "confirmation_window_closed", // 409 — confirm after confirmationDeadline (INV-CONF-5)
+] as const;
+
+export type EventRegistrationErrorCode =
+  (typeof EVENT_REGISTRATION_ERROR_CODES)[number];
+
+/**
  * Event media role.
  * - `"cover"` — Hero/cover image (max 1 per event).
  * - `"gallery"` — Additional gallery images (max 20 per event).
@@ -68,12 +103,23 @@ export interface EventV2 {
   title: string;
   /** ISO-8601 datetime of the event. Null if date not set. */
   eventDate: string | null;
+  /** Registration deadline (Cierre de inscripción), ISO-8601. Null = open until eventDate. Once passed, registration returns `registration_closed`. */
+  registrationEndDate: string | null;
   /** ISO-8601 end datetime of the event. Null = single-moment event ending at eventDate. */
   endDate?: string | null;
   /** Short description. Max 2,000 chars. */
   description: string | null;
-  /** Image URL (presigned S3 or relative path). Max 2,048 chars. */
+  /** Image URL (presigned S3 or relative path). Max 2,048 chars. After
+   * on-demand ingest this is the durable MinIO URL. */
   img: string | null;
+  /**
+   * On-demand responsive variant bundle (avif/webp + blurhash) for the cover,
+   * same shape as `programs.ImageVariants`. v0.87.0+. `null` until the external
+   * cover is ingested (SITIMM-12) or when on-demand transforms are not
+   * configured — the FE then falls back to the flat `img`.
+   * Backend: events_v2_serializers.py :: img_variants.
+   */
+  imgVariants?: import("../programs").ImageVariants | null;
   /** Physical location/venue. Max 500 chars. */
   place: string | null;
   /** Whether participant registration is enabled. Default: false. */
@@ -100,6 +146,12 @@ export interface EventV2 {
   waitlistCount: number;
   /** Remaining seats (`max(0, capacity - participantCount)`). Null if capacity is null. */
   seatsRemaining: number | null;
+  /** Opt-in attendance-confirmation gate. When true, participants confirm to keep their seat. Default: false. */
+  requiresConfirmation: boolean;
+  /** ISO-8601. Earliest a participant may confirm. Null when unset / confirmation not required. */
+  confirmationOpensAt: string | null;
+  /** ISO-8601. Latest a participant may confirm. Null when unset / confirmation not required. */
+  confirmationDeadline: string | null;
   /** Venue latitude (WGS84). Null if not set. */
   latitude: number | null;
   /** Venue longitude (WGS84). Null if not set. */
@@ -136,6 +188,10 @@ export interface EventV2 {
   updatedAt: string;
   /** Transport mode for the event. "none" when no transport is configured. */
   transportMode?: TransportMode;
+  /** IANA timezone the event's wall-clock times are expressed in. Default "America/Mexico_City". */
+  timeZone: string;
+  /** True when this is a QA-harness event: time-gate bypass + hidden from non-privileged callers. Default false. */
+  qaHarnessEvent: boolean;
   /** Resolved locale applied to translatable fields. Present on i18n GET responses. */
   currentLang?: string;
   /** Origin of the translation (machine/human/fallback). Fallback = native Spanish. */
@@ -192,6 +248,23 @@ export interface EventParticipantStats {
   waitlisted: number;
 }
 
+// ── QA Harness ──
+
+/**
+ * Re-minted pending-confirmation token for a QA-harness event registration.
+ * Returned by GET /api/v2/events/{uuid}/qa/pending-confirm?email= (harness-only,
+ * unrestricted callers) so QA can drive the email-confirm step without inbox access.
+ * Backend: event_qa_v2.py :: pending-confirm — raw dict, NOT success_response-wrapped.
+ */
+export interface QAPendingConfirmV2Response {
+  /** JWT ID (jti) of the pending registration. */
+  jti: string;
+  /** Freshly-minted signed confirmation JWT. */
+  token: string;
+  /** Frontend deep-link path: `/es/eventos/confirmar-registro?token=...`. */
+  confirmUrl: string;
+}
+
 /**
  * Paginated event list response.
  * Backend: event_v2.py :: EventListV2Response
@@ -222,6 +295,8 @@ export interface CreateEventV2Request {
   eventDate: string;
   /** ISO-8601 end datetime. Must be strictly after eventDate when provided. */
   endDate?: string | null;
+  /** Registration deadline (Cierre de inscripción), ISO-8601. Omit → backend defaults to eventDate − 1 day when register=true. Must be on or before eventDate. */
+  registrationEndDate?: string | null;
   /** Event type catalog ID. Required. */
   EventTypeId: number;
   /** Rich HTML content. Max 100,000 chars. */
@@ -268,6 +343,15 @@ export interface CreateEventV2Request {
   streamingUrl?: string;
   /** Streaming provider tag. */
   streamingProvider?: string;
+  /**
+   * Opt-in attendance confirmation gate. When true, `POST /{uuid}/confirm` promotes a
+   * participant from `registered` → `confirmed` (subject to the window below). Default: false.
+   */
+  requiresConfirmation?: boolean;
+  /** ISO-8601. Earliest a participant may confirm. Must be `<= confirmationDeadline`. */
+  confirmationOpensAt?: string | null;
+  /** ISO-8601. Latest a participant may confirm. Must be `<= eventDate`. */
+  confirmationDeadline?: string | null;
   /** Venue slots to create alongside the event. */
   venues?: CreateEventCampusV2Request[] | null;
 }
@@ -283,6 +367,8 @@ export interface UpdateEventV2Request {
   eventDate?: string;
   /** ISO-8601 end datetime. Must be strictly after eventDate when provided. */
   endDate?: string | null;
+  /** Registration deadline (Cierre de inscripción), ISO-8601. Must be on or before eventDate. */
+  registrationEndDate?: string | null;
   /** Event type catalog ID. */
   EventTypeId?: number;
   /** Rich HTML content. Max 100,000 chars. */
@@ -329,6 +415,12 @@ export interface UpdateEventV2Request {
   streamingUrl?: string;
   /** Streaming provider tag. */
   streamingProvider?: string;
+  /** Opt-in attendance confirmation gate. When true, enables the confirm-to-attend flow. */
+  requiresConfirmation?: boolean;
+  /** ISO-8601. Earliest a participant may confirm. Must be `<= confirmationDeadline`. */
+  confirmationOpensAt?: string | null;
+  /** ISO-8601. Latest a participant may confirm. Must be `<= eventDate`. */
+  confirmationDeadline?: string | null;
 }
 
 // ── Participant Types ──
@@ -477,6 +569,49 @@ export interface DeleteParticipantV2Request {
 export interface ConfirmParticipantV2Request {
   /** Participant UUID (path param). */
   uuid: string;
+}
+
+/**
+ * POST /api/v2/events/{uuid}/register-public — body.
+ * Public (NO auth) anonymous event registration. The server creates the
+ * participant only after the email double-opt-in is confirmed (a pending
+ * payload lives in Redis keyed by the confirmation token until then).
+ */
+export interface RegisterPublicV2Request {
+  /** Full name. 3–120 chars (FIELD_LIMITS.FULL_NAME_MIN..FULL_NAME_MAX). */
+  name: string;
+  /** Contact email; the confirmation link is sent here. Max 100 chars. */
+  email: string;
+  /** MX phone, 10 digits (PHONE_MX_PATTERN after cleanDigits). */
+  phone: string;
+  /** Attendance modality. Defaults to "presencial" server-side. */
+  modality?: EventModality;
+}
+
+/**
+ * POST /api/v2/events/{uuid}/register-public — response (HTTP 202).
+ * Never reveals whether the email already exists; always "pending_confirmation".
+ */
+export interface RegisterPublicV2Response {
+  status: "pending_confirmation";
+  /** User-facing message, e.g. "Revisa tu correo para confirmar el registro." */
+  message: string;
+}
+
+/**
+ * POST /api/v2/events/registration/confirm — body.
+ * Consumes the one-time email token and creates the participant row.
+ */
+export interface ConfirmRegistrationV2Request {
+  /** Signed JWT from the confirmation email link (type "event_reg_confirm"). */
+  token: string;
+}
+
+/** POST /api/v2/events/registration/confirm — response (HTTP 200/201). */
+export interface ConfirmRegistrationV2Response {
+  status: "registered";
+  eventUuid: string;
+  eventTitle: string;
 }
 
 /**

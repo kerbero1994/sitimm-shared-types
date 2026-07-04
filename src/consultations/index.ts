@@ -274,6 +274,8 @@ export interface ConsultationV2 {
   advisor_uuid: string | null;
   /** Full name of the assigned advisor, or null if unassigned. */
   advisor_name: string | null;
+  /** Profile picture URL of the assigned advisor, or null if unassigned / no avatar. */
+  advisor_avatar_url: string | null;
   /** Co-advisors assigned to this consultation. Null if none. */
   co_advisors: CoAdvisorInfoV2[] | null;
   /** UUID of the company associated with this consultation. */

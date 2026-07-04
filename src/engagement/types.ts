@@ -245,6 +245,87 @@ export interface EngagementShareResponse {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// Extended interactions (like / download / report) — opt-in per subject
+// ─────────────────────────────────────────────────────────────────────
+//
+// These routes are mounted only for subjects that declare the interaction
+// in `SubjectDescriptor.enabled_interactions` (e.g. magazine ships
+// like/download/report/stats; blog uses reactions instead of like and
+// mounts none of these). Backend:
+// `app/engagement/presentation/routes/extended_routes.py` +
+// `app/engagement/presentation/schemas/extended.py`.
+
+/**
+ * Response for the authenticated `POST/DELETE /{subject}/like` toggle.
+ * Backend: `EngagementLikeResponseV2`.
+ *
+ * Carries both the real (deduped-per-user) and vanity (append-only,
+ * social-proof) counters. `user_liked` is `null` only on the rare path
+ * where the service can't resolve the caller's state.
+ */
+export interface EngagementLikeResponse {
+  /** Caller's like state after the toggle — `null` when unresolved. */
+  user_liked?: boolean | null;
+  /** Real deduped-per-user like counter. Defaults to `0`. */
+  like_count_real: number;
+  /** Vanity append-only like counter (social-proof). Defaults to `0`. */
+  like_count_vanity: number;
+}
+
+/**
+ * Response for the anonymous `POST /{subject}/like/public` vanity bump.
+ * Backend: `EngagementLikePublicResponseV2`.
+ *
+ * Anonymous callers only ever see the vanity counter — the real counter
+ * is deduped per user id and is meaningless without a caller identity.
+ */
+export interface EngagementLikePublicResponse {
+  /** Vanity append-only like counter. Defaults to `0`. */
+  like_count_vanity: number;
+}
+
+/**
+ * Response for `POST /{subject}/download`.
+ * Backend: `EngagementDownloadResponseV2`.
+ *
+ * Append-only vanity + deduped real download counters. NOTE: the
+ * download route returns ONLY the counters — the asset URL (e.g. a
+ * magazine `pdfUrl`) is NOT part of this shape (legacy magazine clients
+ * expected a `pdfUrl`; the engagement download route never emits one).
+ */
+export interface EngagementDownloadResponse {
+  /** Real deduped download counter. Defaults to `0`. */
+  download_count_real: number;
+  /** Vanity append-only download counter. Defaults to `0`. */
+  download_count_vanity: number;
+}
+
+/**
+ * Request body for `POST /{subject}/report`. `reason` must be in the
+ * backend allow-list (`ALLOWED_REASONS` in `report_service.py`);
+ * `comment` is optional free text.
+ * Backend: `EngagementReportRequestV2`.
+ */
+export interface EngagementReportRequest {
+  /** Allow-listed reason key. Max 64 chars. */
+  reason: string;
+  /** Optional free-text context. Max 2000 chars. */
+  comment?: string | null;
+}
+
+/**
+ * Acknowledgement for `POST /{subject}/report`. Status 201.
+ * Backend: `EngagementReportAckV2`.
+ *
+ * The report row's lifecycle status (e.g. `"open"`) — the only field the
+ * route surfaces to the reporter; full report rows live behind the admin
+ * moderation surface.
+ */
+export interface EngagementReportAck {
+  status: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // Comments
 // ─────────────────────────────────────────────────────────────────────
 

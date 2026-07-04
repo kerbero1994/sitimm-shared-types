@@ -62,15 +62,15 @@ export const V2_ENDPOINTS = {
   /** DELETE → V2Response<AvatarV2Response>. Removes profile picture. Auth required. */
   USERS_ME_AVATAR_DELETE: "/users/me/avatar",
 
-  // ── Social Auth ───────────────────────────────────────────
+  // ── Social Auth (served on the V1 base: /api/v1, NOT /api/v2) ──
 
-  /** POST → Body: SocialLoginRequest. Returns V2Response<SocialLoginResponse>. No auth. */
-  AUTH_SOCIAL_LOGIN: "/auth/social/login",
-  /** POST → Body: VerifyIdentityRequest. Returns V2Response<VerifyIdentityResponse>. No auth. */
+  /** POST → Body: SocialLoginRequest. NO auth. Served on V1: /api/v1/auth/social (no "/login" suffix). */
+  AUTH_SOCIAL_LOGIN: "/auth/social",
+  /** POST → Body: VerifyIdentityRequest. NO auth. Served on V1: /api/v1/auth/social/verify. */
   AUTH_SOCIAL_VERIFY: "/auth/social/verify",
-  /** POST → Body: GuestLoginRequest. Returns V2Response<GuestLoginResponse>. No auth. */
+  /** POST → Body: GuestLoginRequest. NO auth. Served on V1: /api/v1/auth/social/guest. */
   AUTH_SOCIAL_GUEST: "/auth/social/guest",
-  /** GET → V2Response<SocialAccountListResponse>. Auth required. */
+  /** GET → V2Response<SocialAccountListResponse>. Auth required. Served on V1: /api/v1/auth/social/accounts. */
   AUTH_SOCIAL_ACCOUNTS: "/auth/social/accounts",
 
   // ── Events ───────────────────────────────────────────────
@@ -89,6 +89,16 @@ export const V2_ENDPOINTS = {
   EVENT_CLONE: "/events/{uuid}/clone",
   /** GET → V2Response<MyEventsV2Response>. Returns user's registered events. Auth required. */
   EVENTS_MY: "/events/my-events",
+  /** POST → Body: ParticipantRegisterV2 (modality, campus_id, is_alternative, ...). Returns
+      V2Response<EventParticipantV2> (201). Auth required (get_user_context). THE canonical authed
+      self-registration route (event_participants_v2.py). NOTE: EVENT_PARTICIPANTS_REGISTER below is stale. */
+  EVENT_REGISTER: "/events/{uuid}/register",
+  /** POST → Body: RegisterPublicV2Request. NO auth. IP rate-limited. Returns
+      V2Response<RegisterPublicV2Response> (202). Anonymous registration; sends double-opt-in email. */
+  EVENT_REGISTER_PUBLIC: "/events/{uuid}/register-public",
+  /** POST → Body: ConfirmRegistrationV2Request. NO auth. IP rate-limited. Returns
+      V2Response<ConfirmRegistrationV2Response>. Consumes the one-time email token, creates the participant. */
+  EVENT_REGISTRATION_CONFIRM: "/events/registration/confirm",
 
   // ── Event Participants ───────────────────────────────────
 
@@ -272,12 +282,23 @@ export const V2_ENDPOINTS = {
   MAGAZINE_VIEW: "/magazines/{uuid}/view",
   /** POST → V2Response<MagazineShareResponse>. Record a share (optional channel). Anonymous allowed, IP rate-limited. */
   MAGAZINE_SHARE: "/magazines/{uuid}/share",
-  /** POST → V2Response<MagazineDownloadResponse>. Record a download + return pdfUrl. Anonymous allowed, IP rate-limited. */
+  /** POST → V2Response<MagazineDownloadResponse>. Record a download — returns counters only (download_count_real/_vanity), NOT a pdfUrl; read the PDF URL from MagazineDetailV2.pdfUrl. Anonymous allowed, IP rate-limited. */
   MAGAZINE_DOWNLOAD: "/magazines/{uuid}/download",
   /** POST → V2Response. Toggle a useful/not_useful/neutral reaction. Auth required. */
   MAGAZINE_REACTIONS: "/magazines/{uuid}/reactions",
   /** POST (add) / DELETE (remove) → bookmark this magazine. Auth required. */
   MAGAZINE_BOOKMARK: "/magazines/{uuid}/bookmark",
+
+  // ── Home CMS ─────────────────────────────────────────────
+
+  /** GET → V2Response<ListHomeSectionsV2Response>. Public, no auth. Query: lang (unknown → es). Enabled sections, ordered, merged structure+text, image refs resolved to URLs. */
+  HOME_SECTIONS_PUBLIC: "/home/sections",
+  /** GET → V2Response<AdminListHomeSectionsV2Response>. All 9 sections incl. disabled, raw trees + per-lang translation status. Requires content:read. */
+  HOME_SECTIONS_ADMIN: "/home/sections/admin",
+  /** PATCH → Body: PatchHomeSectionV2Request. Returns V2Response<PatchHomeSectionV2Response>. Errors: 404 section_not_found, 409 not_editable_yet (Fase-2 key), 422 shape_mismatch. Requires content:update. Rate-limited 60/min per user. */
+  HOME_SECTION_PATCH: "/home/sections/{key}",
+  /** POST → Body: ReorderHomeSectionsV2Request (all 9 keys exactly once, else 422 invalid_order). Returns V2Response<ReorderHomeSectionsV2Response>. Requires content:update. Rate-limited 60/min per user. */
+  HOME_SECTIONS_REORDER: "/home/sections/reorder",
 
   // ── Headquarters ───────────────────────────────────────────
 
