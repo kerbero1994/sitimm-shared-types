@@ -5,6 +5,14 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.92.0] - 2026-07-04
+
+Events transport: per-stop waitlist override (S6, SITIMM-90). `EventBusStopV2`
+gains `waitlistEnabled: boolean | null` (`null` inherits the event-level flag);
+`CreateEventBusStopRequest` / `UpdateEventBusStopRequest` accept optional
+`waitlistEnabled`. Matches mini-back `EventBusStop.waitlistEnabled` + the
+`EventBusStopCreate/Update/Response` schemas. Additive.
+
 ## [0.91.0] - 2026-07-04
 
 `EVENT_REGISTRATION_ERROR_CODES` gains `venue_full` (409) — the per-sede capacity

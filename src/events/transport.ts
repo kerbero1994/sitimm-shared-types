@@ -52,6 +52,12 @@ export interface EventBusStopV2 {
   sortOrder: number;
   /** Whether this stop is closed to new reservations. */
   isClosed: boolean;
+  /**
+   * Per-stop transport-waitlist override (§S6, SITIMM-90). `null` = inherit the
+   * event-level `Event.waitlistEnabled`; `true`/`false` overrides it for THIS stop
+   * (a full stop enqueues on the transport waitlist when the effective flag is on).
+   */
+  waitlistEnabled: boolean | null;
   /** ISO-8601 creation timestamp. */
   createdAt: string;
   /** ISO-8601 last update timestamp. */
@@ -120,6 +126,8 @@ export interface CreateEventBusStopRequest {
   notes?: string | null;
   /** Ordering hint (auto-assigned if omitted). */
   sortOrder?: number;
+  /** Per-stop waitlist override; omit/null to inherit the event flag (§S6). */
+  waitlistEnabled?: boolean | null;
 }
 
 /**
@@ -143,6 +151,8 @@ export interface UpdateEventBusStopRequest {
   sortOrder?: number;
   /** Close this stop to new reservations (existing reservations cleared). */
   isClosed?: boolean;
+  /** Per-stop waitlist override; null inherits the event flag (§S6). */
+  waitlistEnabled?: boolean | null;
 }
 
 /**
