@@ -1,19 +1,20 @@
 /**
- * Authentication types for the dual-backend auth system.
+ * Authentication types for the SITIMM V2 auth contract.
  *
- * Used by: new_dashboard (Shell -> Remotes), sitimmApp (V2 auth)
- * Backend: mini-back JWT system (app/shared/auth/jwt_service.py)
+ * Used by: new_dashboard, sitimmApp
+ * Backend: mini-back /api/v2 (hard cutover 9e3a4255, 2026-06-22 — V1 auth
+ * routes removed). Token mechanics: app/shared/auth/jwt_service.py.
  *
- * Auth flow:
- * 1. Shell authenticates against V1 and/or V2 backend
- * 2. Stores DualAuthPayload in localStorage key "sitimm-dual-auth"
- * 3. Remotes hydrate from localStorage on module load (hydrateFromDualAuth)
- * 4. Token refresh emits auth:refresh CustomEvent on window
+ * NOTE: DualAuthPayload/AuthPayload/V2TokenData/AuthEvent below describe a
+ * legacy shell↔remote micro-frontend model that new_dashboard no longer
+ * implements — kept only for backwards compatibility, see @deprecated tags.
  */
 
 /**
  * Per-backend token payload emitted to each remote.
  * Used in auth:login and auth:refresh CustomEvents.
+ * @deprecated Modelo micro-frontend legacy — new_dashboard usa su slice Redux
+ * `login`; ningún consumidor conocido. Se eliminará en 1.0.0.
  */
 export interface AuthPayload {
   /** JWT access token (V1 or V2 format). */
@@ -35,6 +36,8 @@ export interface AuthPayload {
 /**
  * V2-specific token data (refresh token system).
  * Backend: mini-back JWT returns access + refresh token pair.
+ * @deprecated Modelo micro-frontend legacy — new_dashboard usa su slice Redux
+ * `login`; ningún consumidor conocido. Se eliminará en 1.0.0.
  */
 export interface V2TokenData {
   /** Short-lived JWT access token. */
@@ -49,6 +52,8 @@ export interface V2TokenData {
  * Dual auth result stored in shell after login.
  * Persisted in localStorage key "sitimm-dual-auth".
  * Each remote reads this on bootstrap to hydrate its Redux store.
+ * @deprecated Modelo micro-frontend legacy — new_dashboard usa su slice Redux
+ * `login`; ningún consumidor conocido. Se eliminará en 1.0.0.
  */
 export interface DualAuthPayload {
   /** User UUID. */
@@ -76,49 +81,186 @@ export interface DualAuthPayload {
 /**
  * Events the shell emits on `window` for auth lifecycle.
  * Remotes subscribe to these via `window.addEventListener()`.
+ * @deprecated Modelo micro-frontend legacy — new_dashboard usa su slice Redux
+ * `login`; ningún consumidor conocido. Se eliminará en 1.0.0.
  */
 export type AuthEventType = "auth:login" | "auth:refresh" | "auth:logout";
 
-/** CustomEvent<AuthPayload> for login and refresh; no detail for logout. */
+/**
+ * CustomEvent<AuthPayload> for login and refresh; no detail for logout.
+ * @deprecated Modelo micro-frontend legacy — new_dashboard usa su slice Redux
+ * `login`; ningún consumidor conocido. Se eliminará en 1.0.0.
+ */
 export type AuthEvent = CustomEvent<AuthPayload | null>;
 
+// ────────────────────────────────────────────────────────────────────
+// Credential login (V2)
+//
+// Backend: app/presentation/api/v2/auth_legacy.py (hard cutover 9e3a4255,
+// 2026-06-22 — las rutas V1 de credenciales fueron ELIMINADAS).
+//   POST /api/v2/users/login        (rate limit 5/min + lockout por email)
+//   POST /api/v2/users/login-phone  (rate limit 3/min)
+//   POST /api/v2/users/refresh      (refresh token ROTATIVO one-time-use)
+//   POST /api/v2/users/logout       (Bearer access token requerido)
+//
+// Los TTL NO vienen en las responses — ver TOKEN_TTL.
+// ────────────────────────────────────────────────────────────────────
+
 /**
- * Login request to V2 backend.
- * Backend: POST /api/v2/auth/login
+ * TTLs de tokens — contrato out-of-band con mini-back.
+ * Backend: app/config.py :: ACCESS_TOKEN_EXPIRE_MINUTES=30,
+ * REFRESH_TOKEN_EXPIRE_DAYS=7. Las responses de login/refresh NO incluyen
+ * `expiresIn`; el FE debe programar el refresh proactivo con estas constantes.
+ */
+export const TOKEN_TTL = {
+  /** Segundos de vida del access token (JWT, 30 min). */
+  ACCESS_SECONDS: 1800,
+  /** Días de vida del refresh token (UUID opaco en Redis, one-time-use). */
+  REFRESH_DAYS: 7,
+} as const;
+
+/**
+ * Body para POST /api/v2/users/login.
+ * Backend: schemas/auth_legacy.py :: LoginRequest — el campo JSON es `pass`
+ * (Pydantic `pass_` con validation_alias="pass"), NO `password`.
  */
 export interface LoginV2Request {
-  /** User email. */
+  /** Email del usuario. Max 320 chars. */
   email: string;
-  /** User password. Min 6, max 100 chars. */
-  password: string;
+  /** Password. Max 128 chars. Campo JSON literal: `pass`. */
+  pass: string;
 }
 
 /**
- * Login response from V2 backend.
- * Backend: POST /api/v2/auth/login response.
- *
- * Note: This response uses snake_case (raw backend format).
- * The shell transforms it into DualAuthPayload (camelCase).
+ * Body para POST /api/v2/users/login-phone.
+ * Backend: schemas/auth_legacy.py :: LoginPhoneRequest.
+ */
+export interface LoginPhoneV2Request {
+  /** Teléfono del usuario. Max 20 chars. */
+  phone: string;
+  /** Password. Max 128 chars. Campo JSON literal: `pass`. */
+  pass: string;
+}
+
+/**
+ * Payload de login exitoso (dentro del envelope `{status, data}`).
+ * Backend: auth_legacy.py :: _build_login_response.
+ */
+export interface LoginV2SuccessData {
+  /** JWT access token (30 min — ver TOKEN_TTL). */
+  accessToken: string;
+  /** Refresh token opaco (UUID), rotativo one-time-use, 7 días. */
+  refreshToken: string;
+  /** User type numérico. Comparar con constantes UserType. */
+  userType: number;
+  /** UUID del usuario. */
+  userUuid: string;
+  /** Solo EMPLOYEE: si tiene employment activo. snake_case verbatim del BE. */
+  active_employment?: boolean;
+  /**
+   * Solo EMPLOYEE: user type efectivo tras el downgrade a INVITADO cuando no
+   * hay employment activo. Si está presente, el FE DEBE usarlo (no userType)
+   * para menú/RBAC. snake_case verbatim del BE.
+   */
+  effective_user_type?: number;
+  /** true cuando el email registrado es un RFC usado como credencial. */
+  needsContactUpdate?: boolean;
+  /** Razón del contact update (e.g., "rfc_as_credential"). */
+  contactUpdateReason?: string;
+}
+
+/**
+ * Payload cuando el usuario tiene password temporal/nula (first login).
+ * NO se emite access token — el setupToken (JWT type="setup", 15 min) es lo
+ * único utilizable, contra /api/v2/auth/setup + /setup/verify.
+ */
+export interface LoginV2SetupData {
+  /** JWT de setup (type="setup", 15 min TTL). */
+  setupToken: string;
+  /** Discriminador del branch. */
+  requiresSetup: true;
+  /** User type numérico. */
+  userType: number;
+  /** UUID del usuario. */
+  userUuid: string;
+  needsContactUpdate?: boolean;
+  contactUpdateReason?: string;
+}
+
+/**
+ * Response de POST /api/v2/users/login y /login-phone.
+ * Envelope legacy `{status, data}` de response_builder.success_response.
+ * Discriminar con `"requiresSetup" in data`.
  */
 export interface LoginV2Response {
-  /** JWT access token. */
-  access_token: string;
-  /** JWT refresh token. */
-  refresh_token: string;
-  /** Seconds until access token expires. */
-  expires_in: number;
-  /** Basic user info. */
-  user: {
-    /** User UUID. */
-    uuid: string;
-    /** User email. */
-    email: string;
-    /** Numeric user type code. Compare with UserType constants. */
-    user_type: number;
-    /** First name(s). */
-    first_name: string;
-    /** Surname(s). */
-    last_name: string;
+  status: "success";
+  data: LoginV2SuccessData | LoginV2SetupData;
+}
+
+/**
+ * Body para POST /api/v2/users/refresh.
+ * Backend: auth_legacy.py :: RefreshRequest (alias refreshToken).
+ * El refresh token es one-time-use: el BE lo consume atómicamente (GETDEL)
+ * y emite un par nuevo — el FE DEBE persistir el refreshToken de la response.
+ */
+export interface RefreshV2Request {
+  refreshToken: string;
+}
+
+/** Response de POST /api/v2/users/refresh. Sin expiresIn — ver TOKEN_TTL. */
+export interface RefreshV2Response {
+  status: "success";
+  data: {
+    accessToken: string;
+    refreshToken: string;
+    userUuid: string;
+  };
+}
+
+/**
+ * Body para POST /api/v2/users/logout. Requiere Bearer access token.
+ * Blacklistea el access token y revoca el refresh token.
+ */
+export interface LogoutV2Request {
+  refreshToken: string;
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Account setup — first login (V2)
+//
+// Backend: app/presentation/api/v2/auth_setup.py + schemas/auth_setup.py.
+// Authorization: Bearer <setupToken> (JWT type="setup"), NO access token.
+//   POST /api/v2/auth/setup         → dispara OTP al contacto elegido
+//   POST /api/v2/auth/setup/verify  → OTP correcto → tokens de sesión
+// ────────────────────────────────────────────────────────────────────
+
+/**
+ * Body para POST /api/v2/auth/setup.
+ * Constraint BE (model_validator): al menos uno de email/phone requerido.
+ */
+export interface SetupInitV2Request {
+  /** Password nueva. 8–128 chars. */
+  password: string;
+  /** Email de contacto. Max 320 chars. */
+  email?: string;
+  /** Teléfono de contacto. Max 20 chars. */
+  phone?: string;
+}
+
+/** Body para POST /api/v2/auth/setup/verify. */
+export interface SetupVerifyV2Request {
+  /** OTP de 6 dígitos. */
+  otpCode: string;
+}
+
+/** Response de POST /api/v2/auth/setup/verify — sesión completa. */
+export interface SetupVerifyV2Response {
+  status: "success";
+  data: {
+    accessToken: string;
+    refreshToken: string;
+    userType: number;
+    userUuid: string;
   };
 }
 
@@ -131,7 +273,7 @@ export type SocialProvider = "google" | "apple";
 export type SocialLoginStatus = "authenticated" | "needs_verification" | "requires_setup";
 
 /**
- * Request body for POST /api/v2/auth/social/login.
+ * Request body for POST /api/v2/auth/social (sin sufijo "/login"; V2 desde el cutover 9e3a4255).
  * Backend: social_auth.py :: SocialLoginRequest
  */
 export interface SocialLoginRequest {
@@ -142,13 +284,19 @@ export interface SocialLoginRequest {
 }
 
 /**
- * Response from POST /api/v2/auth/social/login.
- * Backend: social_auth.py :: SocialLoginResponse
+ * Response de POST /api/v2/auth/social. FLAT — sin envelope {status,data}.
+ * Backend: schemas/social_auth.py :: SocialLoginResponse (serializado
+ * by-alias: needsContactUpdate, isFirstLogin, googlePhotoUrl, refreshToken).
  *
  * Flow:
- * - "authenticated" → returning user, token is a full JWT. Login complete.
- * - "needs_verification" → new user, call /auth/social/verify with session_id + RFC.
- * - "requires_setup" → user exists but needs additional setup.
+ * - "authenticated" → usuario existente (cuenta vinculada o email match).
+ *   `token` es el access JWT. Login completo.
+ * - "requires_setup" → usuario existente con password temporal/nula.
+ *   `token` es el setupToken → /api/v2/auth/setup.
+ * - "needs_verification" → usuario desconocido. `session_id` (TTL 10 min)
+ *   sirve como signup_token del onboarding unificado
+ *   (/auth/employee/match + /auth/employee/claim) o para /auth/social/guest.
+ *   El viejo /auth/social/verify por RFC es 410 GONE.
  */
 export interface SocialLoginResponse {
   /** Login status determining next step. */
@@ -171,12 +319,19 @@ export interface SocialLoginResponse {
   needsContactUpdate: boolean | null;
   /** Reason why contact update is needed. */
   contactUpdateReason: string | null;
+  /** true en el primer login social del usuario. Alias BE: isFirstLogin. */
+  isFirstLogin?: boolean | null;
+  /** URL de la foto de perfil de Google (claim `picture`). Solo Google. */
+  googlePhotoUrl?: string | null;
 }
 
 /**
  * Request body for POST /api/v2/auth/social/verify.
  * Links a social login to an existing employee via RFC.
  * Backend: social_auth.py :: VerifyIdentityRequest
+ * @deprecated El endpoint /auth/social/verify responde 410 GONE desde el
+ * login redesign (2026-06-22). Usar el onboarding unificado
+ * (employee/match + employee/claim) o GuestLoginRequest. Se eliminará en 1.0.0.
  */
 export interface VerifyIdentityRequest {
   /** Temporary session ID from SocialLoginResponse. */
@@ -188,6 +343,9 @@ export interface VerifyIdentityRequest {
 /**
  * Response from POST /api/v2/auth/social/verify.
  * Backend: social_auth.py :: VerifyIdentityResponse
+ * @deprecated El endpoint /auth/social/verify responde 410 GONE desde el
+ * login redesign (2026-06-22). Usar el onboarding unificado
+ * (employee/match + employee/claim) o GuestLoginRequest. Se eliminará en 1.0.0.
  */
 export interface VerifyIdentityResponse {
   /** JWT access token. */

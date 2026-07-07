@@ -5,6 +5,35 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.93.0] - 2026-07-07
+
+Auth contract resync against mini-back main post-cutover `9e3a4255` (SITIMM-190).
+
+**BREAKING (0.x minor por convención del paquete):**
+
+- `auth`: `LoginV2Request.password` → `pass` — el nombre viejo nunca coincidió
+  con el alias Pydantic real de mini-back (`schemas/auth_legacy.py`). El path
+  real es `POST /api/v2/users/login`, no `/api/v2/auth/login`.
+- `endpoints`: `V2_ENDPOINTS.AUTH_SOCIAL_VERIFY` eliminado — el endpoint
+  responde 410 GONE desde el login redesign (2026-06-22).
+
+**Added:**
+
+- `auth`: `TOKEN_TTL` (access 30 min / refresh 7 días — el BE ya no devuelve
+  `expiresIn`), `LoginPhoneV2Request`, `LoginV2SuccessData` (con
+  `effective_user_type` / `active_employment`), `LoginV2SetupData`,
+  `RefreshV2Request/Response`, `LogoutV2Request`, `SetupInitV2Request`,
+  `SetupVerifyV2Request/Response`; `SocialLoginResponse.isFirstLogin` +
+  `googlePhotoUrl`.
+- `endpoints`: `AUTH_LOGIN`, `AUTH_LOGIN_PHONE`, `AUTH_REFRESH`, `AUTH_LOGOUT`,
+  `AUTH_SETUP`, `AUTH_SETUP_VERIFY`, `AUTH_FORGOT_PASSWORD`,
+  `AUTH_VERIFY_RESET`, `AUTH_RESET_PASSWORD`; social re-documentados como V2.
+- `users`: `UserBasicV2.accountStatus` / `purgeAfter` (GDPR self-deletion).
+
+**Deprecated:** `DualAuthPayload` / `AuthPayload` / `V2TokenData` /
+`AuthEvent` / `AuthEventType` (modelo micro-frontend sin consumidores),
+`VerifyIdentityRequest/Response` (endpoint 410 GONE). Se eliminan en 1.0.0.
+
 ## [0.92.0] - 2026-07-04
 
 Events transport: per-stop waitlist override (S6, SITIMM-90). `EventBusStopV2`
