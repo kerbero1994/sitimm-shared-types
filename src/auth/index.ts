@@ -273,7 +273,7 @@ export type SocialProvider = "google" | "apple";
 export type SocialLoginStatus = "authenticated" | "needs_verification" | "requires_setup";
 
 /**
- * Request body for POST /api/v2/auth/social/login.
+ * Request body for POST /api/v2/auth/social (sin sufijo "/login"; V2 desde el cutover 9e3a4255).
  * Backend: social_auth.py :: SocialLoginRequest
  */
 export interface SocialLoginRequest {
@@ -284,13 +284,19 @@ export interface SocialLoginRequest {
 }
 
 /**
- * Response from POST /api/v2/auth/social/login.
- * Backend: social_auth.py :: SocialLoginResponse
+ * Response de POST /api/v2/auth/social. FLAT — sin envelope {status,data}.
+ * Backend: schemas/social_auth.py :: SocialLoginResponse (serializado
+ * by-alias: needsContactUpdate, isFirstLogin, googlePhotoUrl, refreshToken).
  *
  * Flow:
- * - "authenticated" → returning user, token is a full JWT. Login complete.
- * - "needs_verification" → new user, call /auth/social/verify with session_id + RFC.
- * - "requires_setup" → user exists but needs additional setup.
+ * - "authenticated" → usuario existente (cuenta vinculada o email match).
+ *   `token` es el access JWT. Login completo.
+ * - "requires_setup" → usuario existente con password temporal/nula.
+ *   `token` es el setupToken → /api/v2/auth/setup.
+ * - "needs_verification" → usuario desconocido. `session_id` (TTL 10 min)
+ *   sirve como signup_token del onboarding unificado
+ *   (/auth/employee/match + /auth/employee/claim) o para /auth/social/guest.
+ *   El viejo /auth/social/verify por RFC es 410 GONE.
  */
 export interface SocialLoginResponse {
   /** Login status determining next step. */
@@ -313,12 +319,19 @@ export interface SocialLoginResponse {
   needsContactUpdate: boolean | null;
   /** Reason why contact update is needed. */
   contactUpdateReason: string | null;
+  /** true en el primer login social del usuario. Alias BE: isFirstLogin. */
+  isFirstLogin?: boolean | null;
+  /** URL de la foto de perfil de Google (claim `picture`). Solo Google. */
+  googlePhotoUrl?: string | null;
 }
 
 /**
  * Request body for POST /api/v2/auth/social/verify.
  * Links a social login to an existing employee via RFC.
  * Backend: social_auth.py :: VerifyIdentityRequest
+ * @deprecated El endpoint /auth/social/verify responde 410 GONE desde el
+ * login redesign (2026-06-22). Usar el onboarding unificado
+ * (employee/match + employee/claim) o GuestLoginRequest. Se eliminará en 1.0.0.
  */
 export interface VerifyIdentityRequest {
   /** Temporary session ID from SocialLoginResponse. */
@@ -330,6 +343,9 @@ export interface VerifyIdentityRequest {
 /**
  * Response from POST /api/v2/auth/social/verify.
  * Backend: social_auth.py :: VerifyIdentityResponse
+ * @deprecated El endpoint /auth/social/verify responde 410 GONE desde el
+ * login redesign (2026-06-22). Usar el onboarding unificado
+ * (employee/match + employee/claim) o GuestLoginRequest. Se eliminará en 1.0.0.
  */
 export interface VerifyIdentityResponse {
   /** JWT access token. */
