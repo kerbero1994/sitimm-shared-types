@@ -62,15 +62,31 @@ export const V2_ENDPOINTS = {
   /** DELETE → V2Response<AvatarV2Response>. Removes profile picture. Auth required. */
   USERS_ME_AVATAR_DELETE: "/users/me/avatar",
 
-  // ── Social Auth (served on the V1 base: /api/v1, NOT /api/v2) ──
+  // ── Auth (V2 desde el hard cutover 9e3a4255, 2026-06-22) ──────────
 
-  /** POST → Body: SocialLoginRequest. NO auth. Served on V1: /api/v1/auth/social (no "/login" suffix). */
+  /** POST → Body: LoginV2Request ({email, pass}). Returns LoginV2Response. NO auth. Rate limit 5/min + lockout por email. */
+  AUTH_LOGIN: "/users/login",
+  /** POST → Body: LoginPhoneV2Request ({phone, pass}). Returns LoginV2Response. NO auth. Rate limit 3/min. */
+  AUTH_LOGIN_PHONE: "/users/login-phone",
+  /** POST → Body: RefreshV2Request. Returns RefreshV2Response. NO auth. Refresh token rotativo one-time-use. */
+  AUTH_REFRESH: "/users/refresh",
+  /** POST → Body: LogoutV2Request. Bearer access token requerido. Blacklistea access + revoca refresh. */
+  AUTH_LOGOUT: "/users/logout",
+  /** POST → Body: SetupInitV2Request. Authorization: Bearer <setupToken> (JWT type="setup"). */
+  AUTH_SETUP: "/auth/setup",
+  /** POST → Body: SetupVerifyV2Request. Bearer <setupToken>. Returns SetupVerifyV2Response. */
+  AUTH_SETUP_VERIFY: "/auth/setup/verify",
+  /** POST → Body: ForgotPasswordV2Request. NO auth. 5/hour/IP. */
+  AUTH_FORGOT_PASSWORD: "/auth/forgot-password",
+  /** POST → Body: VerifyResetV2Request. NO auth. Returns {status,data:{success,data:{resetToken}}} (envelope doble). */
+  AUTH_VERIFY_RESET: "/auth/verify-reset",
+  /** POST → Body: ResetPasswordV2Request. Bearer <resetToken> + token en body. */
+  AUTH_RESET_PASSWORD: "/auth/reset-password",
+  /** POST → Body: SocialLoginRequest. NO auth. Response FLAT SocialLoginResponse. V2 (antes V1). */
   AUTH_SOCIAL_LOGIN: "/auth/social",
-  /** POST → Body: VerifyIdentityRequest. NO auth. Served on V1: /api/v1/auth/social/verify. */
-  AUTH_SOCIAL_VERIFY: "/auth/social/verify",
-  /** POST → Body: GuestLoginRequest. NO auth. Served on V1: /api/v1/auth/social/guest. */
+  /** POST → Body: GuestLoginRequest ({session_id}). NO auth. Response FLAT GuestLoginResponse. V2 (antes V1). */
   AUTH_SOCIAL_GUEST: "/auth/social/guest",
-  /** GET → V2Response<SocialAccountListResponse>. Auth required. Served on V1: /api/v1/auth/social/accounts. */
+  /** GET → Response FLAT SocialAccountListResponse. Auth required. V2 (antes V1). DELETE en `${AUTH_SOCIAL_ACCOUNTS}/{provider}`. */
   AUTH_SOCIAL_ACCOUNTS: "/auth/social/accounts",
 
   // ── Events ───────────────────────────────────────────────

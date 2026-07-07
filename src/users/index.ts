@@ -367,6 +367,14 @@ export interface UserBasicV2 {
   userType: number;
   /** Numeric Headquarter ID assigned to the user — null when unassigned. */
   headquarterId?: number | null;
+  /**
+   * Estado de la cuenta (GDPR self-service deletion, mini-back b53204cb).
+   * "pending_deletion" → BE bloquea todo excepto GET /users/me,
+   * POST /users/me/restore y DELETE /users/me (403 "account_pending_deletion").
+   */
+  accountStatus?: "active" | "pending_deletion" | string;
+  /** ISO-8601 — fecha de purga definitiva cuando accountStatus="pending_deletion". */
+  purgeAfter?: string | null;
 }
 
 /**
