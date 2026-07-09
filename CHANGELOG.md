@@ -26,6 +26,10 @@ Events contract sync contra mini-back (SITIMM-213). Aditivo.
   `transport_stop_not_in_whitelist` (422 — parada fuera del whitelist en el
   PATCH de participante; grafía distinta del `transport_stop_not_whitelisted`
   409 del endpoint dedicado — NO deduplicar).
+- `events`: `EventParticipantV2.attendanceConfirmedAt` (ISO-8601 | null) —
+  stamp del gate S5 confirm-to-attend, distinto de `confirmationDate`. El BE
+  lo serializa con valor real desde mini-back PR #225 (SITIMM-212); en
+  backends previos llega siempre `null`.
 
 **Migración new_dashboard (rompe typecheck por diseño):**
 

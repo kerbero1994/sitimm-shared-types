@@ -528,6 +528,15 @@ export interface EventParticipantV2 {
   avatarUrl: string | null;
   /** ISO-8601 datetime when attendance was confirmed. */
   confirmationDate: string | null;
+  /**
+   * ISO-8601 datetime the participant confirmed attendance through the S5
+   * confirm-to-attend gate (`POST /event-participants/{uuid}/confirm` while
+   * `Event.requiresConfirmation` is true). Distinct from `confirmationDate`
+   * (legacy generic confirmation stamp). Backend: event_v2.py ::
+   * ParticipantV2Response.attendanceConfirmedAt — serialized with a real value
+   * from mini-back PR #225 (SITIMM-212); always `null` on older backends.
+   */
+  attendanceConfirmedAt: string | null;
   /** ISO-8601 datetime when the participant was checked in via QR ticket. */
   checkedInAt: string | null;
   /** ISO-8601 creation timestamp. */
