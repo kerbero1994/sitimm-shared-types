@@ -5,6 +5,39 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.96.0] - 2026-07-09
+
+DAM Fase 2a (SITIMM-219, epic SITIMM-203): nuevo módulo `collections` —
+colecciones de galerías (capa superior de la jerarquía DAM: Collection →
+Gallery → Media). Aditivo. Contrato types-first: `collection.py` aterriza en
+mini-back con la implementación paralela de SITIMM-219 (mismo patrón que el
+módulo `media` de F1).
+
+**Added:**
+
+- `collections`: `CollectionV2` (uuid, name, slug?, description?, coverUrl?,
+  visibility `"public" | "restricted"`, galleryCount? computado, createdAt,
+  updatedAt), `CreateCollectionV2Body`, `UpdateCollectionV2Body` (semántica
+  only-supplied-fields-apply; `name`/`visibility` NOT NULL-backed → 422
+  `invalid_null` con null explícito), `CollectionVisibility`,
+  `CollectionListV2Response` (envelope camelCase `{items, total, page,
+  pageSize}` — familia del `MediaSearchV2Response` de F1).
+- `collections`: join M:N `collection_galleries` (espejo de `gallery_media`
+  un nivel arriba): `CollectionGalleryV2` (joinUuid + resumen embebido
+  `gallery` + sortOrder),
+  `CollectionGallerySummaryV2` (uuid, name, slug?, coverUrl? — resumen
+  compacto, NO el `GalleryV2` completo), `CollectionGalleryListV2Response`,
+  `AttachCollectionGalleryV2Body` (galleryUuid, sortOrder?; doble attach
+  activo rechazado) y `ReorderCollectionGalleriesV2Body` (galleryUuids —
+  UUIDs de galería, no de join-row).
+- `endpoints`: `COLLECTIONS` (`/collections`), `COLLECTION_DETAIL`
+  (`/collections/{uuid}`), `COLLECTION_GALLERIES`
+  (`/collections/{collection_uuid}/galleries`), `COLLECTION_GALLERY_DETAIL`
+  (`/collections/{collection_uuid}/galleries/{gallery_uuid}`) y
+  `COLLECTION_GALLERIES_REORDER`
+  (`/collections/{collection_uuid}/galleries/reorder`). Todo el surface
+  gated por el permiso `galleries` existente (igual que media en F1).
+
 ## [0.95.0] - 2026-07-09
 
 Events contract sync contra mini-back (SITIMM-213). Aditivo. (Renumerado de

@@ -60,6 +60,7 @@ export type {
   GalleryV2ErrorCode,
 } from "./galleries";
 export * from "./media";
+export * from "./collections";
 export * from "./faq";
 export * from "./bonuses";
 export * from "./blogPosts";
