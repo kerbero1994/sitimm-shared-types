@@ -49,9 +49,14 @@ export type EventParticipantStatus =
  * status — is the disambiguator.
  *
  * Source of truth: mini-back `event_registration_service.py` +
- * `event_eligibility_service.py`. The private-event guard intentionally returns
- * a bare 404 "Event not found" with NO code (it must not reveal that a private
- * event exists), so it is absent here.
+ * `event_eligibility_service.py` + `event_service.py`. The private-event guard
+ * intentionally returns a bare 404 "Event not found" with NO code (it must not
+ * reveal that a private event exists), so it is absent here.
+ *
+ * The same catalog also covers the rest of the registration lifecycle —
+ * confirm (`POST /event-participants/{uuid}/confirm`), participant PATCH
+ * (stop change), and self-cancel (`DELETE /event-participants/{uuid}`) — which
+ * reuse these structured `{ code, message }` details.
  */
 export const EVENT_REGISTRATION_ERROR_CODES = [
   "event_full", // 409 — capacity reached, waitlist disabled
@@ -70,6 +75,15 @@ export const EVENT_REGISTRATION_ERROR_CODES = [
   "invalid_state", // 409 — confirm attempted on a non-registered participant (INV-CONF-3)
   "confirmation_not_open", // 409 — confirm before confirmationOpensAt (INV-CONF-4)
   "confirmation_window_closed", // 409 — confirm after confirmationDeadline (INV-CONF-5)
+  "transport_venue_mismatch", // 409 — chosen transport stop does not serve the selected sede/venue (L26)
+  "cancel_window_closed", // 409 — self-cancel within 24h of eventDate (admins exempt; system sweeps bypass)
+  "registration_conflict", // 409 — concurrent re-registration race (IntegrityError on cancelled-registration reactivation); safe to retry
+  // NOTE: two BE surfaces use two different spellings for the whitelist guard —
+  // `transport_stop_not_in_whitelist` (participant PATCH stop change,
+  // event_transport_coordination.py) vs `transport_stop_not_whitelisted`
+  // (dedicated transport stop-change endpoint, in TransportCapacityErrorCode).
+  // Do NOT deduplicate them; they are distinct wire values.
+  "transport_stop_not_in_whitelist", // 422 — target stop is not in the event's transport whitelist (participant PATCH stop change)
 ] as const;
 
 export type EventRegistrationErrorCode =
@@ -355,6 +369,14 @@ export interface CreateEventV2Request {
   confirmationDeadline?: string | null;
   /** Venue slots to create alongside the event. */
   venues?: CreateEventCampusV2Request[] | null;
+  /**
+   * IANA timezone the event's wall-clock times are expressed in (e.g.
+   * "America/Mexico_City"). Max 64 chars. Validated against `zoneinfo` — an
+   * unknown zone is rejected 422 with message `invalid_timezone`. Omit/null →
+   * the event keeps the backend default ("America/Mexico_City" on responses).
+   * Backend: event_v2.py :: EventCreateV2.time_zone.
+   */
+  timeZone?: string | null;
 }
 
 /**
@@ -416,6 +438,41 @@ export interface UpdateEventV2Request {
   streamingUrl?: string;
   /** Streaming provider tag. */
   streamingProvider?: string;
+  /**
+   * Transport mode for the event: `"none" | "manual" | "capped" | "scheduled" | "live"`.
+   * Update-only — EventCreateV2 does not accept it (transport is configured
+   * after the event exists). Omit to keep the current mode.
+   * Backend: event_v2.py :: EventUpdateV2.transport_mode.
+   */
+  transportMode?: TransportMode;
+  /**
+   * When true and the event is a recurrence parent, cascade content/config
+   * fields present in this PATCH to every draft (enabled=false) child. The
+   * real cascade set (event_service._PROPAGATABLE_FIELDS) is: title, content,
+   * description, img, place, files, register, isPrivate, offersMobility,
+   * daysBeforeAnouncment, virtualUrl, audience, EventTypeId, capacity,
+   * waitlistEnabled, latitude, longitude, addressStructured, accessibility,
+   * streamingUrl, streamingProvider, transportMode — i.e. broader than the BE
+   * Field description suggests (register/isPrivate/EventTypeId etc. DO cascade
+   * to draft children). Never propagated: event dates, registrationEndDate,
+   * enabled, recurrenceRule, timeZone, audienceTitles, confirmation fields.
+   * Published (enabled=true) children are never touched. PATCHing a child
+   * event with this flag returns 400 `not_a_parent`. Update-only.
+   * Default: false.
+   * Backend: event_v2.py :: EventUpdateV2.propagate_to_children.
+   */
+  propagateToChildren?: boolean;
+  /**
+   * IANA timezone the event's wall-clock times are expressed in (e.g.
+   * "America/Mexico_City"). Max 64 chars. Validated against `zoneinfo` — an
+   * unknown zone is rejected 422 with message `invalid_timezone`. Omit to keep
+   * the current value. Explicit `null` is NOT accepted: the PATCH path uses
+   * `model_dump(exclude_unset=True)` (explicit nulls survive) and the repo
+   * writes the raw value into `Event.timeZone`, a `nullable=false` column —
+   * sending `null` causes a server error. Hence the type is omit-only.
+   * Backend: event_v2.py :: EventUpdateV2.time_zone.
+   */
+  timeZone?: string;
   /** Opt-in attendance confirmation gate. When true, enables the confirm-to-attend flow. */
   requiresConfirmation?: boolean;
   /** ISO-8601. Earliest a participant may confirm. Must be `<= confirmationDeadline`. */
@@ -471,6 +528,15 @@ export interface EventParticipantV2 {
   avatarUrl: string | null;
   /** ISO-8601 datetime when attendance was confirmed. */
   confirmationDate: string | null;
+  /**
+   * ISO-8601 datetime the participant confirmed attendance through the S5
+   * confirm-to-attend gate (`POST /event-participants/{uuid}/confirm` while
+   * `Event.requiresConfirmation` is true). Distinct from `confirmationDate`
+   * (legacy generic confirmation stamp). Backend: event_v2.py ::
+   * ParticipantV2Response.attendanceConfirmedAt — serialized with a real value
+   * from mini-back PR #225 (SITIMM-212); always `null` on older backends.
+   */
+  attendanceConfirmedAt: string | null;
   /** ISO-8601 datetime when the participant was checked in via QR ticket. */
   checkedInAt: string | null;
   /** ISO-8601 creation timestamp. */

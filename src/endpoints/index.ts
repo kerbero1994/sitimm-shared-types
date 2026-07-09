@@ -146,6 +146,22 @@ export const V2_ENDPOINTS = {
   /** DELETE → V2Response<{message}>. Requires event_types:delete permission. */
   EVENT_TYPE_DELETE: "/event-types/{id}",
 
+  // ── Audience Templates ───────────────────────────────────
+  // Reusable AudienceSpec library (audience_templates_v2.py). Admin-only
+  // surface: reads included require a write-tier events:* permission —
+  // events:read is BASE-level and intentionally NOT sufficient.
+
+  /** GET → V2Response<AudienceTemplateListV2Response>. Query: page (≥1), pageSize (1-100, default 50), search (1-255). Requires events:update. */
+  AUDIENCE_TEMPLATES: "/audience-templates",
+  /** POST → Body: CreateAudienceTemplateRequest. Returns V2Response<AudienceTemplateV2> (201). Requires events:update. */
+  AUDIENCE_TEMPLATES_CREATE: "/audience-templates",
+  /** GET → V2Response<AudienceTemplateV2>. 404 if unknown/soft-deleted. Requires events:update. */
+  AUDIENCE_TEMPLATE: "/audience-templates/{uuid}",
+  /** PATCH → Body: UpdateAudienceTemplateRequest (null/omitted fields keep current). Returns V2Response<AudienceTemplateV2>. Requires events:update. */
+  AUDIENCE_TEMPLATE_UPDATE: "/audience-templates/{uuid}",
+  /** DELETE → 204 No Content (no envelope). Soft-delete. Requires events:delete. */
+  AUDIENCE_TEMPLATE_DELETE: "/audience-templates/{uuid}",
+
   // ── Consultations ────────────────────────────────────────
 
   /** POST → Body: ListConsultationsV2Request. Returns V2Response<ListConsultationsV2Response>. Auth required.

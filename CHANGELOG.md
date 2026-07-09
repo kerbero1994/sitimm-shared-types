@@ -5,6 +5,56 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.95.0] - 2026-07-09
+
+Events contract sync contra mini-back (SITIMM-213). Aditivo. (Renumerado de
+0.94.0 → 0.95.0: el 0.94.0 lo tomó el módulo `media` de DAM Fase 1 en `main`.)
+
+**Added:**
+
+- `events`: `CreateEventV2Request.timeZone` y `UpdateEventV2Request.timeZone`
+  (IANA, max 64 chars, 422 `invalid_timezone` si es inválida);
+  `UpdateEventV2Request.transportMode` (update-only,
+  `"none" | "manual" | "capped" | "scheduled" | "live"`) y
+  `UpdateEventV2Request.propagateToChildren` (update-only, default false —
+  cascada de campos content-safe a los hijos draft de una recurrencia).
+  Matches mini-back `event_v2.py :: EventCreateV2 / EventUpdateV2`.
+- `events`: `EVENT_REGISTRATION_ERROR_CODES` gana 4 códigos (15 → 19):
+  `transport_venue_mismatch` (409 — la parada de transporte no sirve a la sede
+  elegida, L26), `cancel_window_closed` (409 — auto-cancelación dentro de las
+  24h previas al evento; admins exentos), `registration_conflict` (409 —
+  carrera de re-registro concurrente; reintentable) y
+  `transport_stop_not_in_whitelist` (422 — parada fuera del whitelist en el
+  PATCH de participante; grafía distinta del `transport_stop_not_whitelisted`
+  409 del endpoint dedicado — NO deduplicar).
+- `events`: `EventParticipantV2.attendanceConfirmedAt` (ISO-8601 | null) —
+  stamp del gate S5 confirm-to-attend, distinto de `confirmationDate`. El BE
+  lo serializa con valor real desde mini-back PR #225 (SITIMM-212); en
+  backends previos llega siempre `null`.
+
+**Migración new_dashboard (rompe typecheck por diseño):**
+
+- `src/views/cms/events/errors.ts` construye un
+  `Record<EventErrorCode, string>` exhaustivo: al subir a 0.95.0 hay que añadir
+  mapeos `CODE_TO_I18N` + entradas de locale (es/en) para
+  `registration_conflict` y `transport_stop_not_in_whitelist`. Los extras
+  locales `transport_venue_mismatch` / `cancel_window_closed` de
+  `ExtraEventErrorCode` quedan redundantes (ya vienen en la union canónica) y
+  pueden borrarse; los comentarios "15 canonical codes" quedan stale (ahora
+  19).
+- Nuevo módulo `audience-templates`: `AudienceTemplateV2`,
+  `AudienceTemplateListV2Response`, `CreateAudienceTemplateRequest`,
+  `UpdateAudienceTemplateRequest` — biblioteca reutilizable de `AudienceSpec`
+  (mini-back `audience_template_v2.py` + router `audience_templates_v2.py`).
+  Reemplaza los tipos locales del dashboard
+  (`src/services/api/cms/events/audienceTemplates.api.ts`); ojo: `spec` en
+  create/update ahora es `AudienceSpec` tipado (antes
+  `Record<string, unknown>` local).
+- `endpoints`: `AUDIENCE_TEMPLATES`, `AUDIENCE_TEMPLATES_CREATE`,
+  `AUDIENCE_TEMPLATE`, `AUDIENCE_TEMPLATE_UPDATE`, `AUDIENCE_TEMPLATE_DELETE`
+  (`/audience-templates`; todo el surface — lecturas incluidas — requiere
+  `events:update`, delete `events:delete`).
+
 ## [0.94.0] - 2026-07-09
 
 DAM Fase 1 (SITIMM-204, epic SITIMM-203): nuevo módulo `media` — asset Media
