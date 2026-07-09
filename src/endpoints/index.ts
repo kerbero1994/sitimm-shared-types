@@ -414,6 +414,26 @@ export const V2_ENDPOINTS = {
   FAQ_ME_SUBSCRIPTION_ADD: "/me/faq-subscriptions/{category_uuid}",
   /** DELETE → 204. Returns 404 FAQ_SUBSCRIPTION_NOT_FOUND if not subscribed. Auth required. */
   FAQ_ME_SUBSCRIPTION_DELETE: "/me/faq-subscriptions/{category_uuid}",
+
+  // ── Media (DAM Fase 1 — SITIMM-204) ──────────────────────
+  // All gated by the existing `galleries` permission (no new permission in
+  // F1). Design doc: mini-back docs/superpowers/specs/
+  // 2026-07-09-dam-fase1-media-design.md §7. Types: `media` module.
+
+  /** POST → Body: CreateMediaV2Body. Returns MediaAdminV2 — 201 created, or 200 with the EXISTING asset when `checksum` matches an active Media (dedupe). Requires galleries permission. */
+  MEDIA: "/media",
+  /** GET → MediaAdminV2 (with tags + gallery memberships). PATCH → Body: UpdateMediaV2Body (metadata/tags only). DELETE → soft-delete the ASSET (removes it from every gallery). Requires galleries permission. */
+  MEDIA_DETAIL: "/media/{uuid}",
+  /** GET → MediaSearchV2Response. Query: MediaSearchQueryV2 (q?, tag?, type?, entityType?, entityUuid?, year?, orphan?, page?, pageSize?). `orphan=true` lists unassigned media (trash bin). Requires galleries permission. */
+  MEDIA_SEARCH: "/media/search",
+  /** GET → MediaTagListV2Response. Query: q? (autocomplete). POST → Body: CreateTagV2Body — idempotent by slug. Requires galleries permission. */
+  MEDIA_TAGS: "/media/tags",
+  /** GET → GalleryMediaListV2Response (ordered by sortOrder, with captionOverride). POST → Body: AttachGalleryMediaV2Body — attach an EXISTING Media (201). Requires galleries permission. */
+  GALLERY_MEDIA: "/galleries/{gallery_uuid}/media",
+  /** DELETE → UNLINK the media from the gallery (soft-deletes the gallery_media join row; the asset survives — orphan if it was its last gallery). Requires galleries permission. */
+  GALLERY_MEDIA_DETAIL: "/galleries/{gallery_uuid}/media/{media_uuid}",
+  /** PATCH → Body: ReorderGalleryMediaV2Body (mediaUuids in desired order). Requires galleries permission. */
+  GALLERY_MEDIA_REORDER: "/galleries/{gallery_uuid}/media/reorder",
 } as const;
 
 export type V1PublicEndpoint = (typeof V1_PUBLIC_ENDPOINTS)[keyof typeof V1_PUBLIC_ENDPOINTS];

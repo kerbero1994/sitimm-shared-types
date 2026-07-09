@@ -5,6 +5,33 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.94.0] - 2026-07-09
+
+DAM Fase 1 (SITIMM-204, epic SITIMM-203): nuevo módulo `media` — asset Media
+reutilizable (image|video), join `gallery_media` con overrides por galería,
+tags normalizados y búsqueda transversal. Contrato para
+`app/presentation/schemas/media.py` (mini-back), diseño
+`docs/superpowers/specs/2026-07-09-dam-fase1-media-design.md`. Additive.
+
+**Added:**
+
+- `media` (módulo nuevo, subpath `@kerbero1994/shared-types/media`):
+  `MediaType`, `MediaStatus`, `MediaScanStatus`, `MediaV2` (shape
+  public-safe — SIN `storageKey`/`checksum`/`scanStatus`/`posterStorageKey`),
+  `MediaAdminV2`, `CreateMediaV2Body` (dedupe por `checksum`: 200 con el
+  asset existente), `UpdateMediaV2Body`, `GalleryMediaV2`,
+  `GalleryMediaListV2Response`, `AttachGalleryMediaV2Body`,
+  `ReorderGalleryMediaV2Body`, `TagV2`, `CreateTagV2Body`,
+  `MediaTagListV2Response`, `MediaSearchQueryV2`, `MediaSearchV2Response`.
+- `endpoints`: `V2_ENDPOINTS.MEDIA`, `MEDIA_DETAIL`, `MEDIA_SEARCH`,
+  `MEDIA_TAGS`, `GALLERY_MEDIA`, `GALLERY_MEDIA_DETAIL`,
+  `GALLERY_MEDIA_REORDER`.
+
+**Nota de contrato:** el módulo `media` estandariza camelCase en el wire
+(`urlVariants`) — los schemas Pydantic de mini-back deben aliasear la columna
+`url_variants`, a diferencia del módulo legacy `galleries` que expone
+snake_case.
+
 ## [0.93.0] - 2026-07-07
 
 Auth contract resync against mini-back main post-cutover `9e3a4255` (SITIMM-190).
