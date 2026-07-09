@@ -68,3 +68,4 @@ export * from "./censusStats";
 export * from "./emailCensusIngestion";
 export * from "./notificationsContent";
 export * from "./home";
+export * from "./audience-templates";

@@ -5,6 +5,36 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.94.0] - 2026-07-09
+
+Events contract sync contra mini-back (SITIMM-213). Aditivo.
+
+**Added:**
+
+- `events`: `CreateEventV2Request.timeZone` y `UpdateEventV2Request.timeZone`
+  (IANA, max 64 chars, 422 `invalid_timezone` si es inválida);
+  `UpdateEventV2Request.transportMode` (update-only,
+  `"none" | "manual" | "capped" | "scheduled" | "live"`) y
+  `UpdateEventV2Request.propagateToChildren` (update-only, default false —
+  cascada de campos content-safe a los hijos draft de una recurrencia).
+  Matches mini-back `event_v2.py :: EventCreateV2 / EventUpdateV2`.
+- `events`: `EVENT_REGISTRATION_ERROR_CODES` gana `transport_venue_mismatch`
+  (409 — la parada de transporte no sirve a la sede elegida, L26) y
+  `cancel_window_closed` (409 — auto-cancelación dentro de las 24h previas al
+  evento; admins exentos).
+- Nuevo módulo `audience-templates`: `AudienceTemplateV2`,
+  `AudienceTemplateListV2Response`, `CreateAudienceTemplateRequest`,
+  `UpdateAudienceTemplateRequest` — biblioteca reutilizable de `AudienceSpec`
+  (mini-back `audience_template_v2.py` + router `audience_templates_v2.py`).
+  Reemplaza los tipos locales del dashboard
+  (`src/services/api/cms/events/audienceTemplates.api.ts`); ojo: `spec` en
+  create/update ahora es `AudienceSpec` tipado (antes
+  `Record<string, unknown>` local).
+- `endpoints`: `AUDIENCE_TEMPLATES`, `AUDIENCE_TEMPLATES_CREATE`,
+  `AUDIENCE_TEMPLATE`, `AUDIENCE_TEMPLATE_UPDATE`, `AUDIENCE_TEMPLATE_DELETE`
+  (`/audience-templates`; todo el surface — lecturas incluidas — requiere
+  `events:update`, delete `events:delete`).
+
 ## [0.93.0] - 2026-07-07
 
 Auth contract resync against mini-back main post-cutover `9e3a4255` (SITIMM-190).
