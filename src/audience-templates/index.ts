@@ -73,10 +73,12 @@ export interface CreateAudienceTemplateRequest {
   description?: string | null;
   /**
    * Audience specification. Validated server-side with `AudienceSpec`
-   * (`extra="forbid"` — unknown keys are rejected 422). Sub-fields omitted in
-   * the payload take backend defaults: `mode="public"`, `combinator="all"`,
-   * `rules=[]`, `guestPolicy="auto_accept"`, `denialMessage=null`. `rules`
-   * must be non-empty iff `mode="custom"`.
+   * (`extra="forbid"` — unknown keys are rejected 422). The wire contract has
+   * per-field backend defaults, but the TS `AudienceSpec` type requires every
+   * field to be spelled out — when in doubt, send the BE defaults explicitly:
+   * `mode: "public"`, `combinator: "all"`, `rules: []`,
+   * `guestPolicy: "auto_accept"`, `denialMessage: null`. `rules` must be
+   * non-empty iff `mode="custom"`.
    */
   spec: AudienceSpec;
 }

@@ -18,10 +18,25 @@ Events contract sync contra mini-back (SITIMM-213). Aditivo.
   `UpdateEventV2Request.propagateToChildren` (update-only, default false —
   cascada de campos content-safe a los hijos draft de una recurrencia).
   Matches mini-back `event_v2.py :: EventCreateV2 / EventUpdateV2`.
-- `events`: `EVENT_REGISTRATION_ERROR_CODES` gana `transport_venue_mismatch`
-  (409 — la parada de transporte no sirve a la sede elegida, L26) y
-  `cancel_window_closed` (409 — auto-cancelación dentro de las 24h previas al
-  evento; admins exentos).
+- `events`: `EVENT_REGISTRATION_ERROR_CODES` gana 4 códigos (15 → 19):
+  `transport_venue_mismatch` (409 — la parada de transporte no sirve a la sede
+  elegida, L26), `cancel_window_closed` (409 — auto-cancelación dentro de las
+  24h previas al evento; admins exentos), `registration_conflict` (409 —
+  carrera de re-registro concurrente; reintentable) y
+  `transport_stop_not_in_whitelist` (422 — parada fuera del whitelist en el
+  PATCH de participante; grafía distinta del `transport_stop_not_whitelisted`
+  409 del endpoint dedicado — NO deduplicar).
+
+**Migración new_dashboard (rompe typecheck por diseño):**
+
+- `src/views/cms/events/errors.ts` construye un
+  `Record<EventErrorCode, string>` exhaustivo: al subir a 0.94.0 hay que añadir
+  mapeos `CODE_TO_I18N` + entradas de locale (es/en) para
+  `registration_conflict` y `transport_stop_not_in_whitelist`. Los extras
+  locales `transport_venue_mismatch` / `cancel_window_closed` de
+  `ExtraEventErrorCode` quedan redundantes (ya vienen en la union canónica) y
+  pueden borrarse; los comentarios "15 canonical codes" quedan stale (ahora
+  19).
 - Nuevo módulo `audience-templates`: `AudienceTemplateV2`,
   `AudienceTemplateListV2Response`, `CreateAudienceTemplateRequest`,
   `UpdateAudienceTemplateRequest` — biblioteca reutilizable de `AudienceSpec`
