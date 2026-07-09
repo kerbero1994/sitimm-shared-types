@@ -38,3 +38,4 @@ import { RFC_PATTERN, FIELD_LIMITS } from "@kerbero1994/shared-types/validation"
 | `validation` | RFC_PATTERN, CURP_PATTERN, PHONE_MX_PATTERN, FIELD_LIMITS, cleanDigits() |
 | `locales` | LOCALE_CODES, LOCALE_NATIVE_NAMES, LOCALE_FLAGS, DEFAULT_LOCALE |
 | `feature-flags` | CONFIGCAT_FLAGS |
+| `media` | MediaV2, MediaAdminV2, GalleryMediaV2, TagV2, media search + attach types (DAM F1) |
