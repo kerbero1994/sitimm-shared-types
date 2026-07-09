@@ -59,6 +59,7 @@ export type {
   GalleryItemTranslationsListResponse,
   GalleryV2ErrorCode,
 } from "./galleries";
+export * from "./media";
 export * from "./faq";
 export * from "./bonuses";
 export * from "./blogPosts";
