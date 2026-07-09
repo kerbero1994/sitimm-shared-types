@@ -77,6 +77,13 @@ export const EVENT_REGISTRATION_ERROR_CODES = [
   "confirmation_window_closed", // 409 — confirm after confirmationDeadline (INV-CONF-5)
   "transport_venue_mismatch", // 409 — chosen transport stop does not serve the selected sede/venue (L26)
   "cancel_window_closed", // 409 — self-cancel within 24h of eventDate (admins exempt; system sweeps bypass)
+  "registration_conflict", // 409 — concurrent re-registration race (IntegrityError on cancelled-registration reactivation); safe to retry
+  // NOTE: two BE surfaces use two different spellings for the whitelist guard —
+  // `transport_stop_not_in_whitelist` (participant PATCH stop change,
+  // event_transport_coordination.py) vs `transport_stop_not_whitelisted`
+  // (dedicated transport stop-change endpoint, in TransportCapacityErrorCode).
+  // Do NOT deduplicate them; they are distinct wire values.
+  "transport_stop_not_in_whitelist", // 422 — target stop is not in the event's transport whitelist (participant PATCH stop change)
 ] as const;
 
 export type EventRegistrationErrorCode =
@@ -439,21 +446,33 @@ export interface UpdateEventV2Request {
    */
   transportMode?: TransportMode;
   /**
-   * When true and the event is a recurrence parent, cascade content-safe fields
-   * (title, description, place, audience, capacity, transport, streaming,
-   * media, accessibility) to every draft (enabled=false) child. Event dates and
-   * structural fields are never propagated. Update-only. Default: false.
+   * When true and the event is a recurrence parent, cascade content/config
+   * fields present in this PATCH to every draft (enabled=false) child. The
+   * real cascade set (event_service._PROPAGATABLE_FIELDS) is: title, content,
+   * description, img, place, files, register, isPrivate, offersMobility,
+   * daysBeforeAnouncment, virtualUrl, audience, EventTypeId, capacity,
+   * waitlistEnabled, latitude, longitude, addressStructured, accessibility,
+   * streamingUrl, streamingProvider, transportMode — i.e. broader than the BE
+   * Field description suggests (register/isPrivate/EventTypeId etc. DO cascade
+   * to draft children). Never propagated: event dates, registrationEndDate,
+   * enabled, recurrenceRule, timeZone, audienceTitles, confirmation fields.
+   * Published (enabled=true) children are never touched. PATCHing a child
+   * event with this flag returns 400 `not_a_parent`. Update-only.
+   * Default: false.
    * Backend: event_v2.py :: EventUpdateV2.propagate_to_children.
    */
   propagateToChildren?: boolean;
   /**
    * IANA timezone the event's wall-clock times are expressed in (e.g.
    * "America/Mexico_City"). Max 64 chars. Validated against `zoneinfo` — an
-   * unknown zone is rejected 422 with message `invalid_timezone`. Omit/null →
-   * keep the current value.
+   * unknown zone is rejected 422 with message `invalid_timezone`. Omit to keep
+   * the current value. Explicit `null` is NOT accepted: the PATCH path uses
+   * `model_dump(exclude_unset=True)` (explicit nulls survive) and the repo
+   * writes the raw value into `Event.timeZone`, a `nullable=false` column —
+   * sending `null` causes a server error. Hence the type is omit-only.
    * Backend: event_v2.py :: EventUpdateV2.time_zone.
    */
-  timeZone?: string | null;
+  timeZone?: string;
   /** Opt-in attendance confirmation gate. When true, enables the confirm-to-attend flow. */
   requiresConfirmation?: boolean;
   /** ISO-8601. Earliest a participant may confirm. Must be `<= confirmationDeadline`. */

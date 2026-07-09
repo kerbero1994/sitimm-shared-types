@@ -191,6 +191,7 @@ export type TransportCapacityErrorCode =
   | "transport_stop_full"
   | "transport_stop_closed"
   | "transport_stop_not_whitelisted"
+  | "transport_venue_mismatch" // 409 — target stop does not serve the participant's sede (event_transport_v2.py stop-change endpoint, mirroring the register-path guard)
   | "transport_not_live_mode"
   | "stops_required_for_mode"
   | "stop_missing_seats_total"
