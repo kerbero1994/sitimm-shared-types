@@ -744,32 +744,40 @@ export interface GalleryItemV2Public {
   /**
    * Poster/thumbnail frame URL for a video asset (DAM Fase 5, SITIMM-253).
    *
-   * Only present when {@link GalleryItemV2Public.mediaType} is `"video"`
-   * AND the video was uploaded with a client-captured poster frame. It is
-   * **absent/`undefined`** for images and for posterless videos — the FE
-   * must fall back to {@link GalleryItemV2Public.fallbackUrl} (or a generic
-   * video placeholder) when this is missing.
+   * A non-`null` string only when {@link GalleryItemV2Public.mediaType} is
+   * `"video"` AND the video was uploaded with a client-captured poster frame.
+   * For images, files, and posterless videos the backend emits this key as
+   * `null` (**present with a `null` value, NOT omitted**) — exactly like every
+   * other nullable field on this DTO (`title`, `width`, …): the response model
+   * declares `posterUrl: str | None` and the public serializer runs NO
+   * `exclude_none`. The FE must fall back to
+   * {@link GalleryItemV2Public.fallbackUrl} (or a generic video placeholder)
+   * when this is `null`/absent.
    *
-   * Optional & additive: consumers may treat a missing value as "no poster".
+   * Optional & nullable — treat a `null` (or missing) value as "no poster".
+   * Marked optional too so a future BE that DOES omit the key stays type-safe.
    *
    * Backend: `GalleryItemV2PublicResponse.posterUrl`
    * (`app/presentation/schemas/galleries_v2.py`).
    */
-  posterUrl?: string;
+  posterUrl?: string | null;
   /**
    * Video duration in **milliseconds** (DAM Fase 5, SITIMM-253).
    *
-   * Video-only — present only when {@link GalleryItemV2Public.mediaType} is
-   * `"video"` and the backend has resolved the media duration; **absent/
-   * `undefined`** for images, files, and videos whose duration is unknown.
+   * A non-`null` number only when {@link GalleryItemV2Public.mediaType} is
+   * `"video"` and the backend has resolved the media duration. For images,
+   * files, and videos whose duration is unknown the backend emits this key as
+   * `null` (**present with a `null` value, NOT omitted**) — `durationMs:
+   * int | None` serialized without `exclude_none`, mirroring the other
+   * nullable fields on this DTO.
    *
-   * Optional & additive. Units are milliseconds (not seconds): a 30-second
+   * Optional & nullable. Units are milliseconds (not seconds): a 30-second
    * clip is `30000`.
    *
    * Backend: `GalleryItemV2PublicResponse.durationMs`
    * (`app/presentation/schemas/galleries_v2.py`).
    */
-  durationMs?: number;
+  durationMs?: number | null;
 }
 
 /**
