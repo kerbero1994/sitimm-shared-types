@@ -146,6 +146,20 @@ export const V2_ENDPOINTS = {
   /** DELETE → V2Response<{message}>. Requires event_types:delete permission. */
   EVENT_TYPE_DELETE: "/event-types/{id}",
 
+  // ── Event Venues · Transport links · Logistics (SITIMM-228) ──
+  // Gaps not covered by V2_ENDPOINTS_GENERATED. Notes, venue-participants,
+  // audit-log, and participant import already live in that generated map
+  // (SET_PARTICIPANT_NOTES / LIST_VENUE_PARTICIPANTS / GET_EVENT_AUDIT_LOG /
+  // PARSE_CSV) and are intentionally not duplicated here.
+
+  /** POST → Body: `{ eventCampusId }`. 204 No Content. Links a transport stop to a sede. Zero links ⇒ stop serves ALL sedes. Requires events:update. */
+  EVENT_TRANSPORT_STOP_CAMPUSES: "/events/{uuid}/transport/{stopUuid}/campuses",
+  /** DELETE → 204 No Content. Unlinks a transport stop from a sede. Requires events:update. */
+  EVENT_TRANSPORT_STOP_CAMPUS:
+    "/events/{uuid}/transport/{stopUuid}/campuses/{eventCampusId}",
+  /** GET → V2Response<EventLogistics>. Confirmed-vs-minimum per sede + per transport stop. Requires events:read. */
+  EVENT_LOGISTICS: "/events/{uuid}/logistics",
+
   // ── Audience Templates ───────────────────────────────────
   // Reusable AudienceSpec library (audience_templates_v2.py). Admin-only
   // surface: reads included require a write-tier events:* permission —
