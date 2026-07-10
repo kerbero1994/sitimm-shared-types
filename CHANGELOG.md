@@ -5,6 +5,26 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.98.0] - 2026-07-10
+
+Cierre de hygiene de contrato Events. Aditivo.
+
+**Added:**
+
+- `events`: `EventParticipantV2.adminNotes?` (string | null) — nota admin
+  staff-only, presente solo para `event_participants:update` (null para el
+  resto). Surfaced en `GET /event-participants/{uuid}` desde mini-back PR #231
+  (SITIMM-239). Cierra **SITIMM-252**.
+- `events`: `MyEventItemV2.attendanceConfirmedAt` (string | null) — stamp del
+  gate S5 en el ítem de `/my-events`, alineado con `EventParticipantV2`. Cierra
+  la segunda mitad de **SITIMM-218** (la primera, en `EventParticipantV2`, llegó
+  en 0.95.0/0.97.0).
+
+**Changed (JSDoc):**
+
+- `SetParticipantNotesResponse`: corregida la nota "adminNotes nunca lo expone un
+  GET" — SITIMM-239 lo expone en el GET de detalle para staff.
+
 ## [0.97.0] - 2026-07-10
 
 Promoción de los tipos locales que el new_dashboard cargaba con marcadores

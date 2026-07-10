@@ -539,6 +539,16 @@ export interface EventParticipantV2 {
   attendanceConfirmedAt: string | null;
   /** ISO-8601 datetime when the participant was checked in via QR ticket. */
   checkedInAt: string | null;
+  /**
+   * Staff-only free-text admin note on this registration. Present ONLY for
+   * callers with `event_participants:update`; `null` for every other caller
+   * (owner, non-staff). Written via `PATCH /event-participants/{uuid}/notes`
+   * and surfaced on `GET /event-participants/{uuid}` since mini-back PR #231
+   * (SITIMM-239); the shared list/roster/register/confirm paths keep it `null`
+   * (opt-in emit in `events_v2_serializers.py::_participant_to_response`).
+   * `undefined`/absent on backends older than SITIMM-239.
+   */
+  adminNotes?: string | null;
   /** ISO-8601 creation timestamp. */
   createdAt: string;
   /** ISO-8601 last update timestamp. */
@@ -562,6 +572,13 @@ export interface MyEventItemV2 {
   campusName: string | null;
   busStopName: string | null;
   confirmationDate: string | null;
+  /**
+   * ISO-8601 datetime the participant confirmed attendance through the S5
+   * confirm-to-attend gate. Distinct from `confirmationDate`. Backend:
+   * event_v2.py :: MyEventItemV2Response.attendanceConfirmedAt (SITIMM-212);
+   * `null` when unconfirmed or on backends older than the fix.
+   */
+  attendanceConfirmedAt: string | null;
   registeredAt: string;
 
   // Event fields (enriched)
@@ -1118,7 +1135,8 @@ export interface EventTemplateListV2Response {
  *
  * Backend: `event_participants_v2.py :: set_participant_notes`. NOT a full
  * `EventParticipantV2` — the route persists only the admin-only note and
- * returns it plus timestamps (`adminNotes` is never surfaced by GET routes).
+ * returns it plus timestamps. Since SITIMM-239, `adminNotes` is also surfaced
+ * on `GET /event-participants/{uuid}` for staff (`EventParticipantV2.adminNotes`).
  */
 export interface SetParticipantNotesResponse {
   /** Participant UUID. */
