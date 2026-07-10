@@ -450,6 +450,23 @@ export const V2_ENDPOINTS = {
   GALLERY_MEDIA_DETAIL: "/galleries/{gallery_uuid}/media/{media_uuid}",
   /** PATCH → Body: ReorderGalleryMediaV2Body (mediaUuids in desired order). Requires galleries permission. */
   GALLERY_MEDIA_REORDER: "/galleries/{gallery_uuid}/media/reorder",
+
+  // ── Collections (DAM Fase 2a — SITIMM-219) ──────────────────────
+  // Top layer of the DAM hierarchy: Collection → Gallery → Media, joined
+  // through `collection_galleries` (mirror of F1's `gallery_media`). Gated
+  // by the existing `galleries` permission, same as the media surface.
+  // Types: `collections` module. Backend: app/presentation/schemas/collection.py.
+
+  /** GET → CollectionListV2Response. Query: page? (1-based, default 1), pageSize? (default 20, max 100). POST → Body: CreateCollectionV2Body (201). Requires galleries permission. */
+  COLLECTIONS: "/collections",
+  /** GET → CollectionV2 (with galleryCount). PATCH → Body: UpdateCollectionV2Body (metadata only; explicit-null-clears semantics). DELETE → soft-delete the COLLECTION (member galleries survive). Requires galleries permission. */
+  COLLECTION_DETAIL: "/collections/{uuid}",
+  /** GET → CollectionGalleryListV2Response (ordered by sortOrder; restricted member galleries filtered per-caller). POST → Body: AttachCollectionGalleryV2Body — attach an EXISTING gallery (201; duplicate active attach rejected). Requires galleries permission. */
+  COLLECTION_GALLERIES: "/collections/{collection_uuid}/galleries",
+  /** DELETE → DETACH the gallery from the collection (soft-deletes the collection_galleries join row; the gallery and its media survive). Requires galleries permission. */
+  COLLECTION_GALLERY_DETAIL: "/collections/{collection_uuid}/galleries/{gallery_uuid}",
+  /** PATCH → Body: ReorderCollectionGalleriesV2Body (galleryUuids in desired order — gallery UUIDs, not join-row UUIDs). Requires galleries permission. */
+  COLLECTION_GALLERIES_REORDER: "/collections/{collection_uuid}/galleries/reorder",
 } as const;
 
 export type V1PublicEndpoint = (typeof V1_PUBLIC_ENDPOINTS)[keyof typeof V1_PUBLIC_ENDPOINTS];

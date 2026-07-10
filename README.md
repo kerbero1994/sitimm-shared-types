@@ -39,3 +39,4 @@ import { RFC_PATTERN, FIELD_LIMITS } from "@kerbero1994/shared-types/validation"
 | `locales` | LOCALE_CODES, LOCALE_NATIVE_NAMES, LOCALE_FLAGS, DEFAULT_LOCALE |
 | `feature-flags` | CONFIGCAT_FLAGS |
 | `media` | MediaV2, MediaAdminV2, GalleryMediaV2, TagV2, media search + attach types (DAM F1) |
+| `collections` | CollectionV2, CollectionGalleryV2, attach/reorder + paginated list types (DAM F2a) |
