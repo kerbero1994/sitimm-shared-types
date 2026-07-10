@@ -27,6 +27,30 @@ Nota de versionado: **0.100.0 se publicó al registry desde la rama
 0.99.0 a 0.101.0 y esta versión NO incluye ese fix. Debe re-shipearse por
 separado mergeando esa rama.
 
+## [0.100.0] - 2026-07-10
+
+DAM Fase 5 — corrección de contrato `null`-vs-ausente en los campos de video de
+galería pública (fix del hallazgo del review de SITIMM-253). **Corrige un type
+bug de 0.99.0** que rompía el reader del sitio público.
+
+**Changed:**
+
+- `galleries`: `GalleryItemV2Public.posterUrl` pasa de `string` (opcional) a
+  `string | null` (opcional + nullable), y `durationMs` de `number` a
+  `number | null`. 0.99.0 documentaba ambos como **ausentes/`undefined`** para
+  imágenes/videos-sin-poster, pero mini-back NO omite: `GalleryItemV2PublicResponse`
+  declara `posterUrl: str | None` / `durationMs: int | None` y el serializer
+  público NO corre `exclude_none`, así que el wire real es la clave **presente
+  con valor `null`** — idéntico a los otros 11 campos nullable del DTO
+  (`title`, `width`, …). El schema Zod del reader público
+  (`Sitimm-web galleries-v2.schema.ts`) usaba `z.string().optional()`, que
+  RECHAZA `null`; combinado con `tolerantArray()` eso descartaba en silencio
+  **cada item imagen y cada video sin poster** de las páginas públicas
+  (list/detail/entity). El FE ahora usa `.nullish()` para espejar este tipo.
+  **SITIMM-253**.
+
+Nota: el DTO authed (`GalleryItemV2`) no expone estos campos; sin cambios ahí.
+
 ## [0.99.0] - 2026-07-10
 
 DAM Fase 5 — soporte de video en galerías públicas. Aditivo, no-breaking.
