@@ -1104,3 +1104,279 @@ export interface EventTemplateListV2Response {
   pageSize: number;
   hasNext: boolean;
 }
+
+// ── Admin operations promoted from new_dashboard (SITIMM-227 / 228 / 229) ──
+//
+// Contracts the dashboard events feature carried locally with
+// `TODO(shared-types)` markers, now promoted so the dashboard can drop the
+// local copies. Field names verified 1:1 against mini-back serializers.
+
+// ── Participant admin notes (SITIMM-227) ──
+
+/**
+ * Response from `PATCH /api/v2/event-participants/{uuid}/notes`.
+ *
+ * Backend: `event_participants_v2.py :: set_participant_notes`. NOT a full
+ * `EventParticipantV2` — the route persists only the admin-only note and
+ * returns it plus timestamps (`adminNotes` is never surfaced by GET routes).
+ */
+export interface SetParticipantNotesResponse {
+  /** Participant UUID. */
+  uuid: string;
+  /** Persisted admin-only note, or `null` when cleared. Max 10,000 chars. */
+  adminNotes: string | null;
+  /** ISO-8601 last-update timestamp, or `null`. */
+  updatedAt: string | null;
+}
+
+// ── Participant CSV import (SITIMM-227) ──
+
+/**
+ * One row outcome of a participant CSV import. Backend:
+ * `event_participants_import_v2.py`. `ok: true` rows carry `email` +
+ * `participantUuid`; `ok: false` rows carry `error` (+ optional `detail`).
+ * The two field groups are mutually exclusive per row.
+ */
+export interface ImportParticipantRow {
+  /** 1-based data-row index in the uploaded CSV (header excluded). */
+  row: number;
+  /** Whether this row registered successfully. */
+  ok: boolean;
+  /** Normalized email; present only on `ok: true` rows. */
+  email?: string;
+  /** Created/updated participant UUID; present only on `ok: true` rows. */
+  participantUuid?: string;
+  /** Failure code (`missing_email` | `invalid_row` | `register_failed` | `unexpected` | backend `code`); present only on `ok: false` rows. */
+  error?: string;
+  /** Human-readable failure detail (truncated ~200 chars); present on some failures. */
+  detail?: string;
+}
+
+/**
+ * Response from `POST /api/v2/events/{uuid}/participants/import`.
+ *
+ * Backend: `event_participants_import_v2.py :: import_participants_csv`.
+ */
+export interface ImportParticipantsResponse {
+  /** Total data rows read from the CSV. */
+  totalRows: number;
+  /** Count of rows that registered successfully. */
+  successCount: number;
+  /** Per-row outcomes, in file order. */
+  results: ImportParticipantRow[];
+}
+
+// ── Per-venue participant roster (SITIMM-227) ──
+
+/**
+ * One participant row within a venue roster.
+ *
+ * Backend: `campus_v2.py :: EventVenueParticipantResponse`. NOTE: the backend
+ * serializes `status` as a bare `str` and `modality` as `str | None`; both are
+ * tightened here to the participant-status / modality unions (consistent with
+ * `EventParticipantV2`), as the roster only ever holds those domain values.
+ */
+export interface EventVenueParticipantResponse {
+  /** Participant UUID. */
+  uuid: string;
+  /** Acting user id, or `null` for guest / anonymous registrations. */
+  userId: number | null;
+  /** Display name, or `null` when unknown. */
+  name: string | null;
+  /** Email, or `null` when unknown. */
+  email: string | null;
+  /** Phone, or `null` when unknown. */
+  phone: string | null;
+  /** Registration status. Backend serializes as bare `str`. */
+  status: EventParticipantStatus;
+  /** Attendance modality, or `null`. Backend serializes as `str | None`. */
+  modality: EventModality | null;
+  /** ISO-8601 check-in timestamp, or `null` if not checked in. */
+  checkedInAt: string | null;
+  /** Avatar URL, or `null`. */
+  avatarUrl: string | null;
+  /** Whether this is an alternative (overflow / waitlist-origin) participant. */
+  isAlternative: boolean;
+  /** ISO-8601 registration timestamp, or `null`. */
+  createdAt: string | null;
+}
+
+/**
+ * Response from `GET /api/v2/events/{uuid}/venues/{venueUuid}/participants`.
+ *
+ * Backend: `campus_v2.py :: EventVenueParticipantsResponse`. Carries venue
+ * metadata alongside the paginated roster — distinct from the generic
+ * `ParticipantListV2Response`.
+ */
+export interface EventVenueParticipantsResponse {
+  /** UUID of the venue (`EventCampus`) this roster belongs to. */
+  venueUuid: string;
+  /** Venue sub-label (e.g. "Salón Norte"), or `null`. */
+  venueLabel: string | null;
+  /** Whether this venue is the event's primary venue. */
+  venueIsPrimary: boolean;
+  /** Participants on the current page. */
+  items: EventVenueParticipantResponse[];
+  /** Total participants for this venue. */
+  total: number;
+  /** Current page number (1-based). */
+  page: number;
+  /** Items per page. */
+  pageSize: number;
+  /** Whether there are more pages after this one. */
+  hasNext: boolean;
+}
+
+/**
+ * Query params for the per-venue roster
+ * (`GET /api/v2/events/{uuid}/venues/{venueUuid}/participants`).
+ */
+export interface ListVenueParticipantsParams {
+  /** Page number (1-based). */
+  page?: number;
+  /** Items per page (serialized as `pageSize`). */
+  pageSize?: number;
+  /** Filter by participant status. */
+  status?: EventParticipantStatus;
+}
+
+// ── Transport stop ⇄ sede links (SITIMM-228) ──
+
+/**
+ * Stop ⇄ sede link state for one transport stop, projected from the
+ * `GET /api/v2/events/{uuid}/transport/available` serializer
+ * (`event_transport_service.py :: list_available_stops`). The admin
+ * `GET /transport` serializer omits campus links, so `available` is the only
+ * source exposing `eventCampusIds` / `servesAllSedes` per stop.
+ */
+export interface TransportStopCampusLinks {
+  /** Stop UUID (`EventBusStop.uuid`). */
+  uuid: string;
+  /** Ids of the `EventCampus` sedes linked to this stop. */
+  eventCampusIds: number[];
+  /** `true` when the stop has zero links ⇒ it serves ALL sedes. */
+  servesAllSedes: boolean;
+}
+
+/**
+ * Stop ⇄ sede link map for an event — the `stops` array of the `available`
+ * transport response, narrowed to the link fields.
+ */
+export interface TransportStopCampusMap {
+  /** Per-stop link state. */
+  stops: TransportStopCampusLinks[];
+}
+
+// ── Consolidated logistics (SITIMM-228) ──
+
+/**
+ * One logistics row (per sede or per transport stop).
+ *
+ * Backend: `event_venues_v2.py :: event_logistics` (`_row`).
+ */
+export interface EventLogisticsRow {
+  /** UUID of the sede (`EventCampus`) or stop (`EventBusStop`). */
+  uuid: string;
+  /** Minimum required seats, or `null` when unset. */
+  seatsMin: number | null;
+  /** Confirmed-attendance count. */
+  confirmedCount: number;
+  /** `true` when `seatsMin` is set AND `confirmedCount < seatsMin`. */
+  belowMin: boolean;
+}
+
+/**
+ * Response from `GET /api/v2/events/{uuid}/logistics`: confirmed-vs-minimum
+ * consolidated per sede and per transport stop. Requires `events:read`.
+ *
+ * Backend: `event_venues_v2.py :: event_logistics`.
+ */
+export interface EventLogistics {
+  /** Per-sede rows. */
+  sedes: EventLogisticsRow[];
+  /** Per-transport-stop rows. */
+  transport: EventLogisticsRow[];
+}
+
+/**
+ * `EventCampusV2` widened with the numeric `id` (`event_campus_id`) and
+ * `seatsMin`, both serialized by mini-back `campus_v2.py :: EventCampusResponse`
+ * but absent from the base `EventCampusV2`. `id` is the `eventCampusId`
+ * consumed by the stop ⇄ sede link/unlink routes.
+ *
+ * NOTE: `EventCampusResponse` also serializes `confirmedCount`, `latitude`,
+ * `longitude`, and `virtualUrl`, still absent from `EventCampusV2` — pending a
+ * fuller campus sync (tracked separately).
+ */
+export type EventVenueWithId = EventCampusV2 & {
+  /** Numeric EventCampus id (`event_campus_id`) — the link/unlink key. */
+  id: number;
+  /** Minimum required seats for this venue, or `null` when unset. */
+  seatsMin: number | null;
+};
+
+// ── Event audit-log — mutating HTTP Log feed (SITIMM-229) ──
+
+/**
+ * One row of an event's HTTP audit-log feed.
+ *
+ * Backend: `event_tickets_v2.py :: get_event_audit_log` — a mutating `Log`
+ * row (POST / PATCH / PUT / DELETE) whose endpoint referenced this event's
+ * UUID. Distinct from `EventHistoryItem` (a user's attendance roll-up).
+ */
+export interface EventAuditLogItem {
+  /** Log row UUID, or `null` when the row predates UUID stamping. */
+  uuid: string | null;
+  /** HTTP verb of the mutating request. */
+  method: string;
+  /** Endpoint path the request hit (references the event UUID). */
+  endPoint: string;
+  /** HTTP status code the server returned. */
+  statusCode: number;
+  /** Acting user id, or `null` for anonymous / system requests. */
+  userId: number | null;
+  /** Origin client IP, or `null` when unrecorded. */
+  clientIp: string | null;
+  /** Server-measured response time in milliseconds, or `null`. */
+  responseTimeMs: number | null;
+  /** ISO-8601 creation timestamp, or `null`. */
+  createdAt: string | null;
+}
+
+/**
+ * Response from `GET /api/v2/events/{uuid}/audit-log` — paginated audit-log
+ * feed. Same `{items, total, page, pageSize, hasNext}` shape as the other
+ * paginated V2 lists. Requires `events:update`.
+ *
+ * Backend: `event_tickets_v2.py :: get_event_audit_log`.
+ */
+export interface EventAuditLogResponse {
+  /** Audit-log rows on the current page. */
+  items: EventAuditLogItem[];
+  /** Total rows matching the filters. */
+  total: number;
+  /** Current page number (1-based). */
+  page: number;
+  /** Items per page. Default 50, max 200. */
+  pageSize: number;
+  /** Whether there are more pages after this one. */
+  hasNext: boolean;
+}
+
+/**
+ * Query args for `GET /api/v2/events/{uuid}/audit-log`.
+ *
+ * Backend: `event_tickets_v2.py :: get_event_audit_log`.
+ */
+export interface EventAuditLogParams {
+  /** Event UUID (path param). */
+  uuid: string;
+  /** Page number (1-based). */
+  page?: number;
+  /** Items per page (serialized as `pageSize`). Default 50, max 200. */
+  pageSize?: number;
+  /** Filter by HTTP verb; backend defaults to all mutations when omitted. */
+  method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
+  /** Filter by acting user (serialized as `userId`). */
+  userId?: number;
+}

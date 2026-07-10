@@ -5,6 +5,64 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.97.0] - 2026-07-10
+
+Promoción de los tipos locales que el new_dashboard cargaba con marcadores
+`TODO(shared-types)` en los PRs 227 / 228 / 229 (notas de participante, import
+CSV, roster por sede, links parada⇄sede, logística y audit-log de eventos), para
+que el dashboard pueda borrar sus copias locales. Aditivo. Nombres de campo
+verificados 1:1 contra los serializers de mini-back; ver notas de discrepancia
+abajo.
+
+**Added:**
+
+- `events` — Participantes (SITIMM-227): `SetParticipantNotesResponse`
+  (`event_participants_v2.py :: set_participant_notes` — `{uuid, adminNotes,
+  updatedAt}`, sólo la nota admin + timestamps, NO el `EventParticipantV2`
+  completo); `ImportParticipantRow` + `ImportParticipantsResponse`
+  (`event_participants_import_v2.py` — `{totalRows, successCount, results[]}`,
+  filas `ok`/`error` mutuamente excluyentes).
+- `events` — Roster por sede (SITIMM-227): `EventVenueParticipantResponse` y
+  `EventVenueParticipantsResponse` (`campus_v2.py`, incluye metadatos de sede
+  `venueUuid`/`venueLabel`/`venueIsPrimary` + paginado `{items, total, page,
+  pageSize, hasNext}`), más `ListVenueParticipantsParams`. Renombrados desde los
+  locales `VenueParticipant(sResponse)` del dashboard a los nombres del backend.
+- `events` — Transporte + logística (SITIMM-228): `TransportStopCampusLinks` +
+  `TransportStopCampusMap` (proyección de links parada⇄sede desde
+  `event_transport_service.py :: list_available_stops` —
+  `eventCampusIds`/`servesAllSedes`); `EventLogisticsRow` + `EventLogistics`
+  (`event_venues_v2.py :: event_logistics` — `{sedes[], transport[]}` con
+  `{uuid, seatsMin, confirmedCount, belowMin}`); `EventVenueWithId`
+  (`EventCampusV2` ampliado con `id` numérico + `seatsMin` de
+  `campus_v2.py :: EventCampusResponse`).
+- `events` — Audit-log (SITIMM-229): `EventAuditLogItem`,
+  `EventAuditLogResponse` (= paginado `{items, total, page, pageSize, hasNext}`)
+  y `EventAuditLogParams` (`event_tickets_v2.py :: get_event_audit_log` — feed de
+  filas `Log` mutantes por evento; distinto del `EventHistoryItem`).
+- `endpoints` — `V2_ENDPOINTS` gana `EVENT_TRANSPORT_STOP_CAMPUSES`
+  (`/events/{uuid}/transport/{stopUuid}/campuses`, link),
+  `EVENT_TRANSPORT_STOP_CAMPUS`
+  (`/events/{uuid}/transport/{stopUuid}/campuses/{eventCampusId}`, unlink) y
+  `EVENT_LOGISTICS` (`/events/{uuid}/logistics`). Notas, venue-participants,
+  audit-log e import ya existían en `V2_ENDPOINTS_GENERATED`
+  (`SET_PARTICIPANT_NOTES` / `LIST_VENUE_PARTICIPANTS` / `GET_EVENT_AUDIT_LOG` /
+  `PARSE_CSV`) y no se duplican.
+
+**Notas de discrepancia FE↔BE:**
+
+- Roster por sede: el backend serializa `status` como `str` y `modality` como
+  `str | None`; aquí se estrechan a `EventParticipantStatus` / `EventModality |
+  null` (consistente con `EventParticipantV2` y con el
+  `ListParticipantsParams.status` del propio dashboard) — el roster sólo
+  contiene esos valores de dominio.
+- `EventVenueWithId`: `EventCampusResponse` también serializa `confirmedCount`,
+  `latitude`, `longitude` y `virtualUrl`, aún ausentes de `EventCampusV2`. Esta
+  promoción sólo añade el widening `id` + `seatsMin` que consume el FE; el resto
+  queda como drift para un sync de campus más completo.
+- Audit-log: `method` / `endPoint` / `statusCode` se tipan no-nulos (decisión del
+  FE); el backend los lee directo del modelo `Log`, donde son nullables a nivel
+  de DB.
+
 ## [0.96.0] - 2026-07-09
 
 DAM Fase 2a (SITIMM-219, epic SITIMM-203): nuevo módulo `collections` —
