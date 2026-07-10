@@ -9,7 +9,7 @@
  *
  * Galleries V2 is a shared photo-collection feature with polymorphic
  * assignment to entity types: event, program, subprogram, bonus, magazine,
- * faq, blog_post. A Gallery owns a list of GalleryItem records, and a
+ * faq, blog_post, company. A Gallery owns a list of GalleryItem records, and a
  * GalleryAssignment row attaches a gallery to an entity (m:n — the same
  * gallery can be attached to multiple entities).
  *
@@ -132,6 +132,9 @@ export type {
 /**
  * Polymorphic target entity types a gallery may be attached to.
  * Backend: `EntityType` literal + `ENTITY_TYPES` tuple (`gallery_v2.py`).
+ *
+ * `"company"` added DAM F6 (SITIMM-258) — requires mini-back >= the
+ * SITIMM-258 deploy; older servers 422 an assignment with this value.
  */
 export type GalleryEntityType =
   | "event"
@@ -140,7 +143,8 @@ export type GalleryEntityType =
   | "bonus"
   | "magazine"
   | "faq"
-  | "blog_post";
+  | "blog_post"
+  | "company";
 
 /**
  * Gallery visibility gate.

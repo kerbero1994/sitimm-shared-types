@@ -423,6 +423,12 @@ export interface MediaSearchQueryV2 {
   entityType?: GalleryEntityType;
   /** UUID of the target entity. Pair with `entityType`. */
   entityUuid?: string;
+  /** Filter media to those in galleries belonging to this collection:
+   * resolved `media` → `gallery_media` → `GalleryV2` →
+   * `collection_galleries` → `CollectionV2.uuid`. Combines (AND) with the
+   * other filters. Added DAM F6 (SITIMM-258); requires mini-back >= the
+   * SITIMM-258 deploy — older servers ignore it. */
+  collectionUuid?: string;
   /** Capture year: `extract(year from coalesce(takenAt, createdAt))`. */
   year?: number;
   /** `true` → ONLY media with zero active `gallery_media` rows (the
