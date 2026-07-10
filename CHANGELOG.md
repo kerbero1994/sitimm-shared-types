@@ -5,6 +5,28 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.101.0] - 2026-07-10
+
+DAM Fase 6 — filtro de colección en la búsqueda de media + galerías
+asignables a empresas. Aditivo, no-breaking. **SITIMM-258**.
+
+**Added:**
+
+- `media`: `MediaSearchQueryV2.collectionUuid?` (string) — filtra la
+  búsqueda a media dentro de galerías pertenecientes a esa colección
+  (`media` → `gallery_media` → `GalleryV2` → `collection_galleries` →
+  `CollectionV2.uuid`). Combina en AND con el resto de filtros. Requiere
+  mini-back >= el deploy de SITIMM-258; servidores anteriores lo ignoran.
+- `galleries`: `GalleryEntityType` gana el literal `"company"` — las
+  galerías pueden asignarse a empresas. Requiere mini-back >= el deploy de
+  SITIMM-258; servidores anteriores rechazan la asignación con 422.
+
+Nota de versionado: **0.100.0 se publicó al registry desde la rama
+`SITIMM-253-poster-null-fix` (commit `0db4aa7`, galleries poster/duration
+`T | null`) sin mergearse a `main`** — por eso este changelog salta de
+0.99.0 a 0.101.0 y esta versión NO incluye ese fix. Debe re-shipearse por
+separado mergeando esa rama.
+
 ## [0.99.0] - 2026-07-10
 
 DAM Fase 5 — soporte de video en galerías públicas. Aditivo, no-breaking.
