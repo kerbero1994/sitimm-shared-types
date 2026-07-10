@@ -737,6 +737,35 @@ export interface GalleryItemV2Public {
   tags: string[] | null;
   /** Coarse media kind derived server-side from `mimeType`. */
   mediaType: "image" | "video" | "file";
+  /**
+   * Poster/thumbnail frame URL for a video asset (DAM Fase 5, SITIMM-253).
+   *
+   * Only present when {@link GalleryItemV2Public.mediaType} is `"video"`
+   * AND the video was uploaded with a client-captured poster frame. It is
+   * **absent/`undefined`** for images and for posterless videos — the FE
+   * must fall back to {@link GalleryItemV2Public.fallbackUrl} (or a generic
+   * video placeholder) when this is missing.
+   *
+   * Optional & additive: consumers may treat a missing value as "no poster".
+   *
+   * Backend: `GalleryItemV2PublicResponse.posterUrl`
+   * (`app/presentation/schemas/galleries_v2.py`).
+   */
+  posterUrl?: string;
+  /**
+   * Video duration in **milliseconds** (DAM Fase 5, SITIMM-253).
+   *
+   * Video-only — present only when {@link GalleryItemV2Public.mediaType} is
+   * `"video"` and the backend has resolved the media duration; **absent/
+   * `undefined`** for images, files, and videos whose duration is unknown.
+   *
+   * Optional & additive. Units are milliseconds (not seconds): a 30-second
+   * clip is `30000`.
+   *
+   * Backend: `GalleryItemV2PublicResponse.durationMs`
+   * (`app/presentation/schemas/galleries_v2.py`).
+   */
+  durationMs?: number;
 }
 
 /**

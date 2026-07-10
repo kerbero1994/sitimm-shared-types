@@ -5,6 +5,26 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.99.0] - 2026-07-10
+
+DAM Fase 5 — soporte de video en galerías públicas. Aditivo, no-breaking.
+
+**Added:**
+
+- `galleries`: `GalleryItemV2Public.posterUrl?` (string) — URL del frame
+  poster/thumbnail de un asset de video. Presente solo cuando
+  `mediaType === "video"` y el video se subió con un poster capturado en el
+  cliente; ausente/`undefined` para imágenes y videos sin poster (el FE cae a
+  `fallbackUrl`). Espeja `GalleryItemV2PublicResponse.posterUrl` de mini-back
+  (`app/presentation/schemas/galleries_v2.py`). **SITIMM-253**.
+- `galleries`: `GalleryItemV2Public.durationMs?` (number) — duración del video
+  en milisegundos. Video-only; ausente/`undefined` para imágenes, archivos y
+  videos con duración desconocida. Espeja
+  `GalleryItemV2PublicResponse.durationMs`. **SITIMM-253**.
+
+Nota: ambos campos se añaden solo al DTO **público** (`GalleryItemV2Public`);
+el shape authed (`GalleryItemV2`) no los expone en esta fase.
+
 ## [0.98.0] - 2026-07-10
 
 Cierre de hygiene de contrato Events. Aditivo.
