@@ -5,6 +5,34 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.103.0] - 2026-07-11
+
+Programas — el embed `gallery` de las shapes PÚBLICAS pasa a la galería DAM
+unificada. Sincroniza el typing con el wire real de mini-back. **SITIMM-261**.
+
+**Changed:**
+
+- `programs`: `ProgramV2Public.gallery` y `SubProgramV2Public.gallery` se
+  retipan de la shape legacy embebida (`programs.GalleryV2` —
+  `{items: [{url, caption, img_variants}]}`, columna JSONB) a
+  `GalleryV2Public | null` importada del módulo `galleries` (la misma shape
+  scrubbed que devuelven las rutas anónimas `/galleries/public*`: `uuid`,
+  `name`, `slug`, `cover_url`, `cover_url_variants`, `visibility`,
+  `item_count`, `items: GalleryItemV2Public[]` con `posterUrl`/`durationMs`,
+  etc.). Backend: `programs_v2.py :: ProgramV2PublicResponse.gallery` /
+  `SubProgramV2PublicResponse.gallery` tipados como
+  `galleries_v2.py :: GalleryV2PublicResponse`. Poblada SOLO con
+  `?include_gallery=true`; `null` con el flag apagado, sin assignment
+  primario, o con galería no-pública. La clave siempre viaja (presente con
+  `null`, no omitida) — se mantiene opcional por resiliencia a futuro.
+- `programs`: las shapes AUTHED (`ProgramV2` / `SubProgramV2`) y los bodies
+  de escritura conservan el embed legacy `programs.GalleryV2` (siguen
+  mapeando a la columna JSONB `gallery`) — sin cambios de shape ahí.
+
+Nota FE: colapsa el override local de Sitimm-web
+(`ProgramGalleryV2Public` en `src/infrastructure/api/types/program-v2.ts`)
+— re-exportar las shapes del paquete directamente.
+
 ## [0.101.0] - 2026-07-10
 
 DAM Fase 6 — filtro de colección en la búsqueda de media + galerías

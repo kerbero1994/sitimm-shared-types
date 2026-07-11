@@ -18,6 +18,8 @@
  * content the union edits centrally.
  */
 
+import type { GalleryV2Public } from "../galleries";
+
 // ─────────────────────────────────────────────────────────────────────
 // Records
 // ─────────────────────────────────────────────────────────────────────
@@ -155,6 +157,14 @@ export interface GalleryItemV2 {
  * public anonymous reads, i18n, moderation), import `GalleryV2` from
  * `@kerbero1994/shared-types/galleries` instead. This `programs` type is
  * kept as-is for `ProgramServiceFieldsV2.gallery` back-compat.
+ *
+ * v0.103.0 (SITIMM-261): the PUBLIC program shapes no longer carry this
+ * legacy embed on the wire — {@link ProgramV2Public.gallery} and
+ * {@link SubProgramV2Public.gallery} are now the unified DAM
+ * `GalleryV2Public` (from `@kerbero1994/shared-types/galleries`). This
+ * legacy container remains only on the AUTHED read shapes
+ * ({@link ProgramV2} / {@link SubProgramV2}) and the write bodies, which
+ * still map to the JSONB `gallery` column.
  */
 export interface GalleryV2 {
   items: GalleryItemV2[];
@@ -172,7 +182,12 @@ export interface ProgramServiceFieldsV2 {
   icon?: string | null;
   /** Theme accent — hex `#RRGGBB` or `#RRGGBBAA`. Drives card gradients. */
   theme_color?: string | null;
-  /** Event photo gallery — separate from `img` hero. */
+  /** Event photo gallery — separate from `img` hero. Legacy embedded
+   * shape backed by the JSONB `gallery` column — used by the AUTHED read
+   * shapes and the write bodies only. The PUBLIC shapes override this
+   * field with the unified DAM `GalleryV2Public` — see
+   * {@link ProgramV2Public.gallery} / {@link SubProgramV2Public.gallery}
+   * (SITIMM-261, v0.103.0). */
   gallery?: GalleryV2 | null;
   /** CTA button label (e.g. "Inscríbete"). Null hides the CTA. */
   cta_label?: string | null;
@@ -232,11 +247,36 @@ export interface SubProgramV2 extends ProgramServiceFieldsV2 {
  * timestamps. INV-PUB-1: `GET /programs/public` must never return
  * `createdAt`/`updatedAt`/`deletedAt` on nested SubPrograms. v0.69.0+.
  * Backend: programs_v2.py :: SubProgramV2PublicResponse
+ *
+ * v0.103.0 (SITIMM-261): `gallery` is retyped to the unified DAM
+ * {@link GalleryV2Public} — see the field JSDoc below.
  */
 export type SubProgramV2Public = Omit<
   SubProgramV2,
-  "createdAt" | "updatedAt" | "deletedAt"
->;
+  "createdAt" | "updatedAt" | "deletedAt" | "gallery"
+> & {
+  /**
+   * Primary DAM gallery attached to this subprogram (active
+   * `GalleryV2Assignment` with `entityType: "subprogram"` + `isPrimary`,
+   * active public gallery, approved+active items) — the SAME scrubbed
+   * shape the anonymous `/galleries/public*` routes return. v0.103.0
+   * (SITIMM-261): replaces the legacy embedded {@link GalleryV2}
+   * (`{items: [{url, caption, img_variants}]}`), which is gone from the
+   * public wire.
+   *
+   * Populated ONLY when the caller passes `?include_gallery=true`
+   * (payload-size guard); `null` when the flag is off, when no primary
+   * assignment exists, or when the attached gallery is not
+   * `visibility: "public"`. Current backends always emit the key
+   * (present with `null`, not omitted) — marked optional too so a future
+   * BE that DOES omit it stays type-safe.
+   *
+   * Backend: `SubProgramV2PublicResponse.gallery`
+   * (`app/presentation/schemas/programs_v2.py`, SITIMM-261) typed as
+   * `galleries_v2.py :: GalleryV2PublicResponse`.
+   */
+  gallery?: GalleryV2Public | null;
+};
 
 /**
  * Program record with embedded active SubPrograms.
@@ -294,8 +334,30 @@ export interface ProgramV2 extends ProgramServiceFieldsV2 {
  * Internal timestamps are stripped so the marketing site never displays
  * createdAt/updatedAt/deletedAt by accident.
  */
-export interface ProgramV2Public extends Omit<ProgramServiceFieldsV2, "is_test"> {
+export interface ProgramV2Public
+  extends Omit<ProgramServiceFieldsV2, "is_test" | "gallery"> {
   uuid: string;
+  /**
+   * Primary DAM gallery attached to this program (active
+   * `GalleryV2Assignment` with `entityType: "program"` + `isPrimary`,
+   * active public gallery, approved+active items) — the SAME scrubbed
+   * shape the anonymous `/galleries/public*` routes return. v0.103.0
+   * (SITIMM-261): replaces the legacy embedded {@link GalleryV2}
+   * (`{items: [{url, caption, img_variants}]}`), which is gone from the
+   * public wire.
+   *
+   * Populated ONLY when the caller passes `?include_gallery=true`
+   * (payload-size guard); `null` when the flag is off, when no primary
+   * assignment exists, or when the attached gallery is not
+   * `visibility: "public"`. Current backends always emit the key
+   * (present with `null`, not omitted) — marked optional too so a future
+   * BE that DOES omit it stays type-safe.
+   *
+   * Backend: `ProgramV2PublicResponse.gallery`
+   * (`app/presentation/schemas/programs_v2.py`, SITIMM-261) typed as
+   * `galleries_v2.py :: GalleryV2PublicResponse`.
+   */
+  gallery?: GalleryV2Public | null;
   title: string | null;
   description: string | null;
   img: string | null;
