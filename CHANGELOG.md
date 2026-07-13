@@ -5,6 +5,50 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.104.0] - 2026-07-13
+
+Events i18n label sidecars — promueve al paquete los tipos de las 4 tablas de
+traducción sidecar (day-header / session / venue(campus) / transport-stop) que
+el `EventTranslation` canónico NO cubre. Aditivo, no-breaking. **SITIMM-257**
+(fase 3). Landearon como: endpoints BE en mini-back PR #246, tipos locales FE
+en new_dashboard PR #87 — que ahora pueden borrarse a favor de estos.
+
+**Added:**
+
+- `events`: `EventSidecarTranslation` — fila de traducción sidecar uniforme
+  (`lang`, `title`/`description`/`label` nullable, `source`, `updatedAt`). El
+  backend devuelve la MISMA response class para las 4 entidades, así que la
+  fila es uniforme (los campos irrelevantes viajan `null`). Backend:
+  `event_i18n.py :: EventSidecarTranslationResponse`. Envuelta en
+  `V2Response<…>`.
+- `events`: `EventSidecarTranslationList` (`{ items }`) — wrapper de la lista
+  (`GET .../translations`). Backend:
+  `EventSidecarTranslationsListResponse`.
+- `events`: `EventTitleDescTranslationUpsertBody` (day/session — `title` 1–500,
+  `description` ≤100 000) y `EventLabelTranslationUpsertBody` (venue/stop —
+  `label` 1–255), más la unión `EventSidecarTranslationUpsertBody`. Reflejan el
+  split real del BE (`EventTitleDescTranslationUpsert` +
+  `EventLabelTranslationUpsert`) — el FE los tenía colapsados en un body plano.
+  `source?` default `"human"`.
+- `events`: `EventSidecarTranslationDeleteResponse` (`{ message: "ok", uuid,
+  lang }`) — respuesta del `DELETE .../translations/{lang}`.
+- `events`: `SidecarTranslationFields` (`"titleDescription" | "label"`) —
+  discriminador que decide qué campos captura cada entidad (drives el diálogo
+  del dashboard).
+- `endpoints`: 4 grupos en `V2_ENDPOINTS` (GET list + PUT/DELETE `{lang}`):
+  `EVENT_DAY_TRANSLATIONS`/`EVENT_DAY_TRANSLATION`,
+  `EVENT_SESSION_TRANSLATIONS`/`EVENT_SESSION_TRANSLATION`,
+  `EVENT_VENUE_TRANSLATIONS`/`EVENT_VENUE_TRANSLATION`,
+  `EVENT_TRANSPORT_STOP_TRANSLATIONS`/`EVENT_TRANSPORT_STOP_TRANSLATION`.
+  Reutilizan el `EventTranslationSource` existente (`machine|human|fallback`).
+
+Nota FE: colapsa los tipos locales de new_dashboard
+(`src/services/api/cms/events/translations.types.ts` — `EventSidecarTranslation`,
+`EventSidecarTranslationList`, `EventSidecarTranslationUpsertBody`,
+`EventSidecarTranslationDeleteResponse`, `SidecarTranslationFields`) e importa
+desde `@kerbero1994/shared-types/events`. Los tipos de args de hooks
+(`EventSidecarTranslation*Arg`) son UI-only y siguen locales.
+
 ## [0.103.0] - 2026-07-11
 
 Programas — el embed `gallery` de las shapes PÚBLICAS pasa a la galería DAM
