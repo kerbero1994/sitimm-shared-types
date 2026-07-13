@@ -216,6 +216,136 @@ export interface EventV2 {
 /** Source label for Event translation rows. */
 export type EventTranslationSource = "machine" | "human" | "fallback";
 
+// ── i18n label sidecars (SITIMM-257 §4.10) ────────────────────────────
+//
+// Admin capture surface for the four label-translation sidecars the canonical
+// `EventTranslation` (event title/description/content) does NOT cover: agenda
+// day-headers, agenda sessions, event-scoped venues (`EventCampus`, URL
+// segment `venues`) and transport stops (`EventBusStop`, URL segment
+// `transport`). Each entity exposes three nested, event-scoped routes — GET
+// list · PUT {lang} · DELETE {lang} — under `V2_ENDPOINTS.EVENT_*_TRANSLATION(S)`.
+//
+// Backend:
+//   · Schemas   — app/presentation/schemas/event_i18n.py
+//   · Endpoints — app/presentation/api/v2/event_translations_v2.py
+//   · Read overlay (`?lang=`) — events_v2_serializers._overlay_sidecar_list
+//
+// Promotes the new_dashboard Phase-2 local types
+// (src/services/api/cms/events/translations.types.ts) into the package.
+
+/**
+ * One sidecar translation row (any of the four entities).
+ *
+ * `title`/`description` populate for day-header + session rows; `label` for
+ * venue + stop rows — the irrelevant fields stay `null`. The backend returns
+ * the SAME response class for all four entities, so this row shape is uniform
+ * (unlike the split upsert bodies below).
+ *
+ * Backend: `event_i18n.py :: EventSidecarTranslationResponse`. Delivered as the
+ * `data` payload of a `V2Response<…>` envelope (`success_response`) by the
+ * list/upsert routes in `event_translations_v2.py`.
+ */
+export interface EventSidecarTranslation {
+  /**
+   * Target locale code (a value from the `locales` module, e.g. `"en"`).
+   * Never the source lang `"es"` — the write guard rejects it (400
+   * `unsupported_lang`), and the read overlay only emits non-source rows.
+   */
+  lang: string;
+  /** Translated title. Set for day-header + session rows; `null` otherwise. 1–500 chars on write. */
+  title: string | null;
+  /** Translated description/body. Set for day-header + session rows; `null` otherwise. ≤100 000 chars on write. */
+  description: string | null;
+  /** Translated label. Set for venue + stop rows; `null` otherwise. 1–255 chars on write. */
+  label: string | null;
+  /** How the row was produced. Backend default `"human"`. */
+  source: EventTranslationSource;
+  /** ISO-8601 last-update timestamp. */
+  updatedAt: string;
+}
+
+/**
+ * List wrapper for one entity's translation rows — the `data` payload of
+ * `GET /api/v2/events/{uuid}/{…}/{entityUuid}/translations`
+ * (`V2Response<EventSidecarTranslationList>`).
+ *
+ * Backend: `event_i18n.py :: EventSidecarTranslationsListResponse`.
+ */
+export interface EventSidecarTranslationList {
+  items: EventSidecarTranslation[];
+}
+
+/**
+ * Upsert body for the title+description entities (agenda **day-header** +
+ * **session**). Send only the fields you're setting; at least one translatable
+ * field is required (else 400 `empty_translation`).
+ *
+ * Backend: `event_i18n.py :: EventTitleDescTranslationUpsert`.
+ */
+export interface EventTitleDescTranslationUpsertBody {
+  /** 1–500 chars. */
+  title?: string;
+  /** ≤100 000 chars. */
+  description?: string;
+  /** Provenance tag. Backend default `"human"` (pattern `machine|human|fallback`). */
+  source?: EventTranslationSource;
+}
+
+/**
+ * Upsert body for the label entities (**venue** / `EventCampus` + transport
+ * **stop** / `EventBusStop`). `label` is required (else 400 `empty_translation`).
+ *
+ * Backend: `event_i18n.py :: EventLabelTranslationUpsert`.
+ */
+export interface EventLabelTranslationUpsertBody {
+  /** 1–255 chars. */
+  label?: string;
+  /** Provenance tag. Backend default `"human"`. */
+  source?: EventTranslationSource;
+}
+
+/**
+ * Body for `PUT /api/v2/events/{uuid}/{…}/{entityUuid}/translations/{lang}`.
+ *
+ * A union of the two backend upsert schemas: day-header + session carry
+ * {@link EventTitleDescTranslationUpsertBody} (`title`/`description`); venue +
+ * stop carry {@link EventLabelTranslationUpsertBody} (`label`). The dashboard's
+ * dialog picks the variant from {@link SidecarTranslationFields}.
+ */
+export type EventSidecarTranslationUpsertBody =
+  | EventTitleDescTranslationUpsertBody
+  | EventLabelTranslationUpsertBody;
+
+/**
+ * Response from
+ * `DELETE /api/v2/events/{uuid}/{…}/{entityUuid}/translations/{lang}`
+ * (the `data` payload of the `V2Response<…>` envelope).
+ *
+ * Soft-deletes the row for one locale. `message` is the literal string `"ok"`
+ * (not a localized/human message); `uuid` echoes the child entity UUID and
+ * `lang` the normalized locale.
+ *
+ * Backend: `event_translations_v2.py :: _delete_core`.
+ */
+export interface EventSidecarTranslationDeleteResponse {
+  /** Always the literal `"ok"`. */
+  message: string;
+  /** Echoes the translated child entity's UUID (day/session/venue/stop). */
+  uuid: string;
+  /** Normalized (lower-cased) locale that was deleted. */
+  lang: string;
+}
+
+/**
+ * Which text field(s) an entity kind captures — drives the dashboard's
+ * translation dialog form and picks the matching
+ * {@link EventSidecarTranslationUpsertBody} variant.
+ *
+ * - `"titleDescription"` — agenda day-header + session (title + description).
+ * - `"label"` — venue (`EventCampus`) + transport stop (`EventBusStop`).
+ */
+export type SidecarTranslationFields = "titleDescription" | "label";
+
 /**
  * Event detail response — extends EventV2 with full content fields.
  * Backend: event_v2.py :: EventDetailV2Response

@@ -160,6 +160,37 @@ export const V2_ENDPOINTS = {
   /** GET → V2Response<EventLogistics>. Confirmed-vs-minimum per sede + per transport stop. Requires events:read. */
   EVENT_LOGISTICS: "/events/{uuid}/logistics",
 
+  // ── Event i18n label sidecars (SITIMM-257) ───────────────
+  // Admin capture surface for the four label-translation sidecars
+  // `EventTranslation` does not cover: agenda day-headers + sessions
+  // (events:manage), event venues + transport stops (events:update). Each
+  // entity: GET list · PUT {lang} upsert · DELETE {lang}. Bodies + row types
+  // live in the `events` module (EventSidecarTranslation, …UpsertBody,
+  // …DeleteResponse). Backend: event_translations_v2.py.
+
+  /** GET → V2Response<EventSidecarTranslationList>. Day-header translation rows. Requires events:manage. */
+  EVENT_DAY_TRANSLATIONS: "/events/{uuid}/agenda/days/{dayUuid}/translations",
+  /** PUT → Body: EventTitleDescTranslationUpsertBody → V2Response<EventSidecarTranslation>. DELETE → V2Response<EventSidecarTranslationDeleteResponse>. Requires events:manage. */
+  EVENT_DAY_TRANSLATION:
+    "/events/{uuid}/agenda/days/{dayUuid}/translations/{lang}",
+  /** GET → V2Response<EventSidecarTranslationList>. Session translation rows. Requires events:manage. */
+  EVENT_SESSION_TRANSLATIONS:
+    "/events/{uuid}/agenda/sessions/{sessionUuid}/translations",
+  /** PUT → Body: EventTitleDescTranslationUpsertBody → V2Response<EventSidecarTranslation>. DELETE → V2Response<EventSidecarTranslationDeleteResponse>. Requires events:manage. */
+  EVENT_SESSION_TRANSLATION:
+    "/events/{uuid}/agenda/sessions/{sessionUuid}/translations/{lang}",
+  /** GET → V2Response<EventSidecarTranslationList>. Venue (EventCampus) label translation rows. Requires events:update. */
+  EVENT_VENUE_TRANSLATIONS: "/events/{uuid}/venues/{venueUuid}/translations",
+  /** PUT → Body: EventLabelTranslationUpsertBody → V2Response<EventSidecarTranslation>. DELETE → V2Response<EventSidecarTranslationDeleteResponse>. Requires events:update. */
+  EVENT_VENUE_TRANSLATION:
+    "/events/{uuid}/venues/{venueUuid}/translations/{lang}",
+  /** GET → V2Response<EventSidecarTranslationList>. Transport-stop (EventBusStop) label translation rows. Requires events:update. */
+  EVENT_TRANSPORT_STOP_TRANSLATIONS:
+    "/events/{uuid}/transport/{stopUuid}/translations",
+  /** PUT → Body: EventLabelTranslationUpsertBody → V2Response<EventSidecarTranslation>. DELETE → V2Response<EventSidecarTranslationDeleteResponse>. Requires events:update. */
+  EVENT_TRANSPORT_STOP_TRANSLATION:
+    "/events/{uuid}/transport/{stopUuid}/translations/{lang}",
+
   // ── Audience Templates ───────────────────────────────────
   // Reusable AudienceSpec library (audience_templates_v2.py). Admin-only
   // surface: reads included require a write-tier events:* permission —
