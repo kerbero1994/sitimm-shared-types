@@ -23,14 +23,23 @@ export type GuestPolicy = "forbidden" | "require_approval" | "auto_accept";
 /** How multiple AudienceRules are evaluated together. */
 export type Combinator = "all" | "any";
 
-/** Supported rule fields for audience targeting. */
+/** Supported rule fields for audience targeting.
+ *
+ * `industrialParkId` / `cityId` / `economicActivityId` derive from the
+ * user's Company row (Employee.CompanyId -> Company.*). They are
+ * categorical ids: only `eq` / `neq` / `in` / `nin` are accepted by the
+ * backend (`gte`/`lte` are rejected with 422).
+ */
 export type RuleField =
   | "sex"
   | "companyId"
   | "userType"
   | "headquarterId"
   | "ageYears"
-  | "affiliationYears";
+  | "affiliationYears"
+  | "industrialParkId"
+  | "cityId"
+  | "economicActivityId";
 
 /** Comparison operators for AudienceRule. */
 export type RuleOp = "eq" | "neq" | "in" | "nin" | "gte" | "lte";
