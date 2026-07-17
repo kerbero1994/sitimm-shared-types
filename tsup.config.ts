@@ -36,6 +36,7 @@ export default defineConfig({
     "src/notificationsContent/index.ts",
     "src/home/index.ts",
     "src/audience-templates/index.ts",
+    "src/support/index.ts",
   ],
   format: ["cjs", "esm"],
   dts: true,
