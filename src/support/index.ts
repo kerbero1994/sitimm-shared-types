@@ -58,6 +58,20 @@ export type SupportStatus = "new" | "in_progress" | "resolved" | "closed";
 /** Server-derived severity. `high` when `httpStatus >= 500` (spec §5.1). */
 export type SupportSeverity = "normal" | "high";
 
+/**
+ * Why a ticket was closed — mandatory on every close (SITIMM-453 decision #8).
+ * `moved_consulta`/`escalated_jira` pair with a `movedTo` pointer to the
+ * destination; `anon_no_contact` is the terminal state for an anonymous
+ * misrouted report that left no way to reach the reporter.
+ */
+export type SupportCloseReason =
+  | "resolved_direct"
+  | "moved_consulta"
+  | "escalated_jira"
+  | "anon_no_contact"
+  | "invalid"
+  | "duplicate";
+
 /** Kind of deferred side-effect written to the transactional outbox (spec §5.2). */
 export type SupportOutboxKind =
   | "jira_create"
@@ -191,13 +205,18 @@ export interface SupportTicketListItem {
   uuid: string;
   folio: string;
   channel: SupportChannel;
+  /** Immutable origin category (server-derived at creation, anchors dedupe/audit). */
   category: SupportCategory;
+  /** Mutable triage category — AI recommends, human confirms. Equals `category` until re-classified (SITIMM-453). */
+  triageCategory: SupportCategory;
   severity: SupportSeverity;
   status: SupportStatus;
   title: string;
   /** How many reports deduped into this canonical ticket (>= 1). */
   occurrenceCount: number;
   isAnonymous: boolean;
+  /** Triage owner (claimant); `null` until someone takes the ticket. */
+  handledBy: number | null;
   /** Always `null` in v1 — company is not resolved at report time. */
   companyId: number | null;
   /** Reporter's effective UserType at report time (snapshot). */
@@ -265,6 +284,14 @@ export interface SupportTicketDetail extends SupportTicketListItem {
   resolvedBy: number | null;
   /** ISO 8601. */
   resolvedAt: string | null;
+  /** ISO 8601. When the current owner claimed the ticket. */
+  claimedAt: string | null;
+  /** Why the ticket was closed; `null` while still open (SITIMM-453 decision #8). */
+  closeReason: SupportCloseReason | null;
+  /** Forwarding pointer to where the ticket ended up: a consultation UUID or Jira key. */
+  movedTo: string | null;
+  /** Machine-readable resolution code (containment metric). */
+  resolutionCode: string | null;
   duplicates: SupportTicketDuplicate[];
   outbox: SupportOutboxItem[];
 }
