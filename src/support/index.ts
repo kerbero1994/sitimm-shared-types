@@ -64,7 +64,11 @@ export type SupportOutboxKind =
   | "jira_comment"
   | "jira_redact"
   | "email_ack"
-  | "email_inbox";
+  | "email_inbox"
+  // Staff-facing creation notifications (SITIMM-447): dedicated Discord
+  // channel + WS toast/FCM push fan-out to support_tickets:notify grantees.
+  | "discord_notify"
+  | "staff_notify";
 
 /** Delivery state of one outbox row. `dead` after 5 failed attempts. */
 export type SupportOutboxState = "pending" | "sending" | "sent" | "failed" | "dead";
