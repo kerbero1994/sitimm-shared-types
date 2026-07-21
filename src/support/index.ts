@@ -72,6 +72,44 @@ export type SupportCloseReason =
   | "invalid"
   | "duplicate";
 
+/**
+ * Who performed a ticket audit event (SITIMM-456). `ai` = the daily triage pass
+ * (advisory only), `human` = a staff action, `system` = automatic.
+ */
+export type SupportEventActor = "ai" | "human" | "system";
+
+/** The append-only audit vocabulary for a ticket's lifecycle (SITIMM-456). */
+export type SupportEventAction =
+  | "created"
+  | "claimed"
+  | "status_changed"
+  | "category_recommended"
+  | "category_changed"
+  | "ai_recommendation"
+  | "moved"
+  | "escalated"
+  | "closed"
+  | "reopened"
+  | "note";
+
+/**
+ * One row of a ticket's append-only audit log (`support_ticket_events`). Rows
+ * are never updated or deleted — the AI↔human go/no-go trail (SITIMM-453 T3).
+ * Backend: support_ticket_event_repository.py :: SupportTicketEvent
+ */
+export interface SupportTicketEvent {
+  id: number;
+  actor: SupportEventActor;
+  /** Staff user who acted; `null` for `system`/`ai` actors or purged users. */
+  actorUserId: number | null;
+  action: SupportEventAction;
+  fromValue: string | null;
+  toValue: string | null;
+  payload: Record<string, unknown>;
+  /** ISO 8601. */
+  createdAt: string;
+}
+
 /** Kind of deferred side-effect written to the transactional outbox (spec §5.2). */
 export type SupportOutboxKind =
   | "jira_create"
