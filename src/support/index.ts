@@ -342,9 +342,39 @@ export interface SupportTicketDetail extends SupportTicketListItem {
 export interface SupportTicketUpdateRequest {
   status?: SupportStatus | null;
   severity?: SupportSeverity | null;
+  /** Re-classification — writes the MUTABLE `triageCategory`, never the immutable origin `category` (SITIMM-453). */
   category?: SupportCategory | null;
   /** max {@link SUPPORT_INTERNAL_NOTE_MAX} chars. */
   internalNote?: string | null;
+}
+
+/**
+ * Body of `POST /api/v2/support/tickets/{uuid}/move` (SITIMM-455). Reroutes a
+ * misfiled support ticket into Consultations. `typeUuid` is the advisor-room
+ * routing decision; `companyUuid` optional (falls back to reporter's employer).
+ */
+export interface SupportMoveRequest {
+  typeUuid: string;
+  companyUuid?: string | null;
+}
+
+/** `data` payload of `POST /tickets/{uuid}/move` — the ticket is now closed. */
+export interface SupportMoveResponse {
+  uuid: string;
+  movedTo: string;
+  consultationUuid: string;
+  closeReason: SupportCloseReason;
+}
+
+/**
+ * Body of `POST /api/v2/support/tickets/{uuid}/close` (SITIMM-457). The reason
+ * is MANDATORY — a ticket never closes silently (decision #8). Both `claim` and
+ * `close` return the full {@link SupportTicketDetail}.
+ */
+export interface SupportCloseRequest {
+  reason: SupportCloseReason;
+  /** max {@link SUPPORT_INTERNAL_NOTE_MAX} chars. */
+  note?: string | null;
 }
 
 /**
