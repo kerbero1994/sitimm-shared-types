@@ -121,6 +121,15 @@ export interface SupportTicketEvent {
   createdAt: string;
 }
 
+/**
+ * `data` payload of `GET /api/v2/support/tickets/{uuid}/events` (SITIMM-462) —
+ * the append-only audit trail, oldest-first. Powers the timeline + the
+ * AI-recommendation panel (the latest `ai_recommendation` event).
+ */
+export interface SupportTicketEventsResponse {
+  events: SupportTicketEvent[];
+}
+
 /** Kind of deferred side-effect written to the transactional outbox (spec §5.2). */
 export type SupportOutboxKind =
   | "jira_create"
