@@ -389,6 +389,53 @@ export interface SupportCloseRequest {
 }
 
 /**
+ * One open ticket in the daily AI triage queue (SITIMM-461) —
+ * `GET /api/v2/support/tickets/triage-queue`. Carries the free text + context
+ * the AI needs to classify and summarize.
+ */
+export interface SupportTriageQueueItem {
+  uuid: string;
+  folio: string;
+  channel: SupportChannel;
+  category: SupportCategory;
+  triageCategory: SupportCategory;
+  severity: SupportSeverity;
+  status: SupportStatus;
+  title: string;
+  description: string;
+  context: SupportTicketContextStored;
+  occurrenceCount: number;
+  isAnonymous: boolean;
+  handledBy: number | null;
+  /** ISO 8601. */
+  createdAt: string;
+}
+
+/** `data` payload of the triage-queue endpoint (open tickets, oldest-first). */
+export interface SupportTriageQueueResponse {
+  items: SupportTriageQueueItem[];
+  total: number;
+}
+
+/**
+ * Body of `POST /api/v2/support/tickets/{uuid}/ai-recommendation` (SITIMM-461).
+ * The daily AI pass's advisory output — **never** applied automatically
+ * (decision #6). A human reads it and acts (go/no-go/assign).
+ */
+export interface SupportAiRecommendationRequest {
+  summary: string;
+  options: string[];
+  triageCategory?: SupportCategory | null;
+  resolutionCode?: string | null;
+}
+
+/** Ack: the recommendation was recorded as a ticket event (no state change). */
+export interface SupportAiRecommendationResponse {
+  uuid: string;
+  recorded: boolean;
+}
+
+/**
  * `data` payload of `POST /api/v2/support/tickets/{uuid}/escalate`.
  * `outboxKind` is always `jira_create` in v1 (the only escalation target).
  * Backend: support_admin_v2.py :: SupportEscalateResponse
