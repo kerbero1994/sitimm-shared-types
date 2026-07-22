@@ -493,7 +493,13 @@ export const CATEGORY_LABELS_ES: Record<SupportCategory, string> = {
 };
 
 /**
- * The two statuses in which a canonical ticket is still "open" and participates
- * in fingerprint dedupe. Mirrors `support.py :: OPEN_STATUSES`.
+ * The statuses in which a canonical ticket is still "open" and participates in
+ * fingerprint dedupe: everything that is not `closed` (SITIMM-459). Mirrors
+ * `support.py :: OPEN_STATUSES`.
  */
-export const SUPPORT_OPEN_STATUSES: readonly SupportStatus[] = ["new", "in_progress"];
+export const SUPPORT_OPEN_STATUSES: readonly SupportStatus[] = [
+  "backlog",
+  "assigned",
+  "working",
+  "qa",
+];
