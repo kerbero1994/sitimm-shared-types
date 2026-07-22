@@ -53,7 +53,18 @@ export type SupportCategory =
  * canonical-dedupe partial index (`uq_support_canonical_open`) keys on — see
  * {@link SUPPORT_OPEN_STATUSES}.
  */
-export type SupportStatus = "new" | "in_progress" | "resolved" | "closed";
+/**
+ * Kanban triage lifecycle (SITIMM-459). The four non-`closed` states are the
+ * open states. `qa` is bug-lane only (support goes backlog → working → closed).
+ * Migrated from the legacy 4-state model (new→backlog, in_progress→working,
+ * resolved/closed→closed).
+ */
+export type SupportStatus =
+  | "backlog"
+  | "assigned"
+  | "working"
+  | "qa"
+  | "closed";
 
 /** Server-derived severity. `high` when `httpStatus >= 500` (spec §5.1). */
 export type SupportSeverity = "normal" | "high";
@@ -482,7 +493,13 @@ export const CATEGORY_LABELS_ES: Record<SupportCategory, string> = {
 };
 
 /**
- * The two statuses in which a canonical ticket is still "open" and participates
- * in fingerprint dedupe. Mirrors `support.py :: OPEN_STATUSES`.
+ * The statuses in which a canonical ticket is still "open" and participates in
+ * fingerprint dedupe: everything that is not `closed` (SITIMM-459). Mirrors
+ * `support.py :: OPEN_STATUSES`.
  */
-export const SUPPORT_OPEN_STATUSES: readonly SupportStatus[] = ["new", "in_progress"];
+export const SUPPORT_OPEN_STATUSES: readonly SupportStatus[] = [
+  "backlog",
+  "assigned",
+  "working",
+  "qa",
+];
