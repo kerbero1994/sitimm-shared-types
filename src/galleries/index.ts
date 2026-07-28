@@ -415,6 +415,16 @@ export interface GalleryV2 {
    * in. See the module-level "Phase B" semantics note above. */
   allowsContributions: boolean;
   items: GalleryItemV2[];
+  /** Number of items the caller may see, independent of whether `items` was
+   * serialized (SITIMM-468). `GET /api/v2/galleries` (the paginated list)
+   * omits the array for payload reasons but still reports the count, so this
+   * cannot be derived from `items.length` — on the list that is always `0`.
+   * The detail route sends both and they agree.
+   *
+   * Moderation-scoped: a gallery manager's count includes pending/rejected
+   * contributions, a regular member's counts only approved items — so the
+   * number always matches what that caller can actually open. */
+  item_count: number;
   /** ISO-8601 datetime. */
   createdAt: string;
   /** ISO-8601 datetime. */
