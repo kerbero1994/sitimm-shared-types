@@ -33,9 +33,13 @@
  * Subject types currently registered with the engagement subsystem.
  * Backend: `SUBJECT_TYPES` in `app/engagement/domain/enums.py`.
  *
- * Only `blog_post` is live on QA today (2026-05-27); the other types are
- * reserved as the migration progresses. Frontends should treat the union
- * as open and fall back to "unknown subject type" gracefully.
+ * Live (a router is mounted): `blog_post`, `magazine`, `event`,
+ * `gallery`, `media`. Reserved (declared, no router yet):
+ * `consultation`, `bulletin`. Frontends should treat the union as open
+ * and fall back to "unknown subject type" gracefully.
+ *
+ * `gallery` and `media` are deliberately separate: a gallery and a
+ * single photo are commented on independently (SITIMM-575).
  */
 export const ENGAGEMENT_SUBJECT_TYPES = [
   "blog_post",
@@ -43,6 +47,8 @@ export const ENGAGEMENT_SUBJECT_TYPES = [
   "event",
   "consultation",
   "bulletin",
+  "gallery",
+  "media",
 ] as const;
 export type EngagementSubjectType = (typeof ENGAGEMENT_SUBJECT_TYPES)[number];
 

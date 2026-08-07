@@ -2,7 +2,8 @@
  * Engagement subsystem — barrel re-export.
  *
  * Bounded context decoupled from any single feature. Blog posts,
- * magazines, events, consultations, and bulletins register a
+ * magazines, events, galleries, single photos, consultations and
+ * bulletins each register a
  * `subject_type` on the backend via `subject_registry` and call
  * `make_engagement_router(subject_type, base_prefix)` to mount the full
  * comments + reactions + bookmarks + views + shares surface under their
