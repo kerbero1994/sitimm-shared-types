@@ -88,6 +88,35 @@ export function engagementSubjectEndpoints(basePrefix: string) {
 }
 
 /**
+ * Build the OPT-IN extended interaction endpoints.
+ *
+ * Unlike the base set above, these exist only for subject types whose
+ * backend descriptor declares them in `enabled_interactions`. Calling a
+ * path a subject has not opted into 404s — the route is never mounted.
+ * Today: `magazine` and `media` have all four; `gallery` has like +
+ * report only (a container has no file to download).
+ */
+export function engagementExtendedEndpoints(basePrefix: string) {
+  const prefix = basePrefix.replace(/\/$/, "");
+  return {
+    /** POST → EngagementLikeResponse. Auth required. Requires `like` in enabled_interactions. */
+    LIKE: `${prefix}/{subject_uuid}/like`,
+    /** DELETE → EngagementLikeResponse. Auth required. */
+    UNLIKE: `${prefix}/{subject_uuid}/like`,
+    /** POST → EngagementLikePublicResponse. Anonymous OK; per-IP rate-limited vanity bump. */
+    LIKE_PUBLIC: `${prefix}/{subject_uuid}/like/public`,
+    /** POST → EngagementDownloadResponse. Anonymous OK (per-IP rate-limited); records the download. Requires `download`. */
+    DOWNLOAD: `${prefix}/{subject_uuid}/download`,
+    /** POST → Body: EngagementReportRequest. Returns EngagementReportAck. Status 201. Auth required. Requires `report`. */
+    REPORT: `${prefix}/{subject_uuid}/report`,
+    /** GET → EngagementCounters. Requires engagement:suspend AND `stats`. */
+    STATS: `${prefix}/{subject_uuid}/stats`,
+    /** GET → text/csv download audit log. Query: since, until. Requires the feature's read permission AND `stats`. */
+    STATS_DOWNLOADS_CSV: `${prefix}/stats/downloads.csv`,
+  } as const;
+}
+
+/**
  * Pre-baked engagement endpoints for the `blog_post` subject_type —
  * mounted at `/api/v2/blog/posts` by `blog_engagement_adapter.py`. Use
  * this directly when working with blog posts; for other subject types
@@ -97,6 +126,37 @@ export function engagementSubjectEndpoints(basePrefix: string) {
 export const ENGAGEMENT_BLOG_ENDPOINTS = engagementSubjectEndpoints(
   "/api/v2/blog/posts"
 );
+
+/**
+ * Pre-baked endpoints for the `gallery` subject_type — mounted at
+ * `/api/v2/galleries` by `gallery_engagement_adapter.py` (SITIMM-575).
+ *
+ * Comment threads ride the base `COMMENTS_CREATE` route: pass
+ * `parent_id` to reply. Depth is capped at 2 (a root comment plus one
+ * level of replies), enforced backend-side.
+ *
+ * Extended set is like + report only — `DOWNLOAD` / `STATS*` are NOT
+ * mounted for galleries and will 404.
+ */
+export const ENGAGEMENT_GALLERY_ENDPOINTS = {
+  ...engagementSubjectEndpoints("/api/v2/galleries"),
+  ...engagementExtendedEndpoints("/api/v2/galleries"),
+} as const;
+
+/**
+ * Pre-baked endpoints for the `media` subject_type — one photo, mounted
+ * at `/api/v2/galleries/media` by `media_engagement_adapter.py`
+ * (SITIMM-575). All four extended interactions are live here.
+ *
+ * A photo carries no publish state of its own: it is engageable only
+ * while it is reachable through at least one publicly visible gallery,
+ * so these routes 404 for a sensitive, unattached, unapproved or
+ * fixture asset exactly as the public read surface does.
+ */
+export const ENGAGEMENT_MEDIA_ENDPOINTS = {
+  ...engagementSubjectEndpoints("/api/v2/galleries/media"),
+  ...engagementExtendedEndpoints("/api/v2/galleries/media"),
+} as const;
 
 // ─────────────────────────────────────────────────────────────────────
 // Caller's cross-subject "/me" surface
