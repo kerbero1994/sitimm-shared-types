@@ -115,6 +115,8 @@ import type { AudienceSpec } from "../events/eligibility";
 
 // Re-export so consumers don't have to reach into events/eligibility
 // directly for the audience-targeting vocabulary galleries reuse verbatim.
+import type { EngagementCountersPublic } from "../engagement";
+
 export type {
   AudienceSpec,
   AudienceMode,
@@ -788,6 +790,18 @@ export interface GalleryItemV2Public {
    * (`app/presentation/schemas/galleries_v2.py`).
    */
   durationMs?: number | null;
+  /**
+   * Engagement counters for THIS photo (SITIMM-575).
+   *
+   * `null` means NOT LOADED — a surface that never asks for the overlay (a
+   * gallery embedded in a program response), or a lookup that failed;
+   * counters are best-effort and never break a read. A photo with no
+   * engagement yet is an all-zeros object, so do NOT use `null` to mean
+   * "no comments".
+   *
+   * Batched once per response, never per item.
+   */
+  engagement?: EngagementCountersPublic | null;
 }
 
 /**
@@ -819,6 +833,18 @@ export interface GalleryV2Public {
   /** Approved + active items only, ordered `(sortOrder, createdAt)`. */
   items: GalleryItemV2Public[];
   item_count: number;
+  /**
+   * Engagement counters for THIS gallery (SITIMM-575).
+   *
+   * `null` means NOT LOADED — a surface that never asks for the overlay (a
+   * gallery embedded in a program response), or a lookup that failed;
+   * counters are best-effort and never break a read. A gallery with no
+   * engagement yet is an all-zeros object, so do NOT use `null` to mean
+   * "no comments".
+   *
+   * Batched once per response, never per item.
+   */
+  engagement?: EngagementCountersPublic | null;
 }
 
 /**
