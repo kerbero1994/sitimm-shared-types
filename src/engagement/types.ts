@@ -53,6 +53,41 @@ export const ENGAGEMENT_SUBJECT_TYPES = [
 export type EngagementSubjectType = (typeof ENGAGEMENT_SUBJECT_TYPES)[number];
 
 /**
+ * Batch counter overlay a feature's own READ serializer embeds — the shape
+ * behind "23 comentarios · 41 me gusta" on a card.
+ *
+ * Distinct from {@link EngagementCounters}, which is the per-subject
+ * hydration: that one carries `settings` plus the caller's own reaction and
+ * bookmark state, costs a query per subject, and cannot serve a list.
+ *
+ * Every field is always present; a never-engaged subject reads as all zeros.
+ * Field names mirror the backend service keys verbatim
+ * (`EngagementCountersService.get_overlay_batch`) rather than being renamed —
+ * a rename is a silent zero on the wire the day a counter is added.
+ *
+ * Where a container declares this as nullable (see
+ * `GalleryV2Public.engagement`), `null` means NOT LOADED, never "no
+ * engagement".
+ *
+ * Backend: `EngagementCountersPublicV2`
+ * (`app/engagement/presentation/schemas/common.py`).
+ */
+export interface EngagementCountersPublic {
+  view_real: number;
+  view_vanity: number;
+  like_real: number;
+  like_vanity: number;
+  share_real: number;
+  share_vanity: number;
+  download_real: number;
+  download_vanity: number;
+  useful: number;
+  not_useful: number;
+  comment: number;
+  bookmark: number;
+}
+
+/**
  * Reaction kinds. `neutral` is request-only sugar that deletes any prior
  * reaction row; the wire never returns `neutral` as `user_reaction`.
  * Backend: `REACTION_KINDS` in `app/engagement/domain/enums.py`.
