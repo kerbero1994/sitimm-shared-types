@@ -450,16 +450,22 @@ export interface HeroCarouselPublicV2 {
     highlight: HomeHighlightText;
     highlight_image_alt: string;
   };
-  slides: Array<{
-    id: string;
-    href: string | null;
-    image: HomeResolvedImage;
-    eyebrow?: string | null;
-    title: string;
-    description?: string | null;
-    link_label?: string | null;
-    image_alt: string;
-  }>;
+  /**
+   * The carousel slides. Since SITIMM-582 these are RESOLVED CURATION rows,
+   * not the hand-written list — see `HomeFeaturedSlidePublicV2`, which is the
+   * one description of this payload rather than a second copy that can drift.
+   *
+   * The differences from the shape this used to declare are not cosmetic, and
+   * each one is a crash or a wrong render if a consumer assumes otherwise:
+   *
+   * - **`image` can be NULL.** An entity with no cover — an event or gallery
+   *   uploaded without one — resolves to a slide with no image at all. The
+   *   previous non-nullable declaration is why `slide.image.url` type-checked
+   *   and then threw at runtime.
+   * - **`title` can be null**, when the referenced content is gone.
+   * - `subject_type`, `image_variants` and `meta` ride along.
+   */
+  slides: HomeFeaturedSlidePublicV2[];
 }
 
 /** about as served by the PUBLIC read (merged + image-resolved). */
