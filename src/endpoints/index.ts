@@ -377,6 +377,22 @@ export const V2_ENDPOINTS = {
   /** POST → Body: ReorderHomeSectionsV2Request (all 9 keys exactly once, else 422 invalid_order). Returns V2Response<ReorderHomeSectionsV2Response>. Requires content:update. Rate-limited 60/min per user. */
   HOME_SECTIONS_REORDER: "/home/sections/reorder",
 
+  // ── Home featured carousel (SITIMM-582) ──────────────────
+  // Curation behind the hero carousel: which content is promoted, in what
+  // order, under what headline, for how long. The PUBLIC read stays
+  // HOME_SECTIONS_PUBLIC — resolved slides arrive inside hero_carousel.
+
+  /** GET → V2Response<HomeFeaturedItemsV2Response>. All curation rows incl. disabled, each with `live` (on the page right now) + `resolved`. Query: lang. Requires content:read. */
+  HOME_FEATURED_LIST: "/home/featured",
+  /** POST → Body: HomeFeaturedItemV2Request. Returns V2Response<{uuid}>, 201. Errors: 409 already_featured, 409 featured_limit_reached, 422 featured_invalid. Requires content:update. Rate-limited 60/min per user. */
+  HOME_FEATURED_CREATE: "/home/featured",
+  /** PUT → Body: HomeFeaturedItemV2Request (FULL replace, not a patch). Returns V2Response<{uuid}>. Errors: 404 featured_not_found, 409 featured_limit_reached, 409 already_featured. Requires content:update. */
+  HOME_FEATURED_REPLACE: "/home/featured/{uuid}",
+  /** DELETE → V2Response<{deleted}>. Idempotent — deleting an already-deleted row succeeds. Requires content:update. */
+  HOME_FEATURED_DELETE: "/home/featured/{uuid}",
+  /** POST → Body: HomeFeaturedReorderV2Request (every uuid exactly once, else 422 invalid_order). Returns V2Response<{order}>. Requires content:update. */
+  HOME_FEATURED_REORDER: "/home/featured/reorder",
+
   // ── Headquarters ───────────────────────────────────────────
 
   /** GET → V2Response<AllHQMetricsResponse>. Real-time metrics for all HQs. Admin+ only. */
