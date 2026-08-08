@@ -180,6 +180,17 @@ export interface HomeSlideContent {
 export interface HeroCarouselContentV2 {
   hero: HomeHeroContent;
   slides: HomeSlideContent[];
+  /**
+   * How many curated slides the carousel serves (SITIMM-582).
+   *
+   * Lives on the section rather than in a settings table so it is editable at
+   * runtime through the PATCH this same shape describes. Absent on rows seeded
+   * before the field existed — the backend falls back to 12.
+   *
+   * Range 1–24, enforced on write. Exceeding it while enabling a featured item
+   * returns 409 `featured_limit_reached`.
+   */
+  max_slides?: number;
 }
 
 /** hero_carousel → hero highlight card, translatable. */
@@ -687,3 +698,212 @@ export type HomeCmsErrorCode =
   | "not_editable_yet"
   | "shape_mismatch"
   | "invalid_order";
+
+// ── featured carousel curation (SITIMM-582) ──────────────────────────────────
+
+/**
+ * The hero carousel is no longer a hand-written list of images: ANY published
+ * content can be promoted into it — a gallery, an event, a programme, a blog
+ * post, a general bulletin — through a curation table the backend resolves on
+ * every public read.
+ *
+ * Backend: `app/infrastructure/database/models/home_featured.py`,
+ * `app/application/services/home_featured_service.py`.
+ *
+ * **Backwards compatibility is structural.** A row with `subject_type` NULL IS
+ * a manual slide, carrying its own title/summary/image/href — the exact shape
+ * the carousel had before. Nothing had to be migrated, and the public payload
+ * is unchanged, so a front end that knows nothing about this keeps working.
+ *
+ * Two things a consumer must not assume:
+ * - **A curated row is not necessarily on the page.** It also has to be
+ *   enabled, inside its window, and still publicly visible. Read `live` from
+ *   the admin list rather than inferring it from `enabled`.
+ * - **The order is `rank` ascending**, ties broken by insertion. It is
+ *   editorial, never chronological.
+ */
+
+/**
+ * Content types that can be featured. Mirrors the `subject_type_values` CHECK
+ * constraint AND the backend descriptor registry — a type missing from either
+ * side is a row that stores fine and renders as nothing.
+ */
+export const FEATURED_SUBJECT_TYPES = [
+  "gallery",
+  "event",
+  "program",
+  "subprogram",
+  "blog_post",
+  "bulletin",
+] as const;
+
+/** A featurable content type. `null` on a manual slide. */
+export type FeaturedSubjectType = (typeof FEATURED_SUBJECT_TYPES)[number];
+
+/**
+ * Type-specific extras a slide may carry, for a badge or a caption. Every key
+ * is optional: which ones appear depends on `subject_type` and on what the
+ * underlying record actually has.
+ */
+export interface HomeFeaturedMeta {
+  /** Events — ISO-8601 start. */
+  date?: string;
+  /** Events — venue. */
+  place?: string;
+  /** Galleries — location tag. */
+  location?: string;
+  /** Blog posts — estimated reading time. */
+  reading_minutes?: number;
+}
+
+/**
+ * A carousel slide as served by the PUBLIC read.
+ *
+ * The first eight fields are the shape the carousel always had, so this is
+ * assignable wherever the old slide type was used. The rest are additive and
+ * safe to ignore.
+ */
+export interface HomeFeaturedSlidePublicV2 {
+  /** The curation row's uuid — stable across edits to the underlying content. */
+  id: string;
+  href: string | null;
+  image: HomeResolvedImage | null;
+  eyebrow: string | null;
+  title: string | null;
+  description: string | null;
+  link_label: string | null;
+  image_alt: string;
+  /**
+   * Which content backs this slide.
+   *
+   * Three states, and they are NOT interchangeable — verified against
+   * production on 2026-08-08:
+   * - a type string — a curated row pointing at that content;
+   * - `null`        — a curated MANUAL row (nothing in the CMS backs it);
+   * - **absent**    — the site has no curation rows at all, so the carousel is
+   *   still serving the hand-written slides straight from the section's JSONB.
+   *
+   * Narrow with `slide.subject_type ?? null`, never `=== null`.
+   */
+  subject_type?: FeaturedSubjectType | null;
+  /**
+   * The backend's responsive ladder for this image, passed through opaquely.
+   * Null when the editor overrode the image, or the source has no variants.
+   * Prefer it over `image` where the renderer can use a srcset.
+   */
+  image_variants?: Record<string, unknown> | null;
+  meta?: HomeFeaturedMeta | null;
+}
+
+/** What the admin list resolves from the referenced content, when it can. */
+export interface HomeFeaturedResolved {
+  title: string;
+  href: string;
+}
+
+/** One curation row, as returned by `GET /home/featured`. */
+export interface HomeFeaturedItemV2 {
+  uuid: string;
+  /** `null` = manual slide; the `override_*` fields ARE its content. */
+  subject_type: FeaturedSubjectType | null;
+  subject_uuid: string | null;
+  /** Editorial order, ascending. Ties break on insertion order. */
+  rank: number;
+  enabled: boolean;
+  /** ISO-8601. Null = already live. */
+  starts_at: string | null;
+  /** ISO-8601. Null = no expiry set by hand. */
+  ends_at: string | null;
+  override_title: string | null;
+  override_summary: string | null;
+  override_image: HomeImageRef | null;
+  override_href: string | null;
+  /**
+   * Whether this row is on the home page RIGHT NOW.
+   *
+   * `enabled` is the editor's intent; `live` is the outcome. A row is enabled
+   * and NOT live when its window has not opened, its event has passed (events
+   * expire on their own 24h after `end_date ?? event_date`), or its content was
+   * unpublished. Surface this — it is the difference between "I promoted it"
+   * and "people can see it".
+   */
+  live: boolean;
+  /** Title/href resolved from the referenced content. Null when not resolvable. */
+  resolved: HomeFeaturedResolved | null;
+}
+
+/** `GET /home/featured` payload. */
+export interface HomeFeaturedItemsV2Response {
+  items: HomeFeaturedItemV2[];
+  /** The configured ceiling, so a UI can show "8 / 12" without a second call. */
+  max_slides: number;
+  enabled_count: number;
+}
+
+/**
+ * Body for `POST /home/featured` and `PUT /home/featured/{uuid}`.
+ *
+ * PUT is a FULL REPLACE, not a patch: send every field you want kept. That is
+ * deliberate — it removes the "is an absent field the same as null" question a
+ * partial update has to answer for all ten of them.
+ *
+ * Rules enforced on write (422 unless noted):
+ * - `subject_type` and `subject_uuid` are set TOGETHER or neither.
+ * - A manual slide (neither set) MUST carry `override_title`.
+ * - `ends_at` must be after `starts_at`.
+ * - Featuring the same content twice → 409 `already_featured`.
+ * - Enabling past `max_slides` → 409 `featured_limit_reached`.
+ */
+export interface HomeFeaturedItemV2Request {
+  subject_type?: FeaturedSubjectType | null;
+  subject_uuid?: string | null;
+  rank?: number;
+  enabled?: boolean;
+  /** ISO-8601 with an OFFSET. A naive datetime is rejected. */
+  starts_at?: string | null;
+  ends_at?: string | null;
+  /** Max 200 chars. Overrides the content's own title where set. */
+  override_title?: string | null;
+  /** Max 500 chars. */
+  override_summary?: string | null;
+  override_image?: HomeImageRef | null;
+  /**
+   * Where the slide points. Required in practice for a manual slide, and the
+   * whole point of the legacy case: a promoted item that is not CMS content and
+   * lives on another site.
+   *
+   * Validated as an allowlist of exactly two shapes — an internal path starting
+   * with `/`, or an absolute `http(s)` URL. Rejected: `javascript:`, `data:`,
+   * protocol-relative `//host`, backslashes and control characters (a browser
+   * reads `/\host` as off-site), and URLs carrying credentials
+   * (`https://sitimm.org@evil.example` resolves to evil.example).
+   */
+  override_href?: string | null;
+}
+
+/**
+ * Body for `POST /home/featured/reorder`.
+ *
+ * Must list EVERY featured uuid exactly once — a partial, duplicated or unknown
+ * list is rejected whole (422 `invalid_order`) rather than applied in part,
+ * because an order that silently skips a row is an order nobody asked for.
+ */
+export interface HomeFeaturedReorderV2Request {
+  /** Every uuid, in the order slides should appear. `rank` becomes the index. */
+  order: string[];
+}
+
+/**
+ * Error `code` values specific to the featured endpoints.
+ * - `featured_not_found`     — 404, unknown uuid on PUT. (DELETE is idempotent.)
+ * - `featured_limit_reached` — 409, enabling would exceed `max_slides`.
+ * - `already_featured`       — 409, that content already has a row.
+ * - `invalid_order`          — 422, reorder list does not match the rows.
+ * - `featured_invalid`       — 422, other write rejection.
+ */
+export type HomeFeaturedErrorCode =
+  | "featured_not_found"
+  | "featured_limit_reached"
+  | "already_featured"
+  | "invalid_order"
+  | "featured_invalid";
