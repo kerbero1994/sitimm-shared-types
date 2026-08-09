@@ -733,6 +733,10 @@ export type HomeCmsErrorCode =
  * Content types that can be featured. Mirrors the `subject_type_values` CHECK
  * constraint AND the backend descriptor registry — a type missing from either
  * side is a row that stores fine and renders as nothing.
+ *
+ * `magazine` joined in v0.122.0: the semestral issue is the item that most
+ * wants promoting, and referencing it by uuid is what stops the slide going
+ * stale between editions.
  */
 export const FEATURED_SUBJECT_TYPES = [
   "gallery",
@@ -741,6 +745,7 @@ export const FEATURED_SUBJECT_TYPES = [
   "subprogram",
   "blog_post",
   "bulletin",
+  "magazine",
 ] as const;
 
 /** A featurable content type. `null` on a manual slide. */

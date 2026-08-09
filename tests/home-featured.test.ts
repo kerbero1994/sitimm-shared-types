@@ -22,7 +22,10 @@ import { V2_ENDPOINTS, endpoint } from "../src/endpoints";
  */
 
 describe("FEATURED_SUBJECT_TYPES (contrato con mini-back)", () => {
-  it("son exactamente los seis tipos con descriptor en el BE", () => {
+  it("son exactamente los siete tipos con descriptor en el BE", () => {
+    // El orden importa poco; la lista, mucho. Un tipo aquí sin descriptor en
+    // el BE es una fila que guarda bien y renderiza nada, y al revés es un
+    // tipo que el BE acepta y ningún cliente sabe ofrecer.
     expect([...FEATURED_SUBJECT_TYPES]).toEqual([
       "gallery",
       "event",
@@ -30,6 +33,7 @@ describe("FEATURED_SUBJECT_TYPES (contrato con mini-back)", () => {
       "subprogram",
       "blog_post",
       "bulletin",
+      "magazine",
     ]);
   });
 
