@@ -634,6 +634,19 @@ export interface GalleryContributionItem {
   createdAt: string;
   /** ISO-8601 datetime. */
   updatedAt: string;
+  /**
+   * Album name, resolved server-side for the moderation queue (SITIMM-583).
+   *
+   * Batched with the page — two queries for the whole queue, never one per
+   * row. `null` when the gallery row is gone; the uuid is always present, so
+   * the row still deep-links.
+   */
+  gallery_name?: string | null;
+  /**
+   * Contributor's display name, same batch as `gallery_name`. `null` when the
+   * user has no profile.
+   */
+  contributor_name?: string | null;
 }
 
 /**
@@ -833,6 +846,22 @@ export interface GalleryV2Public {
   /** Approved + active items only, ordered `(sortOrder, createdAt)`. */
   items: GalleryItemV2Public[];
   item_count: number;
+  /**
+   * Whether this album accepts member contributions (SITIMM-583).
+   *
+   * Lived only on the authed {@link GalleryV2} until now, which made the
+   * contribute button impossible to render: apps paint galleries from THIS
+   * payload — it is where `items[].uuid` comes from, the identity both the
+   * engagement and contribution routes resolve.
+   *
+   * Safe on the anonymous surface: it says who ACCEPTS photos, not who
+   * uploaded any. Contributing still requires auth, the
+   * `galleries:contribute` permission, and passing the visibility gate.
+   *
+   * Optional for wire tolerance with older backends; absent means `false`,
+   * i.e. do not offer to upload.
+   */
+  allowsContributions?: boolean;
   /**
    * Engagement counters for THIS gallery (SITIMM-575).
    *

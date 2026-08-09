@@ -444,6 +444,21 @@ export interface EngagementMyCommentItem {
   created_at: string;
   /** ISO 8601 — null when not deleted. */
   deleted_at: string | null;
+  /**
+   * Human title of the subject the comment is on (SITIMM-583).
+   *
+   * The queue used to return `subject_type: ""` and the zero UUID, so a
+   * moderation row could not say what it was about and could not be
+   * deep-linked. Identity now always ships; this is the readable name on top.
+   *
+   * `null` when that subject type has no title resolver, or its row is gone —
+   * render the uuid, do not treat it as an error.
+   */
+  subject_title?: string | null;
+  /** Comment author's display name. `null` when the user has no profile. */
+  author_name?: string | null;
+  /** Comment author's avatar URL. `null` when unset. */
+  author_avatar?: string | null;
 }
 
 /**
