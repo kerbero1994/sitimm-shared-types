@@ -650,10 +650,29 @@ export interface GalleryContributionItem {
 }
 
 /**
+ * Query for `GET /api/v2/galleries/moderation/pending`.
+ *
+ * `status` defaults to `pending` server-side, which is what the path names
+ * and what every pre-v0.124.0 caller already gets. `approved` / `rejected`
+ * are the decision history: `reject` keeps the row for audit and until this
+ * parameter existed no endpoint could read that audit back.
+ */
+export interface GalleryModerationQuery {
+  status?: GalleryModerationStatus;
+  /** Scope to one gallery; omit for every gallery. */
+  gallery_uuid?: string;
+  /** 1-based. */
+  page?: number;
+  /** 1–200, defaults to 50. */
+  page_size?: number;
+}
+
+/**
  * Response from `GET /api/v2/galleries/moderation/pending`.
  * Backend: `GalleryModerationPendingListResponse` (`galleries_v2.py`).
  * Optional `gallery_uuid` query param scopes to one gallery; otherwise
- * every pending item across all galleries is returned.
+ * every item in the requested `status` across all galleries is returned
+ * (see {@link GalleryModerationQuery}).
  */
 export interface GalleryModerationPendingListResponse {
   items: GalleryContributionItem[];

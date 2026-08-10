@@ -5,6 +5,41 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.124.0] - 2026-08-10
+
+La cola de reportes por fin existe del lado del backend, y un reporte puede
+apuntar a un comentario. Aditivo, no-breaking. **SITIMM-585** (mini-back).
+
+`POST /{subject_uuid}/report` estaba montado desde v0.118.0 y **nada leía las
+filas de vuelta**: el servicio tenía `list_open()` y `resolve()` escritos y
+ningún router los llamaba. Un socio reportaba una foto y ningún moderador la
+veía jamás.
+
+**Added:**
+
+- `engagement`: `EngagementReportItem` — una fila de la cola, unida a lo que
+  reporta (`subject_type` + `subject_uuid` para deep-link, `subject_title`
+  best-effort). El trío `comment_*` sólo viene en reportes de comentario;
+  `comment_body_html` es el cuerpo SANEADO, nunca el markdown crudo, y
+  sobrevive al borrado del comentario con `comment_deleted_at` diciéndolo.
+- `engagement`: `EngagementReportListResponse` (`total` es un `COUNT(*)` real,
+  no un flag `has_more`), `EngagementReportListQuery`,
+  `EngagementReportResolveResponse`.
+- `engagement/endpoints`: `ADMIN_REPORTS_LIST`, `ADMIN_REPORT_RESOLVE`.
+- `galleries`: `GalleryModerationQuery` — el `status` de la cola de
+  contribuciones. `pending` por defecto, que es lo que ya recibe todo llamador
+  existente; `approved`/`rejected` son el historial de decisiones que `reject`
+  guardaba "para auditoría" sin que nadie pudiera leerlo.
+
+**Changed (aditivo):**
+
+- `engagement`: `EngagementReportRequest` gana `comment_uuid?` — acota el
+  reporte a UN comentario del sujeto. Debe estar vivo y pertenecer al sujeto de
+  la ruta; cualquier otra cosa es 404 con el MISMO código que "no existe", para
+  que la ruta no sirva de oráculo de uuids.
+- `endpoints`: el doc de `LIST_MODERATION_PENDING` documenta el nuevo `status`.
+  La ruta **no** se renombró: `new_dashboard` ya la llama.
+
 ## [0.104.0] - 2026-07-13
 
 Events i18n label sidecars — promueve al paquete los tipos de las 4 tablas de

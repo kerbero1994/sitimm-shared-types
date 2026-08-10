@@ -736,7 +736,7 @@ export const V2_ENDPOINTS_GENERATED = {
     UPSERT_GALLERY_TRANSLATION: (gallery_uuid: string | number, lang: string | number) => `/api/v2/galleries/${gallery_uuid}/translations/${lang}`,
     /** POST — V2 Galleries — Contributions. `galleries:contribute` (EMPLOYEE+) + visibility gate. Body: GalleryContributeRequest. 201. SITIMM-45/46. */
     CONTRIBUTE_TO_GALLERY: (gallery_uuid: string | number) => `/api/v2/galleries/${gallery_uuid}/contribute`,
-    /** GET — V2 Galleries — Contributions. `galleries:moderate` (ADMIN_COMMUNICATION+). Query: gallery_uuid?, page, page_size. SITIMM-45/46. */
+    /** GET — V2 Galleries — Contributions. `galleries:moderate` (ADMIN_COMMUNICATION+). Query: status? (pending|approved|rejected, default pending), gallery_uuid?, page, page_size. SITIMM-45/46, SITIMM-585. */
     LIST_MODERATION_PENDING: "/api/v2/galleries/moderation/pending",
     /** GET — V2 Galleries — Contributions. Any authed caller (self-scoped, contributedBy === caller.id). Query: page, page_size. SITIMM-45/46. */
     LIST_MY_CONTRIBUTIONS: "/api/v2/galleries/me/contributions",

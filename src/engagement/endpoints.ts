@@ -192,6 +192,12 @@ export const ENGAGEMENT_ADMIN_ENDPOINTS = {
   /** POST → Body: EngagementCommentModerationDecision (optional reason). Returns EngagementCommentModerationResult. Hides the comment from everyone, its author included. Idempotent. Requires engagement:moderate. */
   ADMIN_COMMENT_REJECT: "/api/v2/engagement/admin/comments/{comment_uuid}/reject",
 
+  // ── Cross-subject user reports ──────────────────────────
+  /** GET → EngagementReportListResponse. Query: status (open|resolved|all), subject_type, limit, offset. Requires engagement:moderate. */
+  ADMIN_REPORTS_LIST: "/api/v2/engagement/admin/reports",
+  /** PATCH → EngagementReportResolveResponse. 404 if absent or already resolved. Requires engagement:moderate. */
+  ADMIN_REPORT_RESOLVE: "/api/v2/engagement/admin/reports/{report_id}/resolve",
+
   // ── Profanity wordlist ──────────────────────────────────
   /** GET → EngagementProfanityTermListResponse. Query: language. Requires engagement:moderate. */
   ADMIN_PROFANITY_LIST: "/api/v2/engagement/admin/profanity-terms",
