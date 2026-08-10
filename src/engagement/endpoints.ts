@@ -186,6 +186,12 @@ export const ENGAGEMENT_ADMIN_ENDPOINTS = {
   /** DELETE → 204. Admin soft-delete of any comment. Requires engagement:moderate. */
   ADMIN_COMMENT_DELETE: "/api/v2/engagement/admin/comments/{comment_uuid}",
 
+  // ── Cross-subject user reports ──────────────────────────
+  /** GET → EngagementReportListResponse. Query: status (open|resolved|all), subject_type, limit, offset. Requires engagement:moderate. */
+  ADMIN_REPORTS_LIST: "/api/v2/engagement/admin/reports",
+  /** PATCH → EngagementReportResolveResponse. 404 if absent or already resolved. Requires engagement:moderate. */
+  ADMIN_REPORT_RESOLVE: "/api/v2/engagement/admin/reports/{report_id}/resolve",
+
   // ── Profanity wordlist ──────────────────────────────────
   /** GET → EngagementProfanityTermListResponse. Query: language. Requires engagement:moderate. */
   ADMIN_PROFANITY_LIST: "/api/v2/engagement/admin/profanity-terms",

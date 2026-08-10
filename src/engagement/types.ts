@@ -352,6 +352,18 @@ export interface EngagementReportRequest {
   reason: string;
   /** Optional free-text context. Max 2000 chars. */
   comment?: string | null;
+  /**
+   * Narrows the report from the subject to ONE comment on it. Omit (or
+   * `null`) to report the gallery/photo itself.
+   *
+   * The comment must be live and belong to the subject in the path —
+   * anything else is 404 `ENGAGEMENT_COMMENT_NOT_FOUND`, deliberately the
+   * same code as "does not exist" so comment uuids cannot be enumerated.
+   *
+   * NOT to be confused with `comment` above, which is the reporter's own
+   * note. Both names predate this field.
+   */
+  comment_uuid?: string | null;
 }
 
 /**
@@ -363,6 +375,82 @@ export interface EngagementReportRequest {
  * moderation surface.
  */
 export interface EngagementReportAck {
+  status: string;
+}
+
+/**
+ * One row of the admin report queue, joined to what it is about.
+ * Backend: `EngagementReportItemV2`.
+ *
+ * `GET /api/v2/engagement/admin/reports` is the ONLY reader of these rows;
+ * before v0.124.0 the backend had no such route at all and every report a
+ * member filed was invisible.
+ */
+export interface EngagementReportItem {
+  id: number;
+  /** `gallery`, `media`, `magazine`, … — what kind of thing was reported. */
+  subject_type: string;
+  subject_uuid: string;
+  /**
+   * Best-effort human label for the subject. `null` when the feature's
+   * title lookup failed or it never implemented one — render the uuid.
+   */
+  subject_title?: string | null;
+  /** Set only for a comment-level report; `null` means the subject itself. */
+  comment_uuid?: string | null;
+  /** SANITIZED body of the reported comment — never raw markdown. */
+  comment_body_html?: string | null;
+  /** Non-null when the reported comment has already been removed. ISO 8601. */
+  comment_deleted_at?: string | null;
+  reporter_user_id: number;
+  /** `name` + `lastNames` as stored; `null` when there is no profile row. */
+  reporter_name?: string | null;
+  /** Allow-listed reason key. */
+  reason: string;
+  /** The reporter's free-text note (HTML-stripped on write). */
+  comment?: string | null;
+  /** `open` | `resolved`. */
+  status: string;
+  /** ISO 8601. */
+  created_at: string;
+  resolved_by_user_id?: number | null;
+  /** ISO 8601. */
+  resolved_at?: string | null;
+}
+
+/**
+ * Paginated report queue.
+ * Backend: `EngagementReportListResponseV2`.
+ *
+ * `total` is a real `COUNT(*)`, not a has_more flag — queue depth is the
+ * number a moderator has to work through.
+ */
+export interface EngagementReportListResponse {
+  items: EngagementReportItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+/** Query for `GET /api/v2/engagement/admin/reports`. */
+export interface EngagementReportListQuery {
+  /** Defaults to `open` server-side. `all` drops the filter entirely. */
+  status?: "open" | "resolved" | "all";
+  subject_type?: string;
+  /** 1–100, defaults to 50. */
+  limit?: number;
+  offset?: number;
+}
+
+/**
+ * Ack for `PATCH /api/v2/engagement/admin/reports/{report_id}/resolve`.
+ * Backend: `EngagementReportResolveResponseV2`.
+ *
+ * A report that is absent OR already resolved returns 404
+ * `ENGAGEMENT_REPORT_NOT_FOUND`, not a silent success.
+ */
+export interface EngagementReportResolveResponse {
+  id: number;
   status: string;
 }
 
