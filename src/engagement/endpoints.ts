@@ -181,10 +181,16 @@ export const ENGAGEMENT_ME_ENDPOINTS = {
 
 export const ENGAGEMENT_ADMIN_ENDPOINTS = {
   // ── Cross-subject comment moderation ────────────────────
-  /** GET → EngagementCommentModerationListResponse. Query: subject_type, user_id, has_flagged_terms, created_after, limit, offset. Requires engagement:moderate. */
+  /** GET → EngagementCommentModerationListResponse. Query: subject_type, user_id, has_flagged_terms, created_after, moderation_status, limit, offset. Filtering by moderation_status='pending' returns the queue oldest-first. Requires engagement:moderate. */
   ADMIN_COMMENTS_LIST: "/api/v2/engagement/admin/comments",
   /** DELETE → 204. Admin soft-delete of any comment. Requires engagement:moderate. */
   ADMIN_COMMENT_DELETE: "/api/v2/engagement/admin/comments/{comment_uuid}",
+  /** GET → EngagementModerationPendingCount. Badge count for the moderation entry. Requires engagement:moderate. */
+  ADMIN_COMMENTS_PENDING_COUNT: "/api/v2/engagement/admin/comments/pending-count",
+  /** POST → Body: EngagementCommentModerationDecision (optional). Returns EngagementCommentModerationResult. Publishes a held comment and notifies the subject author. Idempotent. Requires engagement:moderate. */
+  ADMIN_COMMENT_APPROVE: "/api/v2/engagement/admin/comments/{comment_uuid}/approve",
+  /** POST → Body: EngagementCommentModerationDecision (optional reason). Returns EngagementCommentModerationResult. Hides the comment from everyone, its author included. Idempotent. Requires engagement:moderate. */
+  ADMIN_COMMENT_REJECT: "/api/v2/engagement/admin/comments/{comment_uuid}/reject",
 
   // ── Profanity wordlist ──────────────────────────────────
   /** GET → EngagementProfanityTermListResponse. Query: language. Requires engagement:moderate. */
