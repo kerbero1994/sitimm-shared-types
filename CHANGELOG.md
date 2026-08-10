@@ -5,7 +5,14 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.124.0] - 2026-08-10
+## [0.125.0] - 2026-08-10
+
+> **Nota de versión.** Esta entrada decía `0.124.0`. Dos sesiones concurrentes
+> reclamaron ese número: el PR #41 (SITIMM-587, estado de moderación de
+> comentarios) mergeó primero y **publicó** 0.124.0 en GitHub Packages, y el
+> #42 mergeó después con el mismo número. npm no permite republicar una
+> versión, así que el contenido de abajo sale como 0.125.0. Lo de #41 sigue
+> en 0.124.0 y no se toca.
 
 La cola de reportes por fin existe del lado del backend, y un reporte puede
 apuntar a un comentario. Aditivo, no-breaking. **SITIMM-585** (mini-back).
