@@ -400,6 +400,13 @@ export interface EngagementComment {
   /** ISO 8601 — null when not deleted. */
   deleted_at: string | null;
   is_author_self?: boolean;
+  /**
+   * Publication state (SITIMM-587). The public list only ever returns
+   * `approved` rows plus the caller's OWN `pending` ones, so a value other
+   * than `approved` here means "yours, still awaiting review" — render it
+   * as held rather than published. `rejected` never reaches this list.
+   */
+  moderation_status?: EngagementModerationStatus;
 }
 
 /**
@@ -729,6 +736,74 @@ export interface EngagementCommentModerationItem {
   created_at: string;
   /** ISO 8601 — null when not deleted. */
   deleted_at: string | null;
+  /**
+   * Human title of the subject this comment sits on. Null when the subject
+   * type does not resolve titles, or its row was deleted — the identity
+   * (`subject_type` + `subject_uuid`) is always present, so the deep link
+   * works regardless.
+   */
+  subject_title?: string | null;
+  /** Commenter display name, joined from the profile. Null when absent. */
+  author_name?: string | null;
+  /** Commenter avatar URL. Null when they have none. */
+  author_avatar?: string | null;
+  /**
+   * Publication state (SITIMM-587). Guests land in `pending` and stay
+   * invisible to everyone but themselves until a moderator resolves them.
+   */
+  moderation_status?: EngagementModerationStatus;
+  /** ISO 8601 — when a moderator resolved it. Null while pending. */
+  moderated_at?: string | null;
+  /**
+   * True when the author is not a union member. An unresolved role counts as
+   * a guest: the queue's job is to surface who needs a human to look.
+   */
+  author_is_guest?: boolean;
+}
+
+/**
+ * Comment publication state.
+ * Backend: `MODERATION_STATUSES` in `app/engagement/domain/enums.py`.
+ */
+export const ENGAGEMENT_MODERATION_STATUSES = [
+  "pending",
+  "approved",
+  "rejected",
+] as const;
+
+export type EngagementModerationStatus =
+  (typeof ENGAGEMENT_MODERATION_STATUSES)[number];
+
+/**
+ * Body for the approve/reject endpoints. The reason is optional and only
+ * meaningful on a rejection.
+ * Backend: `EngagementCommentModerationDecisionV2`.
+ */
+export interface EngagementCommentModerationDecision {
+  /** Max 500 chars. */
+  reason?: string | null;
+}
+
+/**
+ * What comes back after a moderation decision.
+ * Backend: `EngagementCommentModerationResultV2`.
+ */
+export interface EngagementCommentModerationResult {
+  /** UUID v4. */
+  uuid: string;
+  moderation_status: EngagementModerationStatus;
+  /** ISO 8601. */
+  moderated_at: string | null;
+  moderated_by_user_id: number | null;
+  moderation_reason: string | null;
+}
+
+/**
+ * Badge count for the dashboard's moderation entry.
+ * Backend: `EngagementModerationPendingCountV2`.
+ */
+export interface EngagementModerationPendingCount {
+  pending: number;
 }
 
 /**
