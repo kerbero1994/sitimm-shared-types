@@ -359,10 +359,27 @@ export interface EventDetailV2 extends EventV2 {
   daysBeforeAnouncment: number | null;
   /** Virtual meeting URL (Zoom, Teams, etc.). */
   virtualUrl: unknown | null;
-  /** Target audience configuration (JSON). */
+  /** Target audience configuration (JSON).
+   *
+   * **`null` en las respuestas PÚBLICAS** (SITIMM-586): el criterio —sexo,
+   * hijos, empresa— no se enseña a quien no tiene sesión. Sólo viaja en las
+   * respuestas autenticadas, donde el CMS lo edita. Lo que la app necesita para
+   * pintar el botón es {@link EventDetailV2.requiresApproval}. */
   audience: unknown | null;
-  /** Audience job titles filter (JSON). */
+  /** Audience job titles filter (JSON). `null` en público, como `audience`. */
   audienceTitles: unknown | null;
+  /** ¿Registrarse aquí requiere que alguien lo apruebe? (SITIMM-586)
+   *
+   * El HECHO, no el criterio (decisión #12 del PO). Es lo único de audiencia
+   * que sale en público, y lo que decide si el botón dice "Registrarme" o
+   * "Solicitar registro".
+   *
+   * `true` cuando el evento tiene una audiencia con
+   * `guestPolicy: "require_approval"`. Un spec ilegible degrada a `public` en
+   * la compuerta, así que aquí responde `false` — el backend deriva esto con el
+   * MISMO lector que decide, para que el botón no prometa algo distinto de lo
+   * que pasa al pulsarlo. */
+  requiresApproval: boolean;
   /** True if the caller has an active (non-cancelled) registration. */
   isRegistered: boolean;
   /**
@@ -750,6 +767,16 @@ export interface CreateParticipantV2Request {
   email?: string;
   /** Phone for alternative registration. */
   phone?: string;
+  /** Por qué quiere ir (SITIMM-586). Máx. 500.
+   *
+   * Lo escribe EL SOLICITANTE al pedir plaza; no confundir con `reviewNote`,
+   * que es del admin al resolver. Opcional siempre (decisión #2 del PO): no se
+   * añade fricción a quien quizá sí debería entrar.
+   *
+   * Sólo se guarda cuando el registro acaba en `pending_approval`. En un
+   * registro que entra directo no hay nada que justificar y el texto se
+   * descarta en vez de quedarse como dato muerto. */
+  requestNote?: string;
 }
 
 /**
@@ -800,6 +827,15 @@ export interface RegisterPublicV2Request {
   phone: string;
   /** Attendance modality. Defaults to "presencial" server-side. */
   modality?: EventModality;
+  /** Por qué quiere ir (SITIMM-586). Máx. 500. Opcional.
+   *
+   * Mismo campo y mismo tope que el registro con sesión: quien pide plaza en un
+   * evento privado sin cuenta argumenta igual que quien la pide con ella.
+   *
+   * Sólo se guarda cuando el registro acaba en `pending_approval`, que en esta
+   * ruta ocurre si el evento es privado o su audiencia no es pública — un
+   * anónimo no tiene perfil que evaluar, así que decide una persona. */
+  requestNote?: string;
 }
 
 /**

@@ -26,6 +26,16 @@
 import type { AudienceSpec } from "../events/eligibility";
 import type { GalleryV2Public } from "../galleries";
 
+// Reexportado aquí para que quien construya la audiencia de un programa no
+// tenga que saber que el tipo vive en `events/eligibility` — mismo criterio
+// que en `bulletins`.
+export type {
+  AudienceRule,
+  AudienceSpec,
+  RuleField,
+  RuleOp,
+} from "../events/eligibility";
+
 // ─────────────────────────────────────────────────────────────────────
 // Records
 // ─────────────────────────────────────────────────────────────────────

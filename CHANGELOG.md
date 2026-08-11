@@ -31,7 +31,24 @@ al lado, para lo que nunca hubo: la regla.
 - La nota del módulo decía "No audience targeting" y era cierta hasta ahora.
   Corregida.
 
-Minor, no major: campo opcional añadido, nada cambia de forma.
+### Eventos — el contrato de "solicitar registro"
+
+- `EventDetailV2.requiresApproval: boolean` — el **hecho**, no el criterio
+  (decisión #12 del PO). Es lo único de audiencia que sale en público y lo que
+  decide si el botón dice "Registrarme" o "Solicitar registro".
+  **Obligatorio, no opcional**: leerlo `undefined` y tratarlo como `false`
+  pintaría el botón equivocado y el rechazo llegaría al pulsarlo.
+- `EventDetailV2.audience` / `audienceTitles` — documentado que van en **`null`
+  en las respuestas públicas**. El criterio (sexo, hijos, empresa) sólo viaja en
+  las autenticadas, donde el CMS lo edita. Siguen tipados `unknown`: darles
+  forma invitaría a reimplementar la evaluación en el cliente.
+- `requestNote?: string` (máx. 500, opcional) en `CreateParticipantV2Request` y
+  `RegisterPublicV2Request`. Lo escribe el SOLICITANTE al pedir plaza; no
+  confundir con `reviewNote`, que es del admin al resolver.
+- `V2_ENDPOINTS.EVENT_APPROVALS_PENDING_COUNT` — la insignia de la cola.
+
+Minor, no major: todo lo añadido es opcional salvo `requiresApproval`, que el
+backend siempre serializa.
 
 ## [1.0.0] - 2026-08-11
 
