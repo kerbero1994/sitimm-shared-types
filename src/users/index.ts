@@ -375,6 +375,14 @@ export interface UserBasicV2 {
   accountStatus?: "active" | "pending_deletion" | string;
   /** ISO-8601 — fecha de purga definitiva cuando accountStatus="pending_deletion". */
   purgeAfter?: string | null;
+  /**
+   * ISO-8601 — when the account was created (SITIMM-597).
+   *
+   * Lets a client tell an account that predates a feature from one created
+   * after it, without guessing. The website uses it to leave older guest
+   * accounts alone rather than nagging every one of them at once.
+   */
+  createdAt?: string | null;
 }
 
 /**
@@ -441,6 +449,17 @@ export interface UserProfileV2 {
   scholarshipId: number | null;
   /** Foreign key to CivilState catalog (marital status). */
   civilStateId: number | null;
+  /**
+   * ISO-8601 — when the person declared they are NOT a union member
+   * (SITIMM-597). Null means they were never asked, which is NOT the same as
+   * having said no.
+   *
+   * Set it and the onboarding stops asking for an RFC they do not have, and
+   * the profile stops being flagged incomplete. It grants nothing: the user
+   * type does not change and their comments stay moderated. Reversible —
+   * someone who joins the union later clears it and claims their RFC.
+   */
+  notMemberDeclaredAt?: string | null;
 }
 
 /**

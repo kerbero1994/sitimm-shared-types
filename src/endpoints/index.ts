@@ -53,6 +53,8 @@ export const V2_ENDPOINTS = {
   USERS_ME: "/users/me",
   /** PATCH → Body: UserProfileUpdateV2. Only "editable" fields accepted; server returns 403 for others. Auth required. */
   USERS_ME_UPDATE: "/users/me",
+  /** PUT → Body: { declared: boolean }. Returns { declared, declaredAt }. Declares the caller is NOT a union member so the onboarding stops asking for an RFC; reversible, idempotent, and 409 `identity_already_claimed` when an employee record is already linked. Auth required (SITIMM-597). */
+  USERS_ME_NOT_A_MEMBER: "/users/me/not-a-member",
   /** GET → V2Response<EmploymentV2>. Returns employment data. Auth required. */
   USERS_ME_EMPLOYMENT: "/users/me/employment",
   /** GET → V2Response<CompanyDataV2>. Returns company info for current user. Auth required. */
