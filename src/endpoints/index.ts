@@ -114,6 +114,12 @@ export const V2_ENDPOINTS = {
   /** POST → Body: RegisterPublicV2Request. NO auth. IP rate-limited. Returns
       V2Response<RegisterPublicV2Response> (202). Anonymous registration; sends double-opt-in email. */
   EVENT_REGISTER_PUBLIC: "/events/{uuid}/register-public",
+  /** GET → V2Response<{ pendingCount: number }>. Perm `events:approve_guests`.
+      La insignia de la cola de solicitudes (SITIMM-586, decisión #10 del PO).
+      Cuenta TODAS las pendientes en eventos habilitados y futuros, no por
+      evento: un evento pasado dejaría la insignia encendida sobre algo que ya
+      no se puede aprobar. */
+  EVENT_APPROVALS_PENDING_COUNT: "/events/approvals/pending-count",
   /** POST → Body: ConfirmRegistrationV2Request. NO auth. IP rate-limited. Returns
       V2Response<ConfirmRegistrationV2Response>. Consumes the one-time email token, creates the participant. */
   EVENT_REGISTRATION_CONFIRM: "/events/registration/confirm",

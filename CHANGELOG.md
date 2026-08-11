@@ -5,6 +5,51 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] - 2026-08-11
+
+Programas y subprogramas ganan `audience`. **SITIMM-586** (mini-back, dashboard).
+
+La decisión del PO decía "migrar y retirar el `target_audience` de texto". Al
+mirar producción, la premisa no se sostenía: la columna está **vacía** (15
+programas y 49 subprogramas, todos NULL) y además no era un mecanismo de
+segmentación — el CMS la describe como *"Tagline corto: a quién está dirigido"*.
+Es copy que se pinta. Nunca filtró acceso a nada.
+
+Un `AudienceSpec` no puede expresar una frase, y una frase no puede filtrar a
+nadie. Así que el rótulo se queda como lo que siempre fue y `audience` se añade
+al lado, para lo que nunca hubo: la regla.
+
+- `ProgramServiceFieldsV2.audience?: AudienceSpec | null` — heredado por
+  `ProgramV2`, `SubProgramV2` y los cuerpos de creación/actualización, para
+  que el CMS pueda segmentar un programa.
+- **Ausente en `ProgramV2Public` y `SubProgramV2Public`.** En público sale el
+  hecho, nunca el criterio, igual que en Eventos. El backend sólo lo serializa
+  en las respuestas de admin.
+- Todas las filas arrancan en `{mode: "public"}`: la información de programas es
+  para todos. Esto no cierra nada hoy; deja el mismo mecanismo que Eventos,
+  Boletines y Galerías.
+- La nota del módulo decía "No audience targeting" y era cierta hasta ahora.
+  Corregida.
+
+### Eventos — el contrato de "solicitar registro"
+
+- `EventDetailV2.requiresApproval: boolean` — el **hecho**, no el criterio
+  (decisión #12 del PO). Es lo único de audiencia que sale en público y lo que
+  decide si el botón dice "Registrarme" o "Solicitar registro".
+  **Obligatorio, no opcional**: leerlo `undefined` y tratarlo como `false`
+  pintaría el botón equivocado y el rechazo llegaría al pulsarlo.
+- `EventDetailV2.audience` / `audienceTitles` — documentado que van en **`null`
+  en las respuestas públicas**. El criterio (sexo, hijos, empresa) sólo viaja en
+  las autenticadas, donde el CMS lo edita. Siguen tipados `unknown`: darles
+  forma invitaría a reimplementar la evaluación en el cliente.
+- `requestNote?: string` (máx. 500, opcional) en `CreateParticipantV2Request` y
+  `RegisterPublicV2Request`. Lo escribe el SOLICITANTE al pedir plaza; no
+  confundir con `reviewNote`, que es del admin al resolver.
+- `V2_ENDPOINTS.EVENT_APPROVALS_PENDING_COUNT` — la insignia de la cola.
+
+Minor, no major: todo lo añadido es opcional salvo `requiresApproval`, que el
+backend siempre serializa.
+
 ## [1.0.0] - 2026-08-11
 
 **BREAKING.** Cambia la forma de `GET /{subject}/comments` para TODOS los
