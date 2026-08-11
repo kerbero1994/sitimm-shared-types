@@ -5,6 +5,34 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] - 2026-08-11
+
+Programas y subprogramas ganan `audience`. **SITIMM-586** (mini-back, dashboard).
+
+La decisión del PO decía "migrar y retirar el `target_audience` de texto". Al
+mirar producción, la premisa no se sostenía: la columna está **vacía** (15
+programas y 49 subprogramas, todos NULL) y además no era un mecanismo de
+segmentación — el CMS la describe como *"Tagline corto: a quién está dirigido"*.
+Es copy que se pinta. Nunca filtró acceso a nada.
+
+Un `AudienceSpec` no puede expresar una frase, y una frase no puede filtrar a
+nadie. Así que el rótulo se queda como lo que siempre fue y `audience` se añade
+al lado, para lo que nunca hubo: la regla.
+
+- `ProgramServiceFieldsV2.audience?: AudienceSpec | null` — heredado por
+  `ProgramV2`, `SubProgramV2` y los cuerpos de creación/actualización, para
+  que el CMS pueda segmentar un programa.
+- **Ausente en `ProgramV2Public` y `SubProgramV2Public`.** En público sale el
+  hecho, nunca el criterio, igual que en Eventos. El backend sólo lo serializa
+  en las respuestas de admin.
+- Todas las filas arrancan en `{mode: "public"}`: la información de programas es
+  para todos. Esto no cierra nada hoy; deja el mismo mecanismo que Eventos,
+  Boletines y Galerías.
+- La nota del módulo decía "No audience targeting" y era cierta hasta ahora.
+  Corregida.
+
+Minor, no major: campo opcional añadido, nada cambia de forma.
+
 ## [1.0.0] - 2026-08-11
 
 **BREAKING.** Cambia la forma de `GET /{subject}/comments` para TODOS los

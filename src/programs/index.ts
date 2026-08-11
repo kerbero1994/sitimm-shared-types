@@ -14,10 +14,16 @@
  * - SubProgram reorder via `position` column.
  * - Image upload helper backed by MinIO.
  *
- * No audience targeting, fan-out, or notifications — programs are static
- * content the union edits centrally.
+ * Sin fan-out ni notificaciones: los programas son contenido estático que el
+ * sindicato edita de forma centralizada.
+ *
+ * v1.2.0 (SITIMM-586): SÍ hay audiencia. Antes esta nota decía "no audience
+ * targeting" y era cierto; ahora `audience` existe y arranca en `public` en
+ * todas las filas. No cierra nada hoy — deja el mismo mecanismo que Eventos,
+ * Boletines y Galerías para cuando haya que segmentar un programa.
  */
 
+import type { AudienceSpec } from "../events/eligibility";
 import type { GalleryV2Public } from "../galleries";
 
 // ─────────────────────────────────────────────────────────────────────
@@ -195,8 +201,24 @@ export interface ProgramServiceFieldsV2 {
   cta_url?: string | null;
   /** Hides the row from public FE renders when true. Replaces ad-hoc title filtering. */
   is_test: boolean;
-  /** Short audience tagline ("Para trabajadores en activo"). */
+  /** Short audience tagline ("Para trabajadores en activo").
+   *
+   * Copy que se PINTA, no una regla: no filtra a nadie. La regla es
+   * {@link ProgramServiceFieldsV2.audience}. Son dos campos con dos trabajos
+   * distintos — un spec no puede expresar una frase, y una frase no puede
+   * filtrar. */
   target_audience?: string | null;
+  /** Regla de audiencia (SITIMM-586).
+   *
+   * Todas las filas arrancan en `{mode: "public"}`: la información de
+   * programas es para todos (decisión del PO). Existe para que Programas
+   * hablen de audiencia igual que Eventos, Boletines y Galerías, listo para
+   * el día que alguien quiera segmentar uno.
+   *
+   * **Ausente en las formas públicas** ({@link ProgramV2Public},
+   * {@link SubProgramV2Public}): en público sale el hecho, nunca el criterio.
+   * Backend: `programs_v2.py` sólo lo serializa en las respuestas de admin. */
+  audience?: AudienceSpec | null;
   /** Long-form eligibility / requirements copy. */
   eligibility?: string | null;
   /** Markdown body — replaces legacy `content` JSONB blob (Phase 1B drops `content`). */
@@ -253,7 +275,7 @@ export interface SubProgramV2 extends ProgramServiceFieldsV2 {
  */
 export type SubProgramV2Public = Omit<
   SubProgramV2,
-  "createdAt" | "updatedAt" | "deletedAt" | "gallery"
+  "createdAt" | "updatedAt" | "deletedAt" | "gallery" | "audience"
 > & {
   /**
    * Primary DAM gallery attached to this subprogram (active
@@ -335,7 +357,7 @@ export interface ProgramV2 extends ProgramServiceFieldsV2 {
  * createdAt/updatedAt/deletedAt by accident.
  */
 export interface ProgramV2Public
-  extends Omit<ProgramServiceFieldsV2, "is_test" | "gallery"> {
+  extends Omit<ProgramServiceFieldsV2, "is_test" | "gallery" | "audience"> {
   uuid: string;
   /**
    * Primary DAM gallery attached to this program (active
