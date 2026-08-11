@@ -5,6 +5,44 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.0] - 2026-08-11
+
+**BREAKING.** Cambia la forma de `GET /{subject}/comments` para TODOS los
+subject types (blog, revistas, eventos, galerías, fotos). **SITIMM-596**
+(mini-back #483, #490).
+
+Primer major del paquete. Se corta ahora porque el cambio es de forma de
+respuesta, no un campo añadido, y fingir que cabe en un minor deja al
+consumidor sin señal.
+
+**Changed (breaking):**
+
+- `EngagementCommentListResponse.items` deja de ser una lista plana de
+  comentarios y pasa a ser **raíces de display**, cada una con sus `replies`
+  dentro. Una raíz de display es un comentario sin padre, **o** con un padre
+  que el lector no puede ver — una respuesta aprobada cuya raíz se borró o
+  rechazó se promueve ahí en vez de desaparecer.
+- `total` ahora cuenta **raíces**, no comentarios. Es el denominador de
+  paginación. **Un consumidor que lo pinte junto al hilo reportará de menos.**
+- `body_md` pasa de `string` a `string | null`. Siempre llega `null` en la
+  lista por sujeto — es markdown crudo, nunca saneado. Presente y nulo, no
+  ausente: un esquema que exige la clave (zod `.nullable()`, no `.optional()`)
+  falla con una clave faltante y vacía la sección entera.
+
+**Added:**
+
+- `EngagementComment.replies` — respuestas directas, más antiguas primero.
+  Siempre presente en la lista por sujeto y como mucho **un** nivel: el tope
+  es 2, así que el `replies` de una respuesta está siempre vacío.
+- `EngagementCommentListResponse.total_comments` — todos los comentarios
+  visibles, respuestas incluidas. **Éste es el número que se pinta.**
+
+**Cómo migrar.** El offset pagina por RAÍCES; el array que rindes cuenta
+raíces + respuestas. Avanzar el cursor con la longitud del array aplanado
+**se salta una raíz por cada respuesta**, en silencio y sólo en hilos que ya
+tienen respuestas. Ver `Sitimm-web` PR #268 para las dos formas de evitarlo
+(contar raíces del payload, o exponer un `rootCount`).
+
 ## [0.125.0] - 2026-08-10
 
 > **Nota de versión.** Esta entrada decía `0.124.0`. Dos sesiones concurrentes

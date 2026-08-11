@@ -480,7 +480,14 @@ export interface EngagementComment {
   /** UUID v4. */
   uuid: string;
   parent_id: number | null;
-  body_md: string;
+  /**
+   * RAW user markdown. **Always `null` on the per-subject list** — it is
+   * length-validated only, never sanitized, so it never reaches a reader.
+   * Render `body_html_sanitized`. Present-and-null rather than absent: a
+   * schema that requires the key (zod `.nullable()`, not `.optional()`)
+   * fails validation on a missing one.
+   */
+  body_md: string | null;
   body_html_sanitized: string;
   author: EngagementCommentAuthor;
   /** ISO 8601. */
@@ -495,6 +502,14 @@ export interface EngagementComment {
    * as held rather than published. `rejected` never reaches this list.
    */
   moderation_status?: EngagementModerationStatus;
+  /**
+   * Direct replies to this comment, oldest first (SITIMM-596).
+   *
+   * Always present on the per-subject list and at most ONE level deep: the
+   * depth cap is 2, so a reply's own `replies` is structurally always empty.
+   * The `/me` and moderation feeds stay flat and omit it.
+   */
+  replies?: EngagementComment[];
 }
 
 /**
@@ -514,8 +529,24 @@ export interface EngagementCommentCreateRequest {
  * Backend: `EngagementCommentListResponseV2`.
  */
 export interface EngagementCommentListResponse {
+  /**
+   * DISPLAY ROOTS, each carrying its own `replies` (SITIMM-596).
+   *
+   * A display root is a comment with no parent, OR one whose parent the
+   * reader cannot see — an approved reply whose root was later deleted or
+   * rejected is promoted here rather than disappearing.
+   *
+   * Before v1.0.0 this was a flat list paginated by comment, which could cut
+   * a page between a reply and its parent.
+   */
   items: EngagementComment[];
+  /** How many display ROOTS exist. The pagination denominator. */
   total: number;
+  /**
+   * Every visible comment, replies included — the number to show next to the
+   * thread. Paginating on this is wrong the moment anyone replies.
+   */
+  total_comments: number;
   limit: number;
   offset: number;
 }
