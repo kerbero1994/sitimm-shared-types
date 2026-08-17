@@ -5,6 +5,22 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] - 2026-08-17
+
+`EventCampusV2.id` — la sede DE ESTE evento. **SITIMM-586.**
+
+El registro espera `eventCampusId` (`CreateParticipantV2Request`), que es
+`EventCampus.id`. Este tipo sólo declaraba `uuid` y `campusId`, y ese último es
+otra cosa: el id del CATÁLOGO de campus, compartido entre eventos.
+
+El backend lo manda desde siempre (`campus_v2_service.list_for_event` lo pone
+como primer campo), así que era un hueco del contrato, no del servidor: la app
+no podía mandar la sede elegida sin salirse de los tipos. Con `Campuses` (V1)
+muerto en V2, el selector de sede quedaba vacío y nadie podía elegir a cuál de
+las sedes se presentaba.
+
+Minor: campo añadido a un tipo de sólo lectura.
+
 ## [1.2.0] - 2026-08-11
 
 Programas y subprogramas ganan `audience`. **SITIMM-586** (mini-back, dashboard).
