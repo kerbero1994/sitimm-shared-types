@@ -117,6 +117,16 @@ export interface CampusListV2Response {
  * Backend: campus_v2.py :: EventCampusV2Response
  */
 export interface EventCampusV2 {
+  /** `EventCampus.id` — la sede DE ESTE evento.
+   *
+   * Es lo que el registro espera como `eventCampusId`; no confundir con
+   * `campusId`, que es el id del CATÁLOGO de campus y se comparte entre
+   * eventos.
+   *
+   * El backend lo manda desde siempre (`campus_v2_service.list_for_event`) y
+   * este tipo no lo declaraba: la app no podía mandar la sede elegida sin
+   * salirse del contrato. */
+  id: number;
   /** EventCampus UUID — primary identifier. */
   uuid: string;
   /** Campus catalog numeric ID. */
