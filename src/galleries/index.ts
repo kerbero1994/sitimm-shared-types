@@ -917,10 +917,37 @@ export interface GalleryV2PublicListResponse {
  * detail endpoint, which only populates these 3 fields on a non-default
  * `?lang=`.
  */
+/**
+ * Pagination over a gallery's items on the PUBLIC DETAIL endpoint (SITIMM-618).
+ *
+ * `total` is the whole gallery and equals `GalleryV2Public.item_count` — it is
+ * NOT the length of the page you were handed. Render "N photos" from either.
+ */
+export interface GalleryItemsPagination {
+  page: number;
+  pageSize: number;
+  total: number;
+  hasMore: boolean;
+}
+
+/**
+ * BREAKING since v2.0.0 (SITIMM-618): the inherited `items` array is ONE PAGE,
+ * at most `pagination.pageSize` entries. It used to be every item in the
+ * gallery. The detail returned 1,579 items / 2.9 MB on the largest gallery and,
+ * with the backend on `--workers 1`, the 0.4-1.6s that took froze the entire
+ * API rather than just that request.
+ *
+ * Query params: `page` (default 1, max 10000) and `page_size` (default 200,
+ * max 500). Keep fetching while `pagination.hasMore` is true.
+ *
+ * 29 of 674 galleries hold more than the 200 default, so a client that ignores
+ * `page` still works and simply shows the first 200 — degraded, not broken.
+ */
 export interface GalleryV2PublicDetail extends GalleryV2Public {
   currentLang: GalleryLang;
   availableLangs: GalleryLang[];
   translationSource: GalleryTranslationSource;
+  pagination: GalleryItemsPagination;
 }
 
 /**

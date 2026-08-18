@@ -50,6 +50,7 @@ export type {
   GalleryV2Public,
   GalleryV2PublicListResponse,
   GalleryV2PublicDetail,
+  GalleryItemsPagination,
   EntityGalleriesV2PublicResponse,
   GalleryTranslationBodyV2,
   GalleryTranslationResponseV2,
