@@ -52,6 +52,12 @@ export function engagementSubjectEndpoints(basePrefix: string) {
     COMMENTS_LIST: `${prefix}/{subject_uuid}/comments`,
     /** DELETE → 204. Soft-delete the caller's own comment. Auth required (owner only). */
     COMMENT_DELETE_OWN: `${prefix}/comments/{comment_uuid}`,
+    /** PATCH — author-only edit, 15-min window. See EngagementCommentEditRequest. */
+    COMMENT_EDIT_OWN: `${prefix}/comments/{comment_uuid}`,
+    /** POST — like a comment. */
+    COMMENT_LIKE: `${prefix}/comments/{comment_uuid}/like`,
+    /** DELETE — same path as COMMENT_LIKE, different verb. */
+    COMMENT_UNLIKE: `${prefix}/comments/{comment_uuid}/like`,
 
     // ── User: reactions ──────────────────────────────────────
     /** POST → Body: EngagementReactionRequest. Returns EngagementReactionResponse. Auth required. Rate-limited 60/min per user. */
