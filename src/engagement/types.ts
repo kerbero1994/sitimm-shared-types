@@ -503,6 +503,20 @@ export interface EngagementComment {
    */
   moderation_status?: EngagementModerationStatus;
   /**
+   * ISO 8601 — null while never edited (SITIMM-623 phase B).
+   *
+   * An edit is only possible inside a 15-minute window from `created_at`,
+   * and NEVER once the comment carries an unresolved report: a reported
+   * comment that can be rewritten makes the report queue lie (INV-ENG-20,
+   * superseding INV-ENG-16). Render it as "edited" — the previous body is
+   * not retained.
+   */
+  edited_at?: string | null;
+  /** Likes on this comment. Inline on every comment row (SITIMM-623 phase B). */
+  like_count?: number;
+  /** Whether the CALLER liked this comment. Always `false` for anonymous readers. */
+  user_liked?: boolean;
+  /**
    * Direct replies to this comment, oldest first (SITIMM-596).
    *
    * Always present on the per-subject list and at most ONE level deep: the
@@ -522,6 +536,27 @@ export interface EngagementCommentCreateRequest {
   body_md: string;
   /** Numeric id of the parent comment (one-level threading). */
   parent_id?: number | null;
+}
+
+/**
+ * Body of `PATCH {prefix}/comments/{comment_uuid}` (SITIMM-623 phase B).
+ *
+ * Author only, and refused with **409** — not 403 — when the 15-minute
+ * window has closed, when the comment has an unresolved report, when the
+ * author is suspended, or when the comment is deleted/rejected (that last
+ * one is a 404). Branch on the error `code`, never on the status.
+ */
+export interface EngagementCommentEditRequest {
+  /** Raw markdown, 1..5000 chars. Re-scanned for profanity on every edit. */
+  body_md: string;
+}
+
+/** Response of `POST` / `DELETE {prefix}/comments/{comment_uuid}/like`. */
+export interface EngagementCommentLikeResponse {
+  /** UUID v4 of the comment that was liked or unliked. */
+  comment_uuid: string;
+  like_count: number;
+  user_liked: boolean;
 }
 
 /**
