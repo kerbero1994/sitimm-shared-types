@@ -200,6 +200,8 @@ export const ENGAGEMENT_ADMIN_ENDPOINTS = {
 
   // ── Cross-subject user reports ──────────────────────────
   /** GET → EngagementReportListResponse. Query: status (open|resolved|all), subject_type, limit, offset. Requires engagement:moderate. */
+  /** POST to sanction the person globally, DELETE to lift, GET for current state. ADMIN+ only. */
+  ADMIN_USER_SANCTION: "/api/v2/engagement/admin/users/{user_id}/sanction",
   ADMIN_REPORTS_LIST: "/api/v2/engagement/admin/reports",
   /** PATCH → EngagementReportResolveResponse. 404 if absent or already resolved. Requires engagement:moderate. */
   ADMIN_REPORT_RESOLVE: "/api/v2/engagement/admin/reports/{report_id}/resolve",
