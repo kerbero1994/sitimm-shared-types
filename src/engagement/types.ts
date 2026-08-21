@@ -909,6 +909,20 @@ export interface EngagementCommentModerationItem {
   /** ISO 8601 — when a moderator resolved it. Null while pending. */
   moderated_at?: string | null;
   /**
+   * Written by the QA account, not by a member (SITIMM-636).
+   *
+   * The public surfaces never return these rows at all; the moderation queue
+   * only sees them when it asks with `include_test=true`. **Render a visible
+   * marker on any row where this is true** — the queue also carries a sanction
+   * control, and sanctioning a real person over a test comment is the failure
+   * this field exists to prevent.
+   *
+   * Marked by AUTHOR, not by title: the backend sets it when the commenter's
+   * id is in `QA_TEST_USER_IDS`, so a QA comment on genuinely real content is
+   * still marked. A `[QA]` string in the subject's title would not catch that.
+   */
+  is_test?: boolean;
+  /**
    * True when the author is not a union member. An unresolved role counts as
    * a guest: the queue's job is to surface who needs a human to look.
    */
