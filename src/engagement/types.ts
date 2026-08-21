@@ -1294,3 +1294,50 @@ export interface EngagementSubject {
   /** ISO 8601. */
   updated_at: string;
 }
+
+/** How long a sanction lasts. `permanent` is stored as a null expiry, not a sentinel date. */
+export const ENGAGEMENT_SANCTION_DURATIONS = ["7d", "30d", "permanent"] as const;
+export type EngagementSanctionDuration = (typeof ENGAGEMENT_SANCTION_DURATIONS)[number];
+
+/**
+ * Body of `POST /api/v2/engagement/admin/users/{user_id}/sanction` (SITIMM-627).
+ *
+ * Sanctioning targets the PERSON, globally — it blocks commenting (creating AND
+ * editing) and contributing, everywhere. It is NOT the per-subject pause, which
+ * silences one gallery: see `EngagementSuspensionPauseRequest` for that.
+ * Reading, reacting, bookmarking and signing in are untouched; this is not
+ * `User.accountStatus`.
+ *
+ * Guarded by `engagement:sanction`, which is ADMIN and MANAGER only —
+ * deliberately NOT `engagement:suspend`, which also reaches
+ * ADMIN_COMMUNICATION. Silencing a member is not a communication-desk power.
+ */
+export interface EngagementSanctionCreateRequest {
+  duration: EngagementSanctionDuration;
+  /** 1..500 chars. ADMIN-facing audit trail — it is NEVER shown to the sanctioned user. */
+  reason: string;
+}
+
+/** A sanction row. Admin-facing: `reason` never reaches the sanctioned user. */
+export interface EngagementSanction {
+  /** UUID v4. */
+  uuid: string;
+  user_id: number;
+  reason: string;
+  /** ISO 8601 — **null means permanent**, not "unknown". Expiry is passive: no sweeper. */
+  expires_at: string | null;
+  created_by_user_id: number;
+  /** ISO 8601. */
+  created_at: string;
+  /** ISO 8601 — null while in force. Re-sanctioning lifts the standing row first. */
+  lifted_at: string | null;
+  lifted_by_user_id: number | null;
+}
+
+/** Response of `GET /api/v2/engagement/admin/users/{user_id}/sanction`. */
+export interface EngagementSanctionState {
+  user_id: number;
+  is_sanctioned: boolean;
+  /** The row in force, or null when the user is not sanctioned. */
+  sanction: EngagementSanction | null;
+}
