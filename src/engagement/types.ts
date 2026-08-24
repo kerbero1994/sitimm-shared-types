@@ -416,6 +416,18 @@ export interface EngagementReportItem {
   resolved_by_user_id?: number | null;
   /** ISO 8601. */
   resolved_at?: string | null;
+  /**
+   * ISO 8601 — when the report was re-opened by a fresh report, or null if it
+   * never was (SITIMM-645).
+   *
+   * A re-opened row legitimately reads `status: "open"` **with
+   * `resolved_by_user_id` and `resolved_at` still populated**: those now mean
+   * "the last time this was closed", not "this is closed". Before SITIMM-645
+   * the upsert nulled them, so who closed it was lost on every re-report.
+   */
+  reopened_at?: string | null;
+  /** How many times this report has been re-opened. 0 if never closed. */
+  reopen_count?: number;
 }
 
 /**
@@ -516,6 +528,20 @@ export interface EngagementComment {
   like_count?: number;
   /** Whether the CALLER liked this comment. Always `false` for anonymous readers. */
   user_liked?: boolean;
+  /**
+   * Whether the CALLER has an **OPEN** report on this comment (SITIMM-645).
+   *
+   * Deliberately "open", not "ever reported": when a moderator resolves the
+   * report this goes back to `false` and the button returns — a comment that
+   * got worse must stay reportable by the same person. Always `false` for an
+   * anonymous caller.
+   *
+   * Without it a client can only hold "reported" in memory, so the control
+   * returns on reload, the reader taps again, and the upsert **re-opens the
+   * report a moderator had already closed**. That is the failure this field
+   * exists to prevent.
+   */
+  user_reported?: boolean;
   /**
    * Direct replies to this comment, oldest first (SITIMM-596).
    *
