@@ -107,9 +107,19 @@ export const V2_ENDPOINTS = {
   EVENT_CLONE: "/events/{uuid}/clone",
   /** GET → V2Response<MyEventsV2Response>. Returns user's registered events. Auth required. */
   EVENTS_MY: "/events/my-events",
-  /** POST → Body: ParticipantRegisterV2 (modality, campus_id, is_alternative, ...). Returns
+  /** POST → Body: `CreateParticipantV2Request` (events module). Returns
       V2Response<EventParticipantV2> (201). Auth required (get_user_context). THE canonical authed
-      self-registration route (event_participants_v2.py). NOTE: EVENT_PARTICIPANTS_REGISTER below is stale. */
+      self-registration route (event_participants_v2.py).
+
+      The event comes from the PATH; the body has no event field.
+
+      Wire format is **camelCase** — `campusId`, `isAlternative`, `needTransport`… Every field on
+      the backend model is an explicit alias and `populate_by_name=True` also accepts snake_case.
+      An earlier version of this note listed the Python field names (`campus_id`, `is_alternative`),
+      which read as if the wire were snake_case. It is not.
+
+      Both `EVENT_PARTICIPANTS` and `EVENT_PARTICIPANTS_MINE` below are DEAD — verified against
+      production, not inferred. Use this route to register and `EVENTS_MY` to list. */
   EVENT_REGISTER: "/events/{uuid}/register",
   /** POST → Body: RegisterPublicV2Request. NO auth. IP rate-limited. Returns
       V2Response<RegisterPublicV2Response> (202). Anonymous registration; sends double-opt-in email. */
@@ -126,11 +136,21 @@ export const V2_ENDPOINTS = {
 
   // ── Event Participants ───────────────────────────────────
 
-  /** GET → V2Response<ParticipantListV2Response>. Query: event_uuid (required), page, per_page. Auth required. */
+  /** @deprecated DEAD ROUTE — the backend serves nothing at `/event-participants`.
+      Verified against production 2026-08-26: **404 on both GET and POST**, with no session
+      (404 = no route; 401 would mean the route exists and wants auth).
+      To list an event's participants use `LIST_EVENT_PARTICIPANTS`. */
   EVENT_PARTICIPANTS: "/event-participants",
-  /** POST → Body: CreateParticipantV2Request. Query: event_uuid. Returns V2Response<EventParticipantV2>. Auth required. */
+  /** @deprecated DEAD ROUTE — same path as `EVENT_PARTICIPANTS`, same 404.
+      To register, use `EVENT_REGISTER` (`POST /events/{uuid}/register`). */
   EVENT_PARTICIPANTS_REGISTER: "/event-participants",
-  /** GET → V2Response<ParticipantListV2Response>. Current user's registrations. Auth required. */
+  /** @deprecated DEAD ROUTE — there is no literal `/mine` segment; the string falls through to the
+      `/{uuid}` path param, reaches the query as a UUID and Postgres rejects it. The caller sees
+      **500 `DB_ERROR`, which is a 404 in disguise** — verified in the server trace
+      (`invalid UUID 'mine'`), not inferred from the status code.
+      A probe alone cannot catch this: the auth check runs BEFORE the path param is parsed, so an
+      unauthenticated request answers 401 and looks alive.
+      Use `EVENTS_MY` (`/events/my-events`) instead. */
   EVENT_PARTICIPANTS_MINE: "/event-participants/mine",
   /** GET → V2Response<EventParticipantV2>. Single participant detail. Auth required. */
   EVENT_PARTICIPANT: "/event-participants/{uuid}",
