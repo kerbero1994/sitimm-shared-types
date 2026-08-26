@@ -745,8 +745,17 @@ export interface MyEventItemV2 {
 }
 
 /**
- * Request body for POST /api/v2/event-participants?event_uuid={uuid}.
+ * Request body for `POST /api/v2/events/{uuid}/register` (`EVENT_REGISTER`).
  * Backend: event_v2.py :: ParticipantRegisterV2
+ *
+ * The event is identified by the PATH, never by the body — the backend schema
+ * has no event field, so an `eventUuid`/`eventId` in the body is silently
+ * ignored (`extra` is not forbidden there).
+ *
+ * Wire format is camelCase: every field below is an explicit Pydantic `alias`,
+ * and `populate_by_name=True` means snake_case is also accepted. A prior
+ * version of this doc pointed at `POST /api/v2/event-participants`, which does
+ * not exist — see the deprecation notes on `EVENT_PARTICIPANTS`.
  */
 export interface CreateParticipantV2Request {
   /** Attendance modality. Default: "presencial". Validated: "presencial"|"virtual"|"mixto". */
@@ -777,6 +786,18 @@ export interface CreateParticipantV2Request {
    * registro que entra directo no hay nada que justificar y el texto se
    * descarta en vez de quedarse como dato muerto. */
   requestNote?: string;
+  /** Per-event contact phone (e.g. WhatsApp). Max 50.
+   *
+   * NOT the profile phone: it is persisted on the participant row and never
+   * written back to the user profile. */
+  eventContactPhone?: string;
+  /** Consent to be contacted over WhatsApp for this event. Default: false. */
+  whatsappConsent?: boolean;
+  /** Up to 3 candidate bus-stop preferences (BusStop ids).
+   *
+   * Only used while the event's transport is in candidate mode (no real stops
+   * yet). Once real stops exist the backend ignores this and uses `busStopId`. */
+  stopPreferences?: number[];
 }
 
 /**
