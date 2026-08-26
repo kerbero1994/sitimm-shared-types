@@ -319,10 +319,19 @@ export interface SocialLoginResponse {
   needsContactUpdate: boolean | null;
   /** Reason why contact update is needed. */
   contactUpdateReason: string | null;
-  /** true en el primer login social del usuario. Alias BE: isFirstLogin. */
-  isFirstLogin?: boolean | null;
-  /** URL de la foto de perfil de Google (claim `picture`). Solo Google. */
-  googlePhotoUrl?: string | null;
+  /** SITIMM-657 — `true` sólo cuando `status="requires_setup"`; `null` en el resto.
+   *  El backend lo emite SIEMPRE (por-alias, valor `null` cuando no aplica), no es
+   *  opcional. Rutea a la pantalla de setup cuando es `true`; no caigas al camino de
+   *  `authenticated`, que abortaría sin refresh token. */
+  requiresSetup: boolean | null;
+  /** SITIMM-657 — el MISMO JWT que `token` cuando `status="requires_setup"` (type="setup",
+   *  15 min); `null` en el resto. Es lo que exige `/api/v2/auth/setup`. Emitido siempre. */
+  setupToken: string | null;
+  /** `true` en el primer login social del usuario. Emitido siempre; `null` cuando no aplica. */
+  isFirstLogin: boolean | null;
+  /** URL de la foto de perfil de Google (claim `picture`). Sólo Google — SIEMPRE `null` con
+   *  Apple. Emitido siempre. */
+  googlePhotoUrl: string | null;
 }
 
 /**
