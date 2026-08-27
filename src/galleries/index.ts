@@ -69,20 +69,36 @@
  * `GalleryContribute*`/`GalleryModeration*`/`GalleryMyContributions*`
  * schemas in `galleries_v2.py`. Design doc §8.2-§8.4.
  *
- * - **`url` sentinel values — NEVER render as `<img src>`.** A normal
- *   {@link GalleryItemV2.url} / {@link GalleryContributionItem.url} is a
- *   real fetchable CDN URL for an `"approved"` item. But a `"pending"`
- *   item's `url` is the INERT placeholder `` `quarantine://${storageKey}` ``
- *   (bytes sit in a private quarantine prefix — this string is never a
- *   working link), and a `"rejected"` item's `url` is the INERT
- *   placeholder `` `rejected://${uuid}` `` (tombstone — bytes purged,
- *   row kept for audit). Both schemes are structurally `string`
- *   (`url` never changes TS type across states) — a client MUST branch on
- *   `moderationStatus` and render pending/rejected as explicit UI states,
- *   never blindly pass `url` to an `<img>`/`<video>` tag. To actually
- *   preview a still-quarantined item's bytes (as its contributor, or as a
- *   moderator), call `GET .../preview-url` — see
- *   {@link GalleryContributionPreviewUrlResponse}.
+ * - **`url` sentinel values — branch on the SCHEME, never on
+ *   `moderationStatus`.** A {@link GalleryItemV2.url} /
+ *   {@link GalleryContributionItem.url} is one of three things, and the
+ *   scheme is what tells them apart:
+ *
+ *   - `` `quarantine://${storageKey}` `` — INERT. The bytes sit in a private
+ *     quarantine prefix; this string is never a working link. To see them
+ *     (as the contributor, or as a moderator) call `GET .../preview-url` —
+ *     see {@link GalleryContributionPreviewUrlResponse}.
+ *   - `` `rejected://${uuid}` `` — INERT. Tombstone: bytes purged, row kept
+ *     for audit.
+ *   - `http(s)://…` — a real fetchable URL. Render it directly.
+ *
+ *   All three are structurally `string` (`url` never changes TS type across
+ *   states), so a client MUST test the scheme before passing `url` to an
+ *   `<img>`/`<video>` tag.
+ *
+ *   **Do not infer the scheme from `moderationStatus`.** It correlates at
+ *   CREATION — the contribute leg writes the quarantine sentinel together
+ *   with `"pending"`, and a trusted publish writes a real URL together with
+ *   `"approved"` (mini-back `gallery_contribution_service.py`, the
+ *   `if trusted:` branch) — but the two fields are independent afterwards.
+ *   `url` records where the bytes LIVE, and moving `moderationStatus`
+ *   backwards does not move the bytes: an approved item sent back for review
+ *   keeps its real URL while reading `"pending"`. Production has exactly that
+ *   (six such rows on 2026-08-26, each carrying a `reviewedAt` stamp older
+ *   than its own `"pending"` status), and the dashboard's moderation queue
+ *   trusted this doc, asked for a presigned preview on every `"pending"` row,
+ *   and showed moderators a broken image for each real contribution they were
+ *   being asked to approve.
  * - **Upload leg — `fileId`, not a raw URL.** A member contribution is a
  *   TWO-step flow: (1) `POST /api/v1/files/upload?category=gallery` to
  *   stage the bytes and obtain a `fileId` (a `File.uuid` string, NOT the
@@ -601,11 +617,14 @@ export interface GalleryContributionItem {
   uuid: string;
   gallery_uuid: string;
   /**
-   * See the module-level "Phase B" doc block: a real CDN URL when
-   * `moderationStatus === "approved"`; an INERT `quarantine://<key>`
-   * placeholder while `"pending"`; an INERT `rejected://<uuid>`
-   * placeholder while `"rejected"`. Branch on `moderationStatus` before
-   * rendering — never assume `url` is fetchable.
+   * One of three forms, told apart by SCHEME — see the module-level "Phase B"
+   * doc block: an INERT `quarantine://<key>` placeholder, an INERT
+   * `rejected://<uuid>` tombstone, or a real fetchable `http(s)` URL.
+   *
+   * Test the scheme. Do NOT infer it from `moderationStatus`: the two
+   * correlate at creation and diverge afterwards, because `url` records where
+   * the bytes live and a status change does not move them. A `"pending"` row
+   * can legitimately carry a working URL.
    */
   url: string;
   title: string | null;
