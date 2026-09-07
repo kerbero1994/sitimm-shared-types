@@ -368,6 +368,16 @@ export interface EventDetailV2 extends EventV2 {
   audience: unknown | null;
   /** Audience job titles filter (JSON). `null` en público, como `audience`. */
   audienceTitles: unknown | null;
+  /** Audiencia REFERENCIADA por este evento (SITIMM-789).
+   *
+   * El evento apunta a una `AudienceTemplate`; no carga su spec. Editar la
+   * audiencia cambia todos los eventos que la referencian — esa es la
+   * diferencia con {@link EventDetailV2.audience}, que es el spec heredado
+   * pegado al evento y sólo se usa cuando esto es `null`.
+   *
+   * `null` = el evento no referencia ninguna audiencia (sin restricción).
+   * Se redacta en público igual que `audience`: identifica el criterio. */
+  audienceUuid: string | null;
   /** ¿Registrarse aquí requiere que alguien lo apruebe? (SITIMM-586)
    *
    * El HECHO, no el criterio (decisión #12 del PO). Es lo único de audiencia
@@ -487,6 +497,12 @@ export interface CreateEventV2Request {
   audience?: unknown;
   /** Audience title filters (JSON). */
   audienceTitles?: unknown;
+  /** uuid de la audiencia que este evento REFERENCIA (SITIMM-789).
+   *
+   * `null` explícito desreferencia la audiencia (evento sin restricción);
+   * omitir el campo en un PATCH la deja como está. Un uuid desconocido o de
+   * una audiencia borrada responde 422 `audience_not_found`. */
+  audienceUuid?: string | null;
   /** Maximum number of participants. Omit or null for unlimited. */
   capacity?: number | null;
   /** Enable waitlist when capacity is reached. Default: false. */
@@ -567,6 +583,12 @@ export interface UpdateEventV2Request {
   audience?: unknown;
   /** Audience title filters (JSON). */
   audienceTitles?: unknown;
+  /** uuid de la audiencia que este evento REFERENCIA (SITIMM-789).
+   *
+   * `null` explícito desreferencia la audiencia (evento sin restricción);
+   * omitir el campo en un PATCH la deja como está. Un uuid desconocido o de
+   * una audiencia borrada responde 422 `audience_not_found`. */
+  audienceUuid?: string | null;
   /** Maximum number of participants. Null = unlimited. */
   capacity?: number | null;
   /** Enable waitlist when capacity is reached. */
