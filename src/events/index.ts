@@ -834,6 +834,17 @@ export interface ConfirmParticipantV2Request {
 }
 
 /**
+ * Optional guest push token attached to a public (account-less) event
+ * registration — see RegisterPublicV2Request.deviceToken.
+ */
+export interface GuestDeviceTokenV2 {
+  token: string;
+  platform: "ios" | "android";
+  /** BCP-47 locale, e.g. "es" or "en-US". */
+  locale: string;
+}
+
+/**
  * POST /api/v2/events/{uuid}/register-public — body.
  * Public (NO auth) anonymous event registration. The server creates the
  * participant only after the email double-opt-in is confirmed (a pending
@@ -857,6 +868,13 @@ export interface RegisterPublicV2Request {
    * ruta ocurre si el evento es privado o su audiencia no es pública — un
    * anónimo no tiene perfil que evaluar, así que decide una persona. */
   requestNote?: string;
+  /**
+   * Optional FCM push token an account-less guest may leave so event reminders
+   * reach their device. Ignored by older clients (server schema is extra:ignore);
+   * persisted server-side once the email double-opt-in is confirmed, and scrubbed
+   * with the rest of the guest PII 30 days after the event ends.
+   */
+  deviceToken?: GuestDeviceTokenV2;
 }
 
 /**
