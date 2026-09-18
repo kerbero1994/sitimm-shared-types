@@ -328,6 +328,8 @@ export const V2_ENDPOINTS = {
   BULLETINS: "/bulletins",
   /** GET → V2Response<ListBulletinsV2Response>. Query: page, page_size. Public — no auth. Returns general bulletins whose published_at is in the past. */
   BULLETINS_PUBLIC: "/bulletins/public",
+  /** GET → V2Response<BulletinV2>. Public — no auth. Same visibility predicate as BULLETINS_PUBLIC; hidden rows are 404 (never 403). Target of the bulletins_new_{locale} topic push deep link. */
+  BULLETIN_PUBLIC: "/bulletins/public/{uuid}",
   /** GET → V2Response<BulletinFeedResponse>. Query: page, page_size, unread_only?. Auth required. Personal materialized inbox. */
   BULLETINS_FEED: "/bulletins/feed",
   /** POST → Body: PreviewAudienceRequest. Returns V2Response<PreviewAudienceResponse>. Requires content:create. Run the coverage gate before publishing. */
