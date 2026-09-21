@@ -176,7 +176,23 @@ export interface BonusV2 {
   address?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  /**
+   * The merchant's published business line — not a person's. Detail only:
+   * the list item never carries it (SITIMM-846, mini-back Bonuses v1.5.0).
+   */
+  phone?: string | null;
+  /**
+   * Bare digits with country code (e.g. "5214621234567"); open
+   * `https://wa.me/<digits>` verbatim — the prefix travels inside the data.
+   * Detail only (SITIMM-847).
+   */
+  whatsapp?: string | null;
   website?: string | null;
+  /** Full https:// profile URLs, like `website`. Detail only (SITIMM-847). */
+  facebook?: string | null;
+  instagram?: string | null;
+  /** Profile URL on X; the field keeps the historical name. */
+  twitter?: string | null;
   hours?: string | null;
   discountType: BonusDiscountType;
   discountValueMin?: number | null;
@@ -282,7 +298,13 @@ export interface BonusV2CreateInput {
   latitude?: number | null;
   longitude?: number | null;
   phone?: string | null;
+  /** `^\d{8,15}$` — digits with country code (e.g. "5214621234567"). */
+  whatsapp?: string | null;
   website?: string | null;
+  /** `^https://` — full profile URLs. */
+  facebook?: string | null;
+  instagram?: string | null;
+  twitter?: string | null;
   hours?: string | null;
   discountValueMin?: number | null;
   discountValueMax?: number | null;
