@@ -437,7 +437,16 @@ export interface BonusV2DetailResponse {
  */
 export interface BonusV2ListResponse {
   bonuses: BonusV2ListItem[];
+  /** Rows matching the filter, every page, fixtures included. Drives `hasMore`. */
   total: number;
+  /**
+   * How many rows of `total` are `[QA]` fixtures (`is_test`), over the same
+   * filter. The API serves fixtures to everyone (SITIMM-849) and each client
+   * hides them in presentation behind its QA switch — subtract this from
+   * `total` for the count you show. Sent since mini-back Bonuses v1.4.0
+   * (SITIMM-850); absent on older deployments.
+   */
+  testCount?: number;
   page: number;
   limit: number;
   hasMore: boolean;
