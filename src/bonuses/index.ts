@@ -176,7 +176,23 @@ export interface BonusV2 {
   address?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  /**
+   * The merchant's published business line — not a person's. Detail only:
+   * the list item never carries it (SITIMM-846, mini-back Bonuses v1.5.0).
+   */
+  phone?: string | null;
+  /**
+   * Bare digits with country code (e.g. "5214621234567"); open
+   * `https://wa.me/<digits>` verbatim — the prefix travels inside the data.
+   * Detail only (SITIMM-847).
+   */
+  whatsapp?: string | null;
   website?: string | null;
+  /** Full https:// profile URLs, like `website`. Detail only (SITIMM-847). */
+  facebook?: string | null;
+  instagram?: string | null;
+  /** Profile URL on X; the field keeps the historical name. */
+  twitter?: string | null;
   hours?: string | null;
   discountType: BonusDiscountType;
   discountValueMin?: number | null;
@@ -282,7 +298,13 @@ export interface BonusV2CreateInput {
   latitude?: number | null;
   longitude?: number | null;
   phone?: string | null;
+  /** `^\d{8,15}$` — digits with country code (e.g. "5214621234567"). */
+  whatsapp?: string | null;
   website?: string | null;
+  /** `^https://` — full profile URLs. */
+  facebook?: string | null;
+  instagram?: string | null;
+  twitter?: string | null;
   hours?: string | null;
   discountValueMin?: number | null;
   discountValueMax?: number | null;
@@ -437,7 +459,16 @@ export interface BonusV2DetailResponse {
  */
 export interface BonusV2ListResponse {
   bonuses: BonusV2ListItem[];
+  /** Rows matching the filter, every page, fixtures included. Drives `hasMore`. */
   total: number;
+  /**
+   * How many rows of `total` are `[QA]` fixtures (`is_test`), over the same
+   * filter. The API serves fixtures to everyone (SITIMM-849) and each client
+   * hides them in presentation behind its QA switch — subtract this from
+   * `total` for the count you show. Sent since mini-back Bonuses v1.4.0
+   * (SITIMM-850); absent on older deployments.
+   */
+  testCount?: number;
   page: number;
   limit: number;
   hasMore: boolean;

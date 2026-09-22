@@ -242,6 +242,8 @@ export const V2_ENDPOINTS_GENERATED = {
     PREVIEW_AUDIENCE: "/api/v2/bulletins/preview-audience",
     /** GET — V2 Bulletins */
     LIST_BULLETINS_PUBLIC: "/api/v2/bulletins/public",
+    /** GET — V2 Bulletins (public, no JWT). Hand-added SITIMM-830 ahead of the next regen. */
+    GET_BULLETIN_PUBLIC: (uuid: string | number) => `/api/v2/bulletins/public/${uuid}`,
   },
   campuses: {
     /** GET — V2 Campuses */
