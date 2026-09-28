@@ -105,6 +105,20 @@ export type EventMediaType = "cover" | "gallery";
  */
 export type EventStreamingStatus = "idle" | "scheduled" | "live" | "ended";
 
+/**
+ * An event's preview video — its first `mediaType="video"` media row. One
+ * nullable object per event: its presence IS "has a preview video".
+ * Backend: event_v2.py :: PreviewVideoV2 (SITIMM-799).
+ */
+export interface EventPreviewVideoV2 {
+  /** `"native"` = hosted by us, autoplays muted. `"youtube"` / `"vimeo"` play only on tap. */
+  provider: "native" | "youtube" | "vimeo";
+  /** The MP4 for native; the canonical watch URL (`youtube.com/watch?v=…`, `vimeo.com/{id}`) for external. */
+  url: string;
+  /** Poster image. YouTube → `i.ytimg.com/vi/{id}/hqdefault.jpg`; Vimeo and posterless native → null. */
+  posterUrl: string | null;
+}
+
 // ── Event Types ──
 
 /**
@@ -185,6 +199,8 @@ export interface EventV2 {
   streamingProvider: string | null;
   /** Streaming lifecycle state. */
   streamingStatus: EventStreamingStatus | null;
+  /** First video of the event (card + hero preview), or null when it has none. Optional: older backends omit it. */
+  previewVideo?: EventPreviewVideoV2 | null;
   /** Public share URL for social/web sharing. Null if not computable. */
   shareUrl: string | null;
   /** App deep-link URL. Null if not computable. */
