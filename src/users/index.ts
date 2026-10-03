@@ -400,7 +400,7 @@ export interface UserBasicV2 {
  *   "dateOfBirth": "1990-05-15T00:00:00Z",
  *   "sex": "M",
  *   "rfc": "PEGJ900515ABC",
- *   "mobilePhone": "3312345678"
+ *   "mobilePhone": "+523312345678"
  * }
  * ```
  */
@@ -425,7 +425,14 @@ export interface UserProfileV2 {
   nss: string | null;
   /** Home/landline phone number. */
   personalPhone: string | null;
-  /** Mobile phone number. 10 digits for MX numbers. Validate with PHONE_MX_PATTERN. */
+  /**
+   * Mobile phone — the login/recovery phone. E.164 since SITIMM-933
+   * (`+52XXXXXXXXXX` for MX, e.g. "+523312345678"); a value that does not
+   * normalize comes back as it was typed. Do NOT validate it with
+   * PHONE_MX_PATTERN: `cleanDigits()` leaves 12 digits and it fails, so an
+   * untouched phone would block saving the profile.
+   * Backend: app/shared/utils/phone.py :: canonical_phone
+   */
   mobilePhone: string | null;
   /** Alternate email address. */
   otherMail: string | null;
@@ -534,7 +541,16 @@ export interface UserProfileUpdateV2 {
   nss?: string;
   /** Home phone. */
   personalPhone?: string;
-  /** Mobile phone. 10 digits for MX. */
+  /**
+   * Mobile phone. 7–20 chars: digits, spaces, `+`, `-`, `(`, `)` (else 422).
+   * Spaces, `-`, `(` and `)` are ignored before normalizing. MX numbers may
+   * come as `3312345678`, `523312345678`, `5213312345678`, `+523312345678` or
+   * `+5213312345678` (also formatted, e.g. `+52 (33) 1234-5678`); they are
+   * stored, and returned by GET, in E.164 (`+52XXXXXXXXXX`), not as sent.
+   * Other `+<country>` numbers are kept in E.164; anything that still fits
+   * none of these once separators are stripped is stored as typed.
+   * An explicit `null` clears the stored phone; an empty string is a 422.
+   */
   mobilePhone?: string;
   /** Alternate email. */
   otherMail?: string;

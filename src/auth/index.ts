@@ -452,7 +452,7 @@ export interface MenuItem {
 //
 // Backend: app/presentation/schemas/auth_reset_v2.py
 // Three-step OTP flow for users who cannot log in:
-//   1. POST /api/v2/auth/forgot-password  → server emails/SMS OTP
+//   1. POST /api/v2/auth/forgot-password  → server sends OTP (email / WhatsApp)
 //   2. POST /api/v2/auth/verify-reset     → returns short-lived reset token
 //   3. POST /api/v2/auth/reset-password   → applies new password
 // ────────────────────────────────────────────────────────────────────
@@ -460,7 +460,7 @@ export interface MenuItem {
 /**
  * Body for POST /api/v2/auth/forgot-password.
  * Server resolves the contact to a user, generates a 6-digit OTP, and
- * dispatches it via email or SMS depending on the contact format.
+ * dispatches it via email or WhatsApp depending on the contact format.
  */
 export interface ForgotPasswordV2Request {
   /** Email address or phone number of the account to recover. */
