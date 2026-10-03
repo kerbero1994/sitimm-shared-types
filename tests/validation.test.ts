@@ -63,6 +63,11 @@ describe("PHONE_MX_PATTERN + cleanDigits", () => {
   it.each(["331234567", "33123456789", "331234567a"])("rechaza %s", (raw) => {
     expect(PHONE_MX_PATTERN.test(raw)).toBe(false);
   });
+
+  it("es sólo de entrada: el mobilePhone que devuelve el BE (E.164) no pasa ni tras cleanDigits", () => {
+    // SITIMM-933/941: no validar con este patrón un teléfono leído de la API.
+    expect(PHONE_MX_PATTERN.test(cleanDigits("+523312345678"))).toBe(false);
+  });
 });
 
 describe("POSTAL_CODE_MX_PATTERN", () => {

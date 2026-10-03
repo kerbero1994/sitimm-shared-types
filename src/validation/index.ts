@@ -4,7 +4,8 @@
  * Backend equivalents:
  * - RFC     -> app/domain/value_objects/rfc.py
  * - CURP    -> app/domain/value_objects/curp.py
- * - Phone   -> app/shared/utils/data_normalizer.py
+ * - Phone   -> app/shared/constants.py MEXICAN_PHONE_REGEX (typed input) /
+ *              app/shared/utils/phone.py (stored mobilePhone, E.164)
  *
  * These regex patterns are the shared source of truth.
  * Frontend Zod/Yup schemas should reference these instead of hardcoding.
@@ -15,7 +16,7 @@
  *
  * const isValidRfc = RFC_PATTERN.test(value);
  * const isValidCurp = CURP_PATTERN.test(value);
- * const cleanPhone = cleanDigits(rawPhone);
+ * const cleanPhone = cleanDigits(typedPhone); // user input, never a phone read from the API
  * const isValidPhone = PHONE_MX_PATTERN.test(cleanPhone);
  * ```
  */
@@ -38,8 +39,11 @@ export const RFC_PATTERN = /^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{2}[0-9A]$/;
 export const CURP_PATTERN = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/;
 
 /**
- * Mexican phone number — exactly 10 digits (no country code, no separators).
- * Apply `cleanDigits()` first to strip formatting.
+ * Mexican phone number as a user types it — exactly 10 digits (no country
+ * code, no separators). Apply `cleanDigits()` first to strip formatting.
+ *
+ * Input only: the API returns `mobilePhone` in E.164 ("+523312345678",
+ * SITIMM-933), which leaves 12 digits after `cleanDigits()` and fails here.
  *
  * @example "3312345678"
  */
@@ -68,9 +72,10 @@ export const MIN_PHONE_DIGITS = 7;
 
 /**
  * Strip all non-digit characters from a string.
- * Use before validating phone numbers with PHONE_MX_PATTERN.
+ * Use before validating user-typed phone numbers with PHONE_MX_PATTERN
+ * (a `+52` value leaves 12 digits and fails it — see PHONE_MX_PATTERN).
  *
- * @example cleanDigits("+52 (33) 1234-5678") → "523312345678"
+ * @example cleanDigits("(33) 1234-5678") → "3312345678"
  */
 export const cleanDigits = (value: string): string => value.replace(/\D/g, "");
 

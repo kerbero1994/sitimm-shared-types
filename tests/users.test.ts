@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -77,5 +79,21 @@ describe("resolveUserType (backward compat)", () => {
     expect(resolveUserType(99999)).toBeUndefined();
     expect(resolveUserType(null)).toBeUndefined();
     expect(resolveUserType(undefined)).toBeUndefined();
+  });
+});
+
+describe("JSDoc de mobilePhone (SITIMM-941)", () => {
+  // Desde SITIMM-933 el BE guarda y devuelve mobilePhone en E.164. Un JSDoc que
+  // pida 10 dígitos lleva a un front a rechazar el valor leído (no deja guardar
+  // el perfil aunque no se toque el teléfono).
+  it("lectura y escritura documentan E.164, no 10 dígitos", () => {
+    const src = readFileSync(resolve(__dirname, "../src/users/index.ts"), "utf8");
+    const docs = [
+      ...src.matchAll(/\/\*\*((?:(?!\*\/)[\s\S])*)\*\/\s*mobilePhone\??:/g),
+    ].map((m) => m[1]);
+    expect(docs).toHaveLength(2); // UserProfileV2 + UserProfileUpdateV2
+    for (const doc of docs) expect(doc).toMatch(/E\.164/);
+    expect(src).not.toMatch(/10 digits/);
+    expect(src).toMatch(/"mobilePhone": "\+52\d{10}"/);
   });
 });

@@ -5,6 +5,33 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.13.1] - 2026-10-03
+
+JSDoc de `mobilePhone`: llega en E.164 desde SITIMM-933. **SITIMM-941**
+(mini-back #625, migración `mobile_phone_e164_20261002`).
+
+El backend guarda y devuelve `mobilePhone` como `canonical_phone(x)`
+(`+52XXXXXXXXXX`). El JSDoc seguía pidiendo 10 dígitos y validar con
+`PHONE_MX_PATTERN`, y `PHONE_MX_PATTERN.test(cleanDigits("+523312345678"))` es
+`false`: un front que lo siguiera no dejaría guardar un perfil aunque nadie
+tocara el teléfono.
+
+- `UserProfileV2.mobilePhone` y su `@example`: E.164; lo que no normaliza
+  vuelve tal cual. No validarlo con `PHONE_MX_PATTERN`.
+- `UserProfileUpdateV2.mobilePhone`: grafías aceptadas (`3312345678`, `52…`,
+  `521…`, `+52…`, `+521…`; espacios, `-` y `()` se ignoran antes de
+  normalizar) y que se guarda —y se lee— en E.164. Un `null` explícito borra
+  el teléfono (sin cambio de tipo).
+- `PHONE_MX_PATTERN`: sólo para lo que el usuario teclea, nunca para un
+  teléfono leído de la API. El ejemplo de `cleanDigits` ya no empareja un
+  `+52…` con ese patrón, y el equivalente del backend apunta a
+  `MEXICAN_PHONE_REGEX` (entrada) y `app/shared/utils/phone.py` (guardado), no
+  al normalizador del censo.
+- `ForgotPasswordV2Request`: el código por teléfono va por WhatsApp, no SMS.
+
+Patch: sólo JSDoc. Ni tipos ni regex cambian (web `affiliation.ts` valida su
+formulario con `PHONE_MX_PATTERN`).
+
 ## [1.3.0] - 2026-08-17
 
 `EventCampusV2.id` — la sede DE ESTE evento. **SITIMM-586.**
