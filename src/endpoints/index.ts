@@ -55,6 +55,10 @@ export const V2_ENDPOINTS = {
   USERS_ME_UPDATE: "/users/me",
   /** PUT → Body: { declared: boolean }. Returns { declared, declaredAt }. Declares the caller is NOT a union member so the onboarding stops asking for an RFC; reversible, idempotent, and 409 `identity_already_claimed` when an employee record is already linked. Auth required (SITIMM-597). */
   USERS_ME_NOT_A_MEMBER: "/users/me/not-a-member",
+  /** POST → Body: ClaimRfcV2Request. Returns V2Response<ClaimRfcV2Response>. Errores: ClaimRfcV2ErrorCode. Auth required (INVITADO o EMPLOYEE sin empleo vivo). SITIMM-954. */
+  USERS_ME_CLAIM_RFC: "/users/me/claim-rfc",
+  /** POST → Body: PasswordUpdateV2Request. Revoca las sesiones: re-login con la contraseña nueva. Auth required. */
+  USERS_PASSWORD_UPDATE: "/users/password-update",
   /** GET → V2Response<EmploymentV2>. Returns employment data. Auth required. */
   USERS_ME_EMPLOYMENT: "/users/me/employment",
   /** GET → V2Response<CompanyDataV2>. Returns company info for current user. Auth required. */
@@ -84,6 +88,8 @@ export const V2_ENDPOINTS = {
   AUTH_VERIFY_RESET: "/auth/verify-reset",
   /** POST → Body: ResetPasswordV2Request. Bearer <resetToken> + token en body. */
   AUTH_RESET_PASSWORD: "/auth/reset-password",
+  /** POST → Body: EmployeeMatchV2Request. Bearer <signup_token>. Returns V2Response<EmployeeMatchV2Response>. 403 `age_restricted`, 429 `too_many_attempts`. */
+  AUTH_EMPLOYEE_MATCH: "/auth/employee/match",
   /** POST → Body: SocialLoginRequest. NO auth. Response FLAT SocialLoginResponse. V2 (antes V1). */
   AUTH_SOCIAL_LOGIN: "/auth/social",
   /** POST → Body: GuestLoginRequest ({session_id}). NO auth. Response FLAT GuestLoginResponse. V2 (antes V1). */

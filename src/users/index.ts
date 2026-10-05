@@ -564,7 +564,27 @@ export interface UserProfileUpdateV2 {
   civilStateId?: number;
 }
 
-/** Password change request — separate from profile update. */
+/**
+ * Body de POST /api/v2/users/password-update (auth_legacy.py :: password_update).
+ * Access token requerido. Revoca TODOS los refresh tokens y marca `pwd_changed`: el
+ * access token en curso deja de servir, así que el cliente vuelve a entrar con la
+ * contraseña nueva. Limpia el lockout de correo, RFC y teléfono.
+ * Errores: 401 `oldPassword` incorrecta · 400 contraseña débil (`detail.requirements[]`)
+ * · 429. Un 503 significa que la contraseña SÍ cambió y sólo falló cerrar las sesiones.
+ */
+export interface PasswordUpdateV2Request {
+  /** Contraseña actual. */
+  oldPassword: string;
+  /** Nueva: 8+ caracteres, 1 mayúscula, 1 minúscula, 1 dígito. */
+  password: string;
+}
+
+/**
+ * Password change request — separate from profile update.
+ * @deprecated El BE no tiene este contrato: `PATCH /users/me` con
+ * `{currentPassword,newPassword}` responde 422 «No fields to update». Usar
+ * `PasswordUpdateV2Request` en `V2_ENDPOINTS.USERS_PASSWORD_UPDATE`. Se eliminará en 3.0.0.
+ */
 export interface ChangePasswordV2Request {
   /** Current password for verification. */
   currentPassword: string;
