@@ -94,7 +94,7 @@ export const V2_ENDPOINTS = {
   AUTH_SOCIAL_LOGIN: "/auth/social",
   /** POST → Body: GuestLoginRequest ({session_id}). NO auth. Response FLAT GuestLoginResponse. V2 (antes V1). */
   AUTH_SOCIAL_GUEST: "/auth/social/guest",
-  /** GET → Response FLAT SocialAccountListResponse. Auth required. V2 (antes V1). DELETE en `${AUTH_SOCIAL_ACCOUNTS}/{provider}`. */
+  /** GET → Response FLAT SocialAccountListResponse. Auth required. V2 (antes V1). POST → Body: SocialLinkV2Request (liga con sesión + reauth, SITIMM-955), misma respuesta. DELETE en `${AUTH_SOCIAL_ACCOUNTS}/{provider}`. */
   AUTH_SOCIAL_ACCOUNTS: "/auth/social/accounts",
 
   // ── Events ───────────────────────────────────────────────

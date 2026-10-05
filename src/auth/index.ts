@@ -335,6 +335,22 @@ export interface SocialLoginResponse {
 }
 
 /**
+ * Body de POST /api/v2/auth/social/accounts: ligar Google/Apple con la sesión abierta
+ * (SITIMM-955). Access token requerido.
+ * Respuesta: `SocialAccountListResponse` (plana), la misma que el GET.
+ * Es idempotente si esa cuenta del proveedor ya es de quien llama.
+ * Errores (`detail`):
+ * - 401 `Authentication failed`: el proveedor rechazó el `id_token`.
+ * - 401 `reauth_required`: el `reauthToken` falta, ya se usó, caducó o es de otro.
+ * - 409 `social_account_taken`: esa cuenta del proveedor es de otro usuario.
+ * - 409 `provider_already_linked`: quien llama ya tiene otra cuenta de ese proveedor.
+ */
+export interface SocialLinkV2Request extends SocialLoginRequest {
+  /** Token de un solo uso de POST /api/v2/auth/reauth (step-up). */
+  reauthToken: string;
+}
+
+/**
  * Request body for POST /api/v2/auth/social/verify.
  * Links a social login to an existing employee via RFC.
  * Backend: social_auth.py :: VerifyIdentityRequest
