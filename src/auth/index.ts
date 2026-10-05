@@ -590,10 +590,9 @@ export interface ClaimRfcV2Response {
  * - 400 `legal_not_accepted`
  * - 403 `age_restricted`: el padrón dice que es menor de edad.
  * - 409 `already_employed`: ya tiene un empleo vivo.
- * - 409 `claim_unavailable`: la cuenta no puede reclamar (staff, borrado pendiente) o la
- *   fila cambió entre el match y el claim.
- * - 409 `placeholder_shared`: el login de censo de esa fila es también el de otra fila
- *   viva; se resuelve por la vía del asesor.
+ * - 409 `claim_unavailable`: la cuenta no puede reclamar (staff, borrado pendiente), la
+ *   fila cambió entre el match y el claim, o su login de censo es también el de otra fila
+ *   viva. La salida es una consulta con el asesor.
  * - 422 `exactly_one_identifier_required`
  * - 429 `too_many_attempts` (5 fallos / 15 min) · `rate_limited` (por IP)
  */
@@ -602,7 +601,6 @@ export type ClaimRfcV2ErrorCode =
   | "age_restricted"
   | "already_employed"
   | "claim_unavailable"
-  | "placeholder_shared"
   | "exactly_one_identifier_required"
   | "too_many_attempts"
   | "rate_limited";
