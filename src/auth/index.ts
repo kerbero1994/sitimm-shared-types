@@ -335,6 +335,22 @@ export interface SocialLoginResponse {
 }
 
 /**
+ * Body de POST /api/v2/auth/social/accounts: ligar Google/Apple con la sesión abierta
+ * (SITIMM-955). Access token requerido.
+ * Respuesta: `SocialAccountListResponse` (plana), la misma que el GET.
+ * Es idempotente si esa cuenta del proveedor ya es de quien llama.
+ * Errores (`detail`):
+ * - 401 `Authentication failed`: el proveedor rechazó el `id_token`.
+ * - 401 `reauth_required`: el `reauthToken` falta, ya se usó, caducó o es de otro.
+ * - 409 `social_account_taken`: esa cuenta del proveedor es de otro usuario.
+ * - 409 `provider_already_linked`: quien llama ya tiene otra cuenta de ese proveedor.
+ */
+export interface SocialLinkV2Request extends SocialLoginRequest {
+  /** Token de un solo uso de POST /api/v2/auth/reauth (step-up). */
+  reauthToken: string;
+}
+
+/**
  * Request body for POST /api/v2/auth/social/verify.
  * Links a social login to an existing employee via RFC.
  * Backend: social_auth.py :: VerifyIdentityRequest
@@ -498,3 +514,109 @@ export interface ResetPasswordV2Request {
   /** New password. 8+ chars, 1 uppercase, 1 lowercase, 1 digit. */
   newPassword: string;
 }
+
+// ────────────────────────────────────────────────────────────────────
+// Reclamar empleo: alta (employee/match) y con sesión (users/me/claim-rfc)
+//
+// Backend: auth_signup.py :: employee_match · users_claim_rfc (SITIMM-954).
+// Mismo match en los dos: la empresa del buscador (`GET /auth/companies`) más
+// EXACTAMENTE UN identificador (422 `exactly_one_identifier_required`). 5 fallos
+// por empresa y tipo de identificador en 15 min → 429 `too_many_attempts`.
+// ────────────────────────────────────────────────────────────────────
+
+/** Los identificadores del padrón con los que se reclama: manda sólo UNO. */
+export interface PadronIdentifierV2 {
+  /** RFC del padrón (12–13). Se compara en mayúsculas. */
+  rfc?: string;
+  /** CURP (18). */
+  curp?: string;
+  /** NSS (11 dígitos). */
+  nss?: string;
+}
+
+/**
+ * Body de POST /api/v2/auth/employee/match. Bearer <signup_token> (el del OTP o el
+ * `session_id` de un social `needs_verification`).
+ */
+export interface EmployeeMatchV2Request extends PadronIdentifierV2 {
+  /** `uuid` de la empresa elegida en el buscador. */
+  company_uuid: string;
+}
+
+/**
+ * Respuesta 200 de employee/match.
+ * - Match: `claim_token` + `masked_name` → `employee/claim`.
+ * - Negativo: `claim_token = null`. Si la fila ya es de una cuenta activada llega
+ *   `already_claimed = true` con `masked_name`/`masked_email` (la máscara no conserva la
+ *   longitud): la app ofrece «Entrar» / «Olvidé mi contraseña» en vez de crear otra cuenta.
+ * - Menor de edad: 403 `age_restricted` (no cuenta como fallo).
+ */
+export interface EmployeeMatchV2Response {
+  claim_token: string | null;
+  company_name: string;
+  masked_name?: string;
+  /** Sólo con `already_claimed`. Ej. `"j***@g***.com"`. */
+  masked_email?: string;
+  already_claimed?: boolean;
+  offer_recovery?: boolean;
+  offer_guest?: boolean;
+  /** Segundos de vida del `claim_token`. */
+  expires_in?: number;
+}
+
+/**
+ * Body de POST /api/v2/users/me/claim-rfc (SITIMM-954). Access token requerido.
+ * Para un INVITADO, o un EMPLOYEE sin empleo vivo, que prueba con su identificador que
+ * una fila del padrón es suya.
+ */
+export interface ClaimRfcV2Request extends PadronIdentifierV2 {
+  /** `uuid` de la empresa elegida en el buscador. */
+  company_uuid: string;
+  /** DEBE ser `true` (400 `legal_not_accepted`). */
+  accept_legal: boolean;
+  /** Versión del texto legal mostrado (queda auditada). */
+  legal_version: string;
+}
+
+/** Resultado de claim-rfc. Sólo `claimed` cambia algo. */
+export type ClaimRfcV2Status = "claimed" | "no_match" | "already_claimed";
+
+/**
+ * Respuesta 200 de claim-rfc (dentro del envelope `{status, data}`).
+ * - `claimed`: la fila del padrón ya es de quien llama; pasa a EMPLOYEE y su perfil se
+ *   completa con el padrón. Conserva correo, contraseña y Google. Si la fila tenía un
+ *   login de censo sin activar (`<rfc>@employee.local`), ése se da de baja. Vuelve a pedir
+ *   `GET /users/me`: el access token sigue valiendo.
+ * - `no_match`: ninguna fila reclamable. Cuenta como fallo.
+ * - `already_claimed`: la fila es de otra cuenta activada (`masked_name`/`masked_email`).
+ *   Cuenta como fallo.
+ */
+export interface ClaimRfcV2Response {
+  status: ClaimRfcV2Status;
+  company_name: string;
+  /** `claimed` y `already_claimed`. */
+  masked_name?: string;
+  /** Sólo `already_claimed`. */
+  masked_email?: string;
+}
+
+/**
+ * Códigos de error de claim-rfc: llegan en `data.message` del envelope
+ * `{status: "error", data: {message}}`.
+ * - 400 `legal_not_accepted`
+ * - 403 `age_restricted`: el padrón dice que es menor de edad.
+ * - 409 `already_employed`: ya tiene un empleo vivo.
+ * - 409 `claim_unavailable`: la cuenta no puede reclamar (staff, borrado pendiente), la
+ *   fila cambió entre el match y el claim, o su login de censo es también el de otra fila
+ *   viva. La salida es una consulta con el asesor.
+ * - 422 `exactly_one_identifier_required`
+ * - 429 `too_many_attempts` (5 fallos / 15 min) · `rate_limited` (por IP)
+ */
+export type ClaimRfcV2ErrorCode =
+  | "legal_not_accepted"
+  | "age_restricted"
+  | "already_employed"
+  | "claim_unavailable"
+  | "exactly_one_identifier_required"
+  | "too_many_attempts"
+  | "rate_limited";
