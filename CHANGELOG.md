@@ -5,6 +5,22 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.16.0] - 2026-10-05
+
+Contratos del cambio de correo o teléfono con OTP. **SITIMM-953** (para la app
+en SITIMM-959; backend de SITIMM-937, `auth_contact.py`).
+
+- `ContactFieldV2`, `ContactCodeChannelV2`, `ContactInitV2Request`,
+  `ContactCodeSentV2Response`, `ContactConfirmIdentityV2Request`,
+  `ContactConfirmNewV2Request` y `ContactUpdatedV2Response`.
+- `V2_ENDPOINTS.AUTH_CONTACT_INIT`, `AUTH_CONTACT_CONFIRM_IDENTITY` y
+  `AUTH_CONTACT_CONFIRM_NEW`.
+- Siempre son dos códigos: el de identidad (el mismo campo o, si no es real, el
+  otro canal de la cuenta) y el del valor nuevo. Agregar un contacto no se salta
+  la identidad.
+- Los errores llegan sin código, sólo con un `detail` en español: se decide por
+  el estado HTTP (400, 403, 409, 429 y 500; detalle en el JSDoc).
+
 ## [2.15.0] - 2026-10-05
 
 `VerifyResetV2Request.rfcLast4?` — segundo factor del reset por teléfono. **SITIMM-971**
@@ -21,6 +37,20 @@ coinciden responde igual que un código incorrecto y gasta un intento.
   pueden mandarlo desde ya.
 
 Minor: campo opcional nuevo; sin cambio de tipos existentes.
+
+## [2.14.0] - 2026-10-05
+
+Contratos de Login V2 completo. **SITIMM-953** (mini-back #636 y #637).
+
+- `ClaimRfcV2Request`, `ClaimRfcV2Response`, `ClaimRfcV2Status` y
+  `ClaimRfcV2ErrorCode`: `POST /users/me/claim-rfc` (SITIMM-954).
+- `PadronIdentifierV2`, `EmployeeMatchV2Request` y `EmployeeMatchV2Response`,
+  con `already_claimed` y `masked_email`.
+- `PasswordUpdateV2Request`. `ChangePasswordV2Request` queda obsoleto.
+- `SocialLinkV2Request`: ligar un proveedor con la sesión abierta y un step-up
+  (SITIMM-955).
+- `V2_ENDPOINTS.USERS_ME_CLAIM_RFC`, `USERS_PASSWORD_UPDATE` y
+  `AUTH_EMPLOYEE_MATCH`.
 
 ## [2.13.1] - 2026-10-03
 

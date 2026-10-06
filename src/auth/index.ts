@@ -631,3 +631,94 @@ export type ClaimRfcV2ErrorCode =
   | "exactly_one_identifier_required"
   | "too_many_attempts"
   | "rate_limited";
+
+// ---------------------------------------------------------------------------
+// Cambio de correo o teléfono con OTP (SITIMM-937/959)
+// Backend: app/presentation/schemas/auth_contact.py · app/presentation/api/v2/auth_contact.py
+// ---------------------------------------------------------------------------
+
+/** Campo de contacto que se cambia o se agrega. Backend: `ContactField`. */
+export type ContactFieldV2 = "email" | "phone";
+
+/**
+ * Canal por el que salió un código. `phone` va por WhatsApp. Backend: el
+ * `method` de `_get_current_contact` / `_send_otp`.
+ */
+export type ContactCodeChannelV2 = "email" | "phone";
+
+/**
+ * Paso 1 · POST /api/v2/auth/contact/init. Manda un código al canal de IDENTIDAD:
+ * el valor real del mismo campo o, si no lo hay (correo `@employee.local`, sin
+ * teléfono verificado), el otro canal real de la cuenta. Sin ningún canal real
+ * responde 400. Agregar también pide los dos códigos: saltarse la identidad
+ * dejaría a un token robado cambiar el correo y resetear la contraseña.
+ *
+ * Backend: `ContactUpdateInitRequest`.
+ */
+export interface ContactInitV2Request {
+  field: ContactFieldV2;
+  /**
+   * Correo nuevo: se guarda en minúsculas; un buzón temporal o reservado da 400.
+   * Teléfono nuevo: 10 dígitos MX (espacios, `-` y `()` se ignoran); se guarda en
+   * E.164. Si ya es de otra cuenta, 409.
+   */
+  newValue: string;
+  /** Sólo administradores: cambia el contacto de otro usuario sin OTP. Si no eres admin, 403. */
+  targetUserUuid?: string;
+}
+
+/**
+ * Respuesta 200 de init y de confirm-identity, dentro del envelope `{status, data}`.
+ * Backend: `auth_contact.py :: contact_init` / `contact_confirm_identity`.
+ */
+export interface ContactCodeSentV2Response {
+  /** Texto del BE, en español. La app muestra el suyo traducido. */
+  message: string;
+  /**
+   * init: el canal de identidad, que puede ser el OTRO campo (cambiar el correo
+   * por WhatsApp). confirm-identity: el canal del valor nuevo.
+   */
+  contactMethod: ContactCodeChannelV2;
+}
+
+/**
+ * Paso 2 · POST /api/v2/auth/contact/confirm-identity. Verifica el código de
+ * identidad y manda otro al valor nuevo. Backend: `ContactUpdateConfirmIdentityRequest`.
+ */
+export interface ContactConfirmIdentityV2Request {
+  /** 6 dígitos. */
+  otpCode: string;
+  /**
+   * El mismo `newValue` que se mandó a init. Si otro init lo reemplazó, o el canal
+   * de identidad cambió entre medias, 409: hay que empezar de nuevo.
+   */
+  newValue: string;
+}
+
+/** Paso 3 · POST /api/v2/auth/contact/confirm-new. Backend: `ContactUpdateConfirmNewRequest`. */
+export interface ContactConfirmNewV2Request {
+  /** 6 dígitos: el código que llegó al valor nuevo. */
+  otpCode: string;
+}
+
+/**
+ * Respuesta 200 de confirm-new (envelope). El cambio ya está aplicado y verificado:
+ * un teléfono nuevo sirve para entrar y para recuperar la contraseña. También la da
+ * init con `targetUserUuid` de admin, que aplica sin OTP.
+ */
+export interface ContactUpdatedV2Response {
+  message: string;
+  updatedField: ContactFieldV2;
+}
+
+/*
+ * Errores del flujo de contacto: HTTPException con un `detail` en español, sin código.
+ * Hay que decidir por el estado HTTP:
+ * - 400: valor inválido o reservado; sin canal de identidad (init); no hay cambio
+ *   pendiente; código incorrecto o expirado (confirm-*).
+ * - 403: `targetUserUuid` sin ser admin.
+ * - 409: el valor ya es de otro usuario (init y confirm-*); en confirm-identity,
+ *   además, el pendiente o el canal de identidad cambió → empezar de nuevo.
+ * - 429: espera de 60 s entre códigos, límite por hora o demasiados intentos.
+ * - 500: no se pudo enviar el código.
+ */

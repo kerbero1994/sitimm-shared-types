@@ -96,6 +96,12 @@ export const V2_ENDPOINTS = {
   AUTH_SOCIAL_GUEST: "/auth/social/guest",
   /** GET → Response FLAT SocialAccountListResponse. Auth required. V2 (antes V1). POST → Body: SocialLinkV2Request (liga con sesión + reauth, SITIMM-955), misma respuesta. DELETE en `${AUTH_SOCIAL_ACCOUNTS}/{provider}`. */
   AUTH_SOCIAL_ACCOUNTS: "/auth/social/accounts",
+  /** POST → Body: ContactInitV2Request. Returns V2Response<ContactCodeSentV2Response>. Código al canal de identidad (el mismo campo o el otro canal real). Errores por estado HTTP, sin código. Auth required. SITIMM-937/959. */
+  AUTH_CONTACT_INIT: "/auth/contact/init",
+  /** POST → Body: ContactConfirmIdentityV2Request. Returns V2Response<ContactCodeSentV2Response>. Verifica la identidad y manda código al valor nuevo; 409 = empezar de nuevo. Auth required. */
+  AUTH_CONTACT_CONFIRM_IDENTITY: "/auth/contact/confirm-identity",
+  /** POST → Body: ContactConfirmNewV2Request. Returns V2Response<ContactUpdatedV2Response>. Aplica el cambio ya verificado. Auth required. */
+  AUTH_CONTACT_CONFIRM_NEW: "/auth/contact/confirm-new",
 
   // ── Events ───────────────────────────────────────────────
 
