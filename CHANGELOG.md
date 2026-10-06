@@ -5,6 +5,23 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.15.0] - 2026-10-05
+
+`VerifyResetV2Request.rfcLast4?` — segundo factor del reset por teléfono. **SITIMM-971**
+(mini-back, rama `SITIMM-971-reset-rfc-second-factor`).
+
+Un número verificado es credencial de reset (SITIMM-936) y la marca no vence: quien recibe un
+número reciclado por la operadora podía restablecer la cuenta del dueño anterior. En un reset
+por teléfono de una cuenta con RFC, el BE pide los últimos 4 caracteres del RFC; si faltan o no
+coinciden responde igual que un código incorrecto y gasta un intento.
+
+- `VerifyResetV2Request.rfcLast4?: string` — exactamente 4 alfanuméricos, sin distinguir
+  mayúsculas. Omitirlo si el usuario no lo escribe (`""` da 422).
+- El BE lo exige sólo con su interruptor `RESET_RFC_FACTOR_ENFORCED` encendido; los clientes
+  pueden mandarlo desde ya.
+
+Minor: campo opcional nuevo; sin cambio de tipos existentes.
+
 ## [2.13.1] - 2026-10-03
 
 JSDoc de `mobilePhone`: llega en E.164 desde SITIMM-933. **SITIMM-941**
