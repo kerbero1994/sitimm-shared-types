@@ -5,7 +5,7 @@ import { V2_ENDPOINTS } from "../src/endpoints";
 /**
  * Paths relativos (sin /api/v2) — los consumidores agregan el prefijo vía su
  * base URL / smart routing. Congelados contra los routers reales de mini-back
- * (auth_legacy.py, auth_setup.py, social_auth.py, auth_reset_v2.py).
+ * (auth_legacy.py, auth_setup.py, social_auth.py, auth_reset_v2.py, auth_contact.py).
  */
 describe("V2_ENDPOINTS auth (contrato post-cutover 9e3a4255)", () => {
   it.each([
@@ -21,6 +21,9 @@ describe("V2_ENDPOINTS auth (contrato post-cutover 9e3a4255)", () => {
     ["AUTH_SOCIAL_LOGIN", "/auth/social"],
     ["AUTH_SOCIAL_GUEST", "/auth/social/guest"],
     ["AUTH_SOCIAL_ACCOUNTS", "/auth/social/accounts"],
+    ["AUTH_CONTACT_INIT", "/auth/contact/init"],
+    ["AUTH_CONTACT_CONFIRM_IDENTITY", "/auth/contact/confirm-identity"],
+    ["AUTH_CONTACT_CONFIRM_NEW", "/auth/contact/confirm-new"],
   ] as const)("%s = %s", (key, path) => {
     expect(V2_ENDPOINTS[key]).toBe(path);
   });
