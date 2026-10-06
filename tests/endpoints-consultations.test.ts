@@ -29,6 +29,8 @@ describe("rutas V2 estables (contrato con consumidores)", () => {
   it.each([
     ["USERS_ME", "/users/me"],
     ["CONSULTATIONS", "/consultations"],
+    ["CONSULTATIONS_TYPES", "/consultations/types"],
+    ["CONSULTATIONS_GUEST", "/consultations/guest"],
   ] as const)("%s = %s", (key, path) => {
     expect(V2_ENDPOINTS[key]).toBe(path);
   });

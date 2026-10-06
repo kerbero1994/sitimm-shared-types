@@ -8,6 +8,8 @@
  * - CoAdvisorInfoV2        -> consultation_v2.py :: CoAdvisorInfoV2
  * - GuestInfoV2            -> consultation_v2.py :: GuestInfoV2
  * - ConsultationTypeV2     -> consultation_v2.py :: ConsultationTypeV2Response
+ * - GuestConsultationV2Request  -> consultation_v2.py :: GuestConsultationV2Request
+ * - GuestConsultationV2Response -> consultation_v2.py :: GuestConsultationV2Response
  * - ReportV2Response       -> consultation_report_v2.py :: ReportV2Response
  *
  * States: 1=Pending, 2=Resolving, 3=Closed, 4=CloseProposed, 5=Reopened, 6=Escalated
@@ -153,6 +155,12 @@ export const CONSULTATION_LIMITS = {
   GUEST_MAX_ACTIVE: 2,
   /** Max consultations a guest can create per day. */
   GUEST_MAX_DAILY: 3,
+  /** Visitor (no account, POST /consultations/guest) creates per client IP per 24 h. Backend: VISITOR_MAX_DAILY_PER_IP = 5. */
+  VISITOR_MAX_DAILY_PER_IP: 5,
+  /** Visitor creates per e-mail, and per phone, per 24 h. Backend: VISITOR_MAX_DAILY_PER_CONTACT = 2. */
+  VISITOR_MAX_DAILY_PER_CONTACT: 2,
+  /** Open visitor consultations per e-mail or phone. Backend: VISITOR_MAX_OPEN_PER_CONTACT = 3. */
+  VISITOR_MAX_OPEN_PER_CONTACT: 3,
 } as const;
 
 /**
@@ -432,6 +440,80 @@ export interface CreateConsultationV2Request {
   company_uuid?: string;
   /** Marks the consultation as high priority. Backend accepts but does not require. */
   high_priority?: boolean;
+}
+
+// -- Create as a visitor (no account) --
+
+/**
+ * Request body for POST /api/v2/consultations/guest — a visitor WITHOUT an account
+ * (SITIMM-944). Public: no session needed, and one sent is ignored — the consultation is
+ * always anonymous. Same keys as {@link CreateConsultationV2Request}, all required.
+ * Backend: consultation_v2.py :: GuestConsultationV2Request
+ *
+ * Strings are trimmed server-side. A body that fails validation is FastAPI's standard
+ * 422 `{ detail: [{ loc: ["body", field], msg, ... }] }`; the coded refusals are
+ * {@link GuestConsultationErrorV2}.
+ */
+export interface GuestConsultationV2Request {
+  /** UUID from GET /consultations/types (public). */
+  type_uuid: string;
+  /** UUID from the public company picker GET /auth/companies?search= (2+ chars). */
+  company_uuid: string;
+  /** 1–10,000 chars (CONSULTATION_LIMITS.DESCRIPTION_MAX). */
+  description: string;
+  /** 1–100 chars (FIELD_LIMITS.NAME_MAX). */
+  guest_name: string;
+  /** A real mailbox: reserved or app-minted domains (example.com, *.local, …) are 422. Stored lowercase. */
+  guest_email: string;
+  /**
+   * 10-digit MX (PHONE_MX_PATTERN after cleanDigits, also with 52 or 521 in front) or
+   * international with a leading "+" (8–15 digits). Stored as E.164 (+524421234567).
+   */
+  guest_phone: string;
+}
+
+/**
+ * `data` of the 201 from POST /consultations/guest.
+ * Backend: consultation_v2.py :: GuestConsultationV2Response
+ *
+ * Nothing else comes back: no tokens, no hint whether the contact has an account. The
+ * visitor cannot open the consultation (no session) — show `message`; an advisor calls
+ * or writes to the contact they left.
+ */
+export interface GuestConsultationV2Response {
+  /** UUID of the created consultation. */
+  uuid: string;
+  /** Confirmation to show the visitor (Spanish). */
+  message: string;
+}
+
+/**
+ * `code` of a POST /consultations/guest refusal. A refusal spends no daily slot.
+ * - `invalid_type` (422) — type_uuid matches no type: reload GET /consultations/types.
+ * - `invalid_company` (422) — company_uuid matches no live company: reopen the picker.
+ * - `visitor_limit_open` (429) — this e-mail or phone already has 3 open visitor
+ *   consultations. `retryAfter` (86400) is a hint, not a countdown: the cap lifts when an
+ *   advisor closes one.
+ * - `visitor_limit_ip` (429) — 5 creates in 24 h from this network.
+ * - `visitor_limit_contact` (429) — 2 creates in 24 h with this e-mail, or with this phone.
+ */
+export type GuestConsultationErrorCode =
+  | "invalid_type"
+  | "invalid_company"
+  | "visitor_limit_open"
+  | "visitor_limit_ip"
+  | "visitor_limit_contact";
+
+/**
+ * Body of a coded POST /consultations/guest refusal — flat, NOT inside `detail`.
+ * A 429 adds `retryAfter` (seconds), also sent as the `Retry-After` header.
+ */
+export interface GuestConsultationErrorV2 {
+  code: GuestConsultationErrorCode;
+  /** Spanish, ready to show. */
+  message: string;
+  /** Seconds to wait. 429 only. */
+  retryAfter?: number;
 }
 
 // -- Update (take / solve / rate) --
