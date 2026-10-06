@@ -492,6 +492,17 @@ export interface VerifyResetV2Request {
   contact: string;
   /** 6-digit OTP code. */
   code: string;
+  /**
+   * Last 4 characters of the account's RFC (exactly 4 letters/digits,
+   * case-insensitive). SITIMM-971 — second factor against carrier-recycled
+   * numbers: on a PHONE reset of an account that has an RFC the backend
+   * requires it (when its `RESET_RFC_FACTOR_ENFORCED` switch is on); a
+   * missing or wrong value answers exactly like a wrong code (400
+   * "Codigo incorrecto.") and spends one attempt. Ignored on email resets
+   * and on accounts without an RFC. Ask for it whenever the contact is a
+   * phone, and OMIT the field when the user leaves it empty — `""` is a 422.
+   */
+  rfcLast4?: string;
 }
 
 /**
