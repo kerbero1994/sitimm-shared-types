@@ -440,6 +440,11 @@ export interface GalleryV2 {
    * absent on older deployments.
    */
   isTest?: boolean;
+  /**
+   * @deprecated Usa `isTest`. Mismo valor; el BE lo envía desde SITIMM-310 y el
+   * dashboard aún lo lee. Se retira cuando nadie lo lea (SITIMM-1039).
+   */
+  is_test?: boolean;
   items: GalleryItemV2[];
   /** Number of items the caller may see, independent of whether `items` was
    * serialized (SITIMM-468). `GET /api/v2/galleries` (the paginated list)
