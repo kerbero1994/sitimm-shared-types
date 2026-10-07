@@ -5,6 +5,16 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.19.1] - 2026-10-07
+
+Galerías: `is_test` queda tipado, como deprecado. **SITIMM-1039** (mini-back, rama
+`SITIMM-1039-docs-galerias`).
+
+- `GalleryV2.is_test?`: `@deprecated Usa isTest`. Mismo valor que `isTest`; el BE lo envía
+  desde SITIMM-310 y el dashboard aún lo lee. Se retira cuando nadie lo lea.
+
+Patch: tipa un campo que el wire ya llevaba; no cambia el contrato.
+
 ## [2.19.0] - 2026-10-07
 
 Consultas: el cierre directo tiene su propio `trigger_type`. **SITIMM-1033** (mini-back, rama
