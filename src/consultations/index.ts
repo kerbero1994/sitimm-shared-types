@@ -1189,8 +1189,12 @@ export interface AdvisorMyStatsV2Response {
 
 // -- Transitions (Audit Log) --
 
-/** How the transition was triggered. */
-export type TransitionTriggerType = "user" | "system" | "celery";
+/**
+ * How the transition was triggered.
+ * `"solve"`: the advisor's or the admin's direct close (SITIMM-1033).
+ * The rest of the union does not match the slugs the backend writes (SITIMM-1044).
+ */
+export type TransitionTriggerType = "user" | "system" | "celery" | "solve";
 
 /**
  * Single state transition entry from the audit log.

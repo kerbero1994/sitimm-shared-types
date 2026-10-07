@@ -5,6 +5,17 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.19.0] - 2026-10-07
+
+Consultas: el cierre directo tiene su propio `trigger_type`. **SITIMM-1033** (mini-back, rama
+`SITIMM-1033-trigger-solve`).
+
+- `TransitionTriggerType` suma `"solve"`: `ConsultationService.solve` (el cierre directo del
+  asesor o del admin) graba su transición así. Antes escribía `"confirm_close"`, el valor del
+  empleado que confirma. Las filas anteriores no se reescriben.
+- El resto de la unión (`"user" | "system" | "celery"`) no coincide con lo que escribe el
+  backend; se corrige en SITIMM-1044.
+
 ## [2.18.0] - 2026-10-07
 
 Galerías en el modelo de semillas QA del PO. **SITIMM-1030** (mini-back, rama
