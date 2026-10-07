@@ -5,6 +5,19 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.18.0] - 2026-10-07
+
+Galerías en el modelo de semillas QA del PO. **SITIMM-1030** (mini-back, rama
+`SITIMM-1030-galerias-qa`; la app las oculta tras su interruptor de QA).
+
+- `GalleryV2.isTest?`: la galería es de prueba. Una `[QA] …` es semilla: siempre
+  `restricted`, y a los miembros de su audiencia les llega como cualquier otra.
+  Mismo valor que el `is_test` que el BE ya enviaba.
+- `GalleryV2ListResponse.testCount?`: cuántas de `total` son de prueba, para
+  restarlas cuando el interruptor las oculta (como `BonusV2ListResponse.testCount`).
+
+Minor: dos campos opcionales; faltan en despliegues anteriores a SITIMM-1030.
+
 ## [2.17.0] - 2026-10-06
 
 Consulta de visitante sin sesión. **SITIMM-944** (mini-back, rama

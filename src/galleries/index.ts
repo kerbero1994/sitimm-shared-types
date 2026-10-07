@@ -432,6 +432,14 @@ export interface GalleryV2 {
    * album (server-default) until an ADMIN_COMMUNICATION+ caller opts it
    * in. See the module-level "Phase B" semantics note above. */
   allowsContributions: boolean;
+  /**
+   * QA fixture. A gallery named `[QA] …` is a seed: marked on write, always
+   * `restricted`, and served to its audience like any other gallery — hide it
+   * behind the QA switch. Any other fixture never reaches a member. Sent since
+   * mini-back Galleries SITIMM-1030 (next to the older `is_test`, same value);
+   * absent on older deployments.
+   */
+  isTest?: boolean;
   items: GalleryItemV2[];
   /** Number of items the caller may see, independent of whether `items` was
    * serialized (SITIMM-468). `GET /api/v2/galleries` (the paginated list)
@@ -469,6 +477,13 @@ export interface GalleryV2 {
 export interface GalleryV2ListResponse {
   galleries: GalleryV2[];
   total: number;
+  /**
+   * How many of `total` are fixtures (`isTest`), over the same filter —
+   * subtract it from `total` when the QA switch hides them. Same contract as
+   * the bonuses list (SITIMM-850). Sent since SITIMM-1030; absent on older
+   * deployments.
+   */
+  testCount?: number;
   page: number;
   page_size: number;
   /** Always populated by the authed list endpoint (mirrors the public
