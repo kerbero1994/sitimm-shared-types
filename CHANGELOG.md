@@ -5,6 +5,24 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.17.0] - 2026-10-06
+
+Consulta de visitante sin sesión. **SITIMM-944** (mini-back, rama
+`SITIMM-944-consulta-visitante`; para la app en el carril Login V2, Epic SITIMM-949).
+
+- `GuestConsultationV2Request`: las llaves de `CreateConsultationV2Request`, aquí todas
+  obligatorias (`type_uuid`, `company_uuid`, `description`, `guest_name`, `guest_email`,
+  `guest_phone`).
+- `GuestConsultationV2Response` (`uuid`, `message`), `GuestConsultationErrorCode` y
+  `GuestConsultationErrorV2`: los rechazos con código llegan planos (`code`, `message` y, en un
+  429, `retryAfter`), no dentro de `detail`.
+- `V2_ENDPOINTS.CONSULTATIONS_GUEST` (público; una sesión se ignora).
+  `CONSULTATIONS_TYPES` es público y su JSDoc ya dice lo que devuelve: `{ types, total }`.
+- `CONSULTATION_LIMITS.VISITOR_MAX_DAILY_PER_IP` (5), `VISITOR_MAX_DAILY_PER_CONTACT` (2) y
+  `VISITOR_MAX_OPEN_PER_CONTACT` (3).
+
+Minor: tipos, constantes y una ruta nuevos; nada cambia de forma.
+
 ## [2.16.0] - 2026-10-05
 
 Contratos del cambio de correo o teléfono con OTP. **SITIMM-953** (para la app

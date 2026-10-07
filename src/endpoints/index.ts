@@ -254,7 +254,9 @@ export const V2_ENDPOINTS = {
   CONSULTATIONS: "/consultations",
   /** POST → Body: CreateConsultationV2Request. Returns V2Response<ConsultationV2>. Status 201. Auth required. */
   CONSULTATIONS_CREATE: "/consultations/create",
-  /** GET → ConsultationTypeV2[]. List consultation type catalog. Auth required. */
+  /** POST → Body: GuestConsultationV2Request. Returns V2Response<GuestConsultationV2Response>. Status 201. PUBLIC — a visitor without an account; a session, if sent, is ignored. Refusals: GuestConsultationErrorV2 (422 invalid_type | invalid_company, 429 visitor_limit_*). SITIMM-944. */
+  CONSULTATIONS_GUEST: "/consultations/guest",
+  /** GET → V2Response<{ types: ConsultationTypeV2[]; total: number }>. The whole type catalog. PUBLIC since SITIMM-944 (the visitor form needs it without a session). */
   CONSULTATIONS_TYPES: "/consultations/types",
   /** GET → V2Response<ConsultationV2>. Single consultation detail. Auth required. */
   CONSULTATION: "/consultations/{uuid}",
