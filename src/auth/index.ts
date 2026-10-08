@@ -281,6 +281,15 @@ export interface SocialLoginRequest {
   provider: SocialProvider;
   /** ID token from the provider (Google/Apple). Min 10 chars. */
   id_token: string;
+  /**
+   * Apple only (SITIMM-1055): Apple gives the name to the app on the first sign-in only, never in
+   * the ID token. Send it from the credential when present. Trimmed; max
+   * `FIELD_LIMITS.NAME_MAX` (100) or 422. Names a new account only; ignored for Google, when the
+   * token has a name, for an existing account, and on `POST /social/accounts`.
+   */
+  givenName?: string | null;
+  /** Apple only (SITIMM-1055): same rules as `givenName`. */
+  familyName?: string | null;
 }
 
 /**
