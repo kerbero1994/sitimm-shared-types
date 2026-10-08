@@ -5,6 +5,19 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.20.0] - 2026-10-07
+
+Auth social: el request lleva el nombre que Apple da sólo la primera vez. **SITIMM-1055**
+(mini-back, rama `SITIMM-1055-apple-aud-ios`).
+
+- `SocialLoginRequest.givenName?` / `familyName?`: opcionales, sólo para `provider: "apple"`.
+  Apple da el nombre a la app en el primer inicio de sesión y nunca en el ID token. Recortados,
+  ≤ `FIELD_LIMITS.NAME_MAX` (100) o 422. Sólo nombran la cuenta nueva: nunca enlazan ni
+  identifican. Con Google, o si el token ya trae nombre, se ignoran.
+- `SocialLinkV2Request` los hereda; `POST /social/accounts` los ignora.
+
+Minor: dos campos opcionales nuevos; nada existente cambia.
+
 ## [2.19.1] - 2026-10-07
 
 Galerías: `is_test` queda tipado, como deprecado. **SITIMM-1039** (mini-back, rama

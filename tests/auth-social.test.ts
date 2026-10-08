@@ -1,6 +1,20 @@
 import { describe, expect, it } from "vitest";
 
-import type { SocialLoginResponse } from "../src/auth";
+import type { SocialLoginRequest, SocialLoginResponse } from "../src/auth";
+
+describe("SocialLoginRequest (SITIMM-1055)", () => {
+  it("lleva el nombre que Apple da sólo en el primer inicio de sesión", () => {
+    const req: SocialLoginRequest = {
+      provider: "apple",
+      id_token: "eyJhbGciOi.apple",
+      givenName: "María José",
+      familyName: "López Pérez",
+    };
+    const google: SocialLoginRequest = { provider: "google", id_token: "eyJhbGciOi.google" };
+    expect(req.givenName).toBe("María José");
+    expect(google.familyName).toBeUndefined();
+  });
+});
 
 /**
  * social/verify respondió su último 200 el 2026-06-22 (login redesign PR
