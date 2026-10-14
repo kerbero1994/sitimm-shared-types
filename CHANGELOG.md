@@ -5,6 +5,13 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.23.0] - 2026-10-14
+
+Puerta de staff del dashboard ya servida por mini-back (#697, **SITIMM-1274**). Hijo de SITIMM-1277.
+
+- `StaffOnlyErrorBody`: `{detail, code: "staff_only"}`, con `code` en la raíz y fuera del envelope. Es el mismo cuerpo en `/users/login`, `/users/login-phone`, `/auth/social`, `/auth/social/guest` y `/auth/setup/verify`. El JSDoc de `STAFF_ONLY_ERROR_CODE` ya lo nombra; antes decía que el campo estaba por fijarse.
+- `SetupV2ErrorCode` suma `"staff_only"`: `/auth/setup/verify` lo responde solo con `X-Sitimm-Client: dashboard` y una cuenta que no es staff. La web y la app no lo reciben, pero un `switch` exhaustivo ahora tiene que cubrirlo; por eso es minor.
+
 ## [2.22.0] - 2026-10-14
 
 Códigos estables del setup de primer login. **SITIMM-1277** parte 2 (hijo de SITIMM-949), para
