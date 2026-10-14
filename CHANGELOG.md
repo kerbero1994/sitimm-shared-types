@@ -32,8 +32,8 @@ Contrato nuevo, aún sin servir en mini-back (`@since 2.21.0`):
 - `nonce?` en `SocialLoginRequest` y `ReauthSocialV2Request` (SITIMM-1275): el valor crudo; Google
   lo compara tal cual y Apple con su sha256 hex. Hasta el despliegue el BE lo ignora.
 - `SITIMM_CLIENT_HEADER` (`"X-Sitimm-Client"`) y `SitimmClient` (`"web" | "app" | "dashboard"`;
-  sin cabecera, `app`) (SITIMM-1273). No mandarla antes de que SITIMM-1273 esté en prod: el
-  preflight CORS fallaría.
+  sin cabecera o con otro valor, `app`, según la Task BE-3 del plan) (SITIMM-1273). No mandarla
+  antes de que SITIMM-1273 esté en prod: el preflight CORS fallaría.
 - `STAFF_ONLY_ERROR_CODE` (`"staff_only"`, 403) (SITIMM-1274).
 - `STAFF_USER_TYPE_IDS` e `isStaffUserType()`: HR y arriba (8 roles), el `union_staff` del BE. No
   son `_STAFF_TYPES` (ADVISOR y arriba, decide el enlace de invitación) ni el `_is_staff` de

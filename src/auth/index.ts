@@ -301,8 +301,11 @@ export interface SocialLoginRequest {
    * - Apple: el BE compara el sha256 en hex de este valor con el claim (a Apple JS se le pasa
    *   el sha256 hex; aquí va el crudo).
    * Sin `nonce` el BE se comporta como hoy: los builds de la app que no lo mandan siguen igual.
-   * `SocialLinkV2Request` lo hereda; la spec sólo lo pide en `/auth/social` y en el reauth
-   * social (`ReauthSocialV2Request.nonce`).
+   * La spec lo pide en `/auth/social` y en el reauth social (`ReauthSocialV2Request.nonce`).
+   * `SocialLinkV2Request` lo hereda igual que, en el BE, `SocialLinkRequest` hereda de
+   * `SocialLoginRequest` (schemas/social_auth.py:22), y la spec cuenta con él para ligar Apple
+   * desde la web (ORCHESTRATION-login.md:300). Si `POST /social/accounts` lo verifica lo fija
+   * el PR de SITIMM-1275.
    */
   nonce?: string;
 }
@@ -1023,8 +1026,8 @@ export const SITIMM_CLIENT_HEADER = "X-Sitimm-Client";
 
 /**
  * @since 2.21.0 — SITIMM-1273. Valores de `SITIMM_CLIENT_HEADER`. Sin la cabecera, o con un
- * valor que no sea uno de estos, el BE asume `"app"`: los builds de la app que no la mandan
- * siguen igual.
+ * valor que no sea uno de estos, el BE asume `"app"` (ORCHESTRATION-login-plan.md, Task
+ * BE-3: «ausente o inválida = app»): los builds de la app que no la mandan siguen igual.
  */
 export type SitimmClient = "web" | "app" | "dashboard";
 
