@@ -290,6 +290,8 @@ export interface SetupVerifyV2Response {
  *   - 404 `user_not_found` · 400 `otp_expired` · 400 `otp_invalid`.
  *   - 429 `otp_max_attempts` (+ `retryAfter`).
  *   - 409 `phone_already_registered`.
+ *   - 403 `staff_only` (@since 2.23.0): solo con `X-Sitimm-Client: dashboard` y una cuenta
+ *     que no es staff, antes de gastar el código. La web y la app nunca lo reciben.
  * @since 2.22.0
  */
 export type SetupV2ErrorCode =
@@ -313,7 +315,8 @@ export type SetupV2ErrorCode =
   | "otp_expired"
   | "otp_invalid"
   | "otp_max_attempts"
-  | "phone_already_registered";
+  | "phone_already_registered"
+  | "staff_only";
 
 /**
  * `detail` del 400 de complejidad de contraseña (setup, claim, guest, reset). Textos en inglés.
@@ -1117,7 +1120,18 @@ export type SitimmClient = "web" | "app" | "dashboard";
  * `requires_setup`) y /auth/setup/verify, y no crea sesiones de alta (`needs_verification`,
  * /auth/social/guest). Sin la cabecera, o con `web`/`app`, nada cambia. Es defensa en
  * profundidad: la protección real sigue siendo `require_permission`.
- * En qué campo del cuerpo llega lo fija el PR del BE de SITIMM-1274, sin mergear al publicar
- * 2.21.0; lo pactado es el estado 403 con este código.
+ * Cuerpo (mini-back #697, en prod desde 2.23.0): {@link StaffOnlyErrorBody}, `code` en la
+ * RAÍZ y fuera del envelope `{status, data}`.
  */
 export const STAFF_ONLY_ERROR_CODE = "staff_only";
+
+/**
+ * @since 2.23.0 — Cuerpo del 403 de la puerta de staff (SITIMM-1274, mini-back #697). Llega
+ * igual en todas las rutas de la puerta, incluido /auth/setup/verify.
+ * Backend: dependencies/client.py :: ensure_staff_on_dashboard.
+ */
+export interface StaffOnlyErrorBody {
+  /** Frase para la persona: «Esta cuenta no tiene acceso al panel. Entra desde la app o desde sitimm.org.» */
+  detail: string;
+  code: typeof STAFF_ONLY_ERROR_CODE;
+}
