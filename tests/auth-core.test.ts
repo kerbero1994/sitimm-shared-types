@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { TOKEN_TTL } from "../src/auth";
+import { SITIMM_CLIENT_HEADER, STAFF_ONLY_ERROR_CODE, TOKEN_TTL } from "../src/auth";
 import type {
   LoginV2Request,
   LoginV2Response,
@@ -26,6 +26,14 @@ describe("TOKEN_TTL (contrato out-of-band con mini-back)", () => {
   });
   it("refresh token dura 7 días", () => {
     expect(TOKEN_TTL.REFRESH_DAYS).toBe(7);
+  });
+});
+
+/** La cabecera y el código los compara el BE literalmente (SITIMM-1273/1274). */
+describe("cliente y puerta de staff (2.21.0)", () => {
+  it("cabecera X-Sitimm-Client y código staff_only", () => {
+    expect(SITIMM_CLIENT_HEADER).toBe("X-Sitimm-Client");
+    expect(STAFF_ONLY_ERROR_CODE).toBe("staff_only");
   });
 });
 

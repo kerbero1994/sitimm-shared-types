@@ -4,9 +4,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEPRECATED_SUPER_ADMIN_ID,
+  STAFF_USER_TYPE_IDS,
   USER_TYPE_HIERARCHY,
+  USER_TYPE_ORDER,
   UserType,
   hasAtLeast,
+  isStaffUserType,
   resolveUserType,
 } from "../src/users";
 
@@ -79,6 +82,28 @@ describe("resolveUserType (backward compat)", () => {
     expect(resolveUserType(99999)).toBeUndefined();
     expect(resolveUserType(null)).toBeUndefined();
     expect(resolveUserType(undefined)).toBeUndefined();
+  });
+});
+
+/**
+ * Puerta de staff del BE (SITIMM-1274) y allowlist del dashboard (SITIMM-1281):
+ * mini-back users_admin_v2.py `_USER_TYPE_GROUPS["union_staff"]` = has_at_least(HR).
+ */
+describe("STAFF_USER_TYPE_IDS / isStaffUserType", () => {
+  it("son exactamente los 8 roles de HR para arriba", () => {
+    expect([...STAFF_USER_TYPE_IDS].sort()).toEqual(
+      [23648, 57341, 48235, 31847, 29563, 85672, 81493, 45298].sort()
+    );
+    for (const ut of USER_TYPE_ORDER) {
+      expect(isStaffUserType(ut)).toBe(hasAtLeast(ut, UserType.HR));
+    }
+  });
+
+  it("vacío, desconocido o no-staff → false; SUPER_ADMIN legacy → MANAGER", () => {
+    for (const v of [UserType.EMPLOYEE, UserType.INVITADO, 0, 99999, null, undefined]) {
+      expect(isStaffUserType(v)).toBe(false);
+    }
+    expect(isStaffUserType(DEPRECATED_SUPER_ADMIN_ID)).toBe(true);
   });
 });
 
