@@ -264,6 +264,81 @@ export interface SetupVerifyV2Response {
   };
 }
 
+/**
+ * Código estable de cada error de POST /api/v2/auth/setup y /setup/verify (SITIMM-1063). Va en
+ * la RAÍZ del cuerpo, junto a `detail`: decide por `code`. `detail` y el status son los de
+ * siempre (los builds de tienda de la app los leen). No traen `code`: el 422 de validación de
+ * FastAPI (`detail` es una lista) ni el 500 genérico.
+ * Backend: dependencies/auth.py :: CodedError · docs/v2/Auth/errors.md#setup-codes.
+ *
+ * - Ambas rutas (dependencia del token y Redis):
+ *   - 401 `setup_token_invalid` (sin header, header malo, token sin uuid); 403 si el token no
+ *     es de setup.
+ *   - 401 `setup_token_expired`: pasaron los 15 min del token, o no es nuestro (S-07).
+ *   - 403 `setup_already_used`.
+ *   - 403 `invitation_used`: el link se usó o una re-invitación lo revocó.
+ *   - 503 `service_unavailable`: Redis caído (S-11).
+ * - /setup:
+ *   - 400 `weak_password` / `password_too_common` (`detail` = {@link PasswordComplexityErrorDetail}).
+ *   - 400 `temporary_email` · 400 `invalid_email` · 409 `email_already_registered`.
+ *   - 422 `invalid_phone`: no es móvil mexicano (antes era 400).
+ *   - 429 `otp_cooldown` / `otp_hourly_limit` (+ `retryAfter`).
+ *   - 502 `delivery_failed`: el código no salió.
+ * - /setup/verify:
+ *   - 403 `setup_password_changed`: la contraseña ya no es la del token (S-10).
+ *   - 400 `session_expired`: no hay setup pendiente (caducó, o lo borró el 5.º código malo).
+ *   - 404 `user_not_found` · 400 `otp_expired` · 400 `otp_invalid`.
+ *   - 429 `otp_max_attempts` (+ `retryAfter`).
+ *   - 409 `phone_already_registered`.
+ * @since 2.22.0
+ */
+export type SetupV2ErrorCode =
+  | "setup_token_invalid"
+  | "setup_token_expired"
+  | "setup_already_used"
+  | "invitation_used"
+  | "setup_password_changed"
+  | "service_unavailable"
+  | "weak_password"
+  | "password_too_common"
+  | "temporary_email"
+  | "invalid_email"
+  | "email_already_registered"
+  | "invalid_phone"
+  | "otp_cooldown"
+  | "otp_hourly_limit"
+  | "delivery_failed"
+  | "session_expired"
+  | "user_not_found"
+  | "otp_expired"
+  | "otp_invalid"
+  | "otp_max_attempts"
+  | "phone_already_registered";
+
+/**
+ * `detail` del 400 de complejidad de contraseña (setup, claim, guest, reset). Textos en inglés.
+ * Backend: dependencies/auth.py :: validate_password.
+ * @since 2.22.0
+ */
+export interface PasswordComplexityErrorDetail {
+  /** "Password does not meet complexity requirements". */
+  message: string;
+  /** Una línea por regla incumplida; «too common» marca `password_too_common`. */
+  requirements: string[];
+}
+
+/**
+ * Cuerpo de error de /auth/setup y /setup/verify. NO viene en el envelope `{status, data}`.
+ * @since 2.22.0
+ */
+export interface SetupV2ErrorBody {
+  /** El texto de siempre (español); el objeto de complejidad en `weak_password`/`password_too_common`. */
+  detail: string | PasswordComplexityErrorDetail;
+  code: SetupV2ErrorCode;
+  /** Segundos de espera, sólo en los 429 (igual que el header `Retry-After`). */
+  retryAfter?: number;
+}
+
 // -- Social Auth --
 
 /** OAuth provider. Backend: social_auth.py :: SocialLoginRequest.provider */
@@ -545,6 +620,8 @@ export interface VerifyResetV2Request {
 /**
  * Successful verify-reset response (unwrapped from `success_response()`).
  * The reset token is a JWT with `type="reset"` and 10-minute TTL.
+ * When the OTP store (Redis) is down: 503 `{detail}` with a Spanish sentence, no code
+ * (SITIMM-1270; it was the catch-all 500).
  */
 export interface VerifyResetV2Response {
   /** Short-lived JWT reset token (10-minute TTL, type="reset"). */
@@ -840,7 +917,8 @@ export interface SignupOtpVerifyV2Response {
  * El resto de rechazos trae en `data.message` un texto en español del servicio de OTP, no un
  * código; decide por estado: otp/request 429 (60 s entre códigos o tope por hora);
  * otp/verify 410 (código caducado), 429 (5 intentos agotados: pide otro código), 400 (código
- * incorrecto). Además, 5xx si Redis cae: hoy 500, SITIMM-1270 lo pasa a 503.
+ * incorrecto). Si Redis cae: 503 con `{detail}` (una frase, FUERA del envelope y sin código;
+ * SITIMM-1270).
  */
 export type SignupOtpV2ErrorCode =
   | "invalid_phone"

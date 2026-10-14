@@ -5,6 +5,20 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.22.0] - 2026-10-14
+
+Códigos estables del setup de primer login. **SITIMM-1277** parte 2 (hijo de SITIMM-949), para
+el contrato que sirve mini-back con **SITIMM-1063** + SITIMM-1270/1271.
+
+- `SetupV2ErrorCode`: 21 códigos de `/auth/setup` y `/setup/verify`, en la RAÍZ del cuerpo
+  (`{detail, code}`, + `retryAfter` en los 429). `detail` y el status no cambian; un solo status
+  se movió: `invalid_phone` (teléfono no mexicano) pasa de 400 a 422. Entrega fallida = 502
+  `delivery_failed`; Redis caído = 503 `service_unavailable`.
+- `SetupV2ErrorBody` y `PasswordComplexityErrorDetail` (`{message, requirements[]}`, el `detail`
+  del 400 de contraseña débil o común).
+- Docs: alta (`otp/request`, `otp/verify`) y `verify-reset` responden 503 `{detail}` con frase,
+  fuera del envelope y sin código, cuando Redis cae (SITIMM-1270; antes 500).
+
 ## [2.21.0] - 2026-10-14
 
 Login web + dashboard: los contratos que faltaban y los nuevos de la iniciativa. **SITIMM-1277**
