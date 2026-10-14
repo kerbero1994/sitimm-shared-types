@@ -290,6 +290,24 @@ export interface SocialLoginRequest {
   givenName?: string | null;
   /** Apple only (SITIMM-1055): same rules as `givenName`. */
   familyName?: string | null;
+  /**
+   * @since 2.21.0 — contrato de SITIMM-1275 (BE #7 de ORCHESTRATION-login §3), aún sin servir
+   * en mini-back al publicar 2.21.0. Hasta su despliegue el BE ignora el campo (Pydantic
+   * descarta claves desconocidas).
+   *
+   * Valor CRUDO del nonce que el cliente generó para este inicio de sesión. Si viene, el
+   * `id_token` debe traerlo en su claim `nonce`, o 401:
+   * - Google: el claim es este mismo valor crudo (es el que se le pasa a GIS).
+   * - Apple: el BE compara el sha256 en hex de este valor con el claim (a Apple JS se le pasa
+   *   el sha256 hex; aquí va el crudo).
+   * Sin `nonce` el BE se comporta como hoy: los builds de la app que no lo mandan siguen igual.
+   * La spec lo pide en `/auth/social` y en el reauth social (`ReauthSocialV2Request.nonce`).
+   * `SocialLinkV2Request` lo hereda igual que, en el BE, `SocialLinkRequest` hereda de
+   * `SocialLoginRequest` (schemas/social_auth.py:22), y la spec cuenta con él para ligar Apple
+   * desde la web (ORCHESTRATION-login.md:300). Si `POST /social/accounts` lo verifica lo fija
+   * el PR de SITIMM-1275.
+   */
+  nonce?: string;
 }
 
 /**
@@ -447,6 +465,16 @@ export interface SocialAccountInfo {
 export interface SocialAccountListResponse {
   /** Array of linked social accounts. */
   accounts: SocialAccountInfo[];
+  /**
+   * `true` si la cuenta tiene una contraseña propia que sirve para entrar (SITIMM-747). La
+   * temporal del padrón o de una invitación NO cuenta (SITIMM-984): sólo abre el setup. Es la
+   * misma señal con la que el BE niega desligar la última credencial: con `false`, ofrece
+   * «Crear contraseña». Siempre presente, también en la respuesta del POST (ligar).
+   * Backend: api/v2/social_auth.py :: list_social_accounts (474-497) y `_has_password`
+   * (101-105); schemas/social_auth.py :: SocialAccountListResponse.has_password
+   * (alias `hasPassword`).
+   */
+  hasPassword: boolean;
 }
 
 /**
@@ -731,3 +759,287 @@ export interface ContactUpdatedV2Response {
  * - 429: espera de 60 s entre códigos, límite por hora o demasiados intentos.
  * - 500: no se pudo enviar el código.
  */
+
+// ────────────────────────────────────────────────────────────────────
+// Alta sin cuenta: OTP → signup_token → employee/claim o invitado
+//
+// Backend: app/presentation/api/v2/auth_signup.py + schemas/auth_signup.py.
+//   POST /api/v2/auth/otp/request    → código al correo o por WhatsApp → session_id
+//   POST /api/v2/auth/otp/verify     → session_id + código → signup_token
+//   POST /api/v2/auth/employee/match → ya tipado (EmployeeMatchV2Request)
+//   POST /api/v2/auth/employee/claim → claim_token + aviso legal + contraseña → sesión
+//   POST /api/v2/auth/guest          → contraseña → sesión de INVITADO
+// Éxito: envelope `{status: "success", data}`. Los errores llegan de DOS formas según la
+// rama: `error_response` → `{status: "error", data: {message: <código>}}`, y HTTPException
+// → `{detail: <string u objeto>}` sin envelope. Un 429 trae `retryAfter` (segundos) en la
+// raíz y la cabecera `Retry-After`; el de slowapi (más de 30/min por IP en otp/*) llega
+// como `{error, retryAfter}`.
+// employee/match, employee/claim y guest piden `Authorization: Bearer <signup_token>`: el
+// de otp/verify, o el `session_id` de un `/auth/social` en `needs_verification` cuando el
+// proveedor dio correo. Ausente o caducado → 401 con `detail` en inglés.
+// ────────────────────────────────────────────────────────────────────
+
+/** Canal del código de alta. El de teléfono sale SÓLO por WhatsApp (sin SMS). Backend: `OtpRequestBody.channel`. */
+export type SignupOtpChannelV2 = "whatsapp" | "email";
+
+/**
+ * Body de POST /api/v2/auth/otp/request. Sin sesión.
+ * Backend: schemas/auth_signup.py :: OtpRequestBody (16-19) · api/v2/auth_signup.py ::
+ * otp_request (308-368).
+ */
+export interface SignupOtpV2Request {
+  channel: SignupOtpChannelV2;
+  /**
+   * 3–255 caracteres. Correo: se guarda en minúsculas. WhatsApp: celular MX de 10 dígitos
+   * (con o sin `52`/`521` delante) o E.164 con `+` de cualquier país; espacios, `-` y `()` se
+   * ignoran y se guarda en E.164. Si no se puede normalizar → 422 `invalid_phone`, antes de
+   * gastar la espera entre códigos.
+   */
+  target: string;
+}
+
+/** Respuesta 200 de otp/request (dentro del envelope `{status, data}`). */
+export interface SignupOtpV2Response {
+  /** Handle opaco de la sesión del código; NO es el signup_token. Va a otp/verify. */
+  session_id: string;
+  /** Canal por el que salió el código: el pedido (no hay respaldo por SMS). */
+  channel_used: SignupOtpChannelV2;
+  /** Segundos de vida de la sesión del código (BE: 300). */
+  expires_in: number;
+}
+
+/**
+ * Body de POST /api/v2/auth/otp/verify. Un código incorrecto no gasta la sesión: el límite
+ * es de 5 intentos por código.
+ * Backend: schemas/auth_signup.py :: OtpVerifyBody (22-24) · api/v2/auth_signup.py ::
+ * otp_verify (371-399).
+ */
+export interface SignupOtpVerifyV2Request {
+  /** El `session_id` de otp/request. */
+  session_id: string;
+  /** El código recibido: 6 dígitos (el BE acepta 4–8 caracteres). */
+  code: string;
+}
+
+/** Respuesta 200 de otp/verify (dentro del envelope `{status, data}`). */
+export interface SignupOtpVerifyV2Response {
+  /** Token opaco de alta (no es JWT). Bearer de employee/match, employee/claim y guest. */
+  signup_token: string;
+  /** El contacto verificado, normalizado (correo en minúsculas o E.164): el principal de la cuenta. */
+  verified_target: string;
+  channel: SignupOtpChannelV2;
+  /** Segundos de vida del signup_token (BE: 900). */
+  expires_in: number;
+}
+
+/**
+ * Códigos estables de otp/request y otp/verify, en `data.message`:
+ * - otp/request: 422 `invalid_phone` · 429 `rate_limited` (tope por IP, o tope diario global
+ *   de WhatsApp) · 502 `delivery_failed` (el código no salió; no se crea sesión).
+ * - otp/verify: 410 `session_expired` (la sesión del código no existe o caducó).
+ * El resto de rechazos trae en `data.message` un texto en español del servicio de OTP, no un
+ * código; decide por estado: otp/request 429 (60 s entre códigos o tope por hora);
+ * otp/verify 410 (código caducado), 429 (5 intentos agotados: pide otro código), 400 (código
+ * incorrecto). Además, 5xx si Redis cae: hoy 500, SITIMM-1270 lo pasa a 503.
+ */
+export type SignupOtpV2ErrorCode =
+  | "invalid_phone"
+  | "rate_limited"
+  | "delivery_failed"
+  | "session_expired";
+
+/**
+ * Body de POST /api/v2/auth/employee/claim. Bearer <signup_token>. Cierra el reclamo: la
+ * fila del padrón pasa a ser la cuenta de quien llama (toma su login de censo sin activar
+ * si lo tiene, SITIMM-933; si no, crea la cuenta EMPLOYEE), copia el padrón al perfil y, si
+ * la sesión vino de Google/Apple, liga ese proveedor.
+ * Backend: schemas/auth_signup.py :: EmployeeClaimBody (48-58) · api/v2/auth_signup.py ::
+ * employee_claim (540-617).
+ */
+export interface EmployeeClaimV2Request {
+  /** El `claim_token` de employee/match: 10 min, un solo uso, atado a este signup_token. */
+  claim_token: string;
+  /** DEBE ser `true` (400 `legal_not_accepted`). */
+  accept_legal: boolean;
+  /** Versión del texto legal mostrado (queda auditada). Omitida, el BE graba `"claim-2026-06"` (`LEGAL_CLAIM_VERSION`). */
+  legal_version?: string;
+  /**
+   * 8–128 caracteres (fuera de rango, 422). Además 1 mayúscula, 1 minúscula, 1 dígito y que
+   * no sea común; si no, 400 con `detail: {message, requirements[]}` (textos en inglés).
+   */
+  password: string;
+  /**
+   * Contacto SECUNDARIO sin verificar: el canal que NO se verificó con el código (≤ 255).
+   * Uno del mismo canal que el verificado se ignora: el principal es siempre `verified_target`.
+   */
+  email?: string | null;
+  /** Ídem `email`, para el teléfono (≤ 32). */
+  phone?: string | null;
+}
+
+/**
+ * Respuesta 200 de employee/claim (dentro del envelope `{status, data}`): sesión completa.
+ * snake_case tal cual: aquí es `refresh_token` (en `/auth/social` es `refreshToken`).
+ * Backend: api/v2/auth_signup.py :: _issue_tokens (295-305) + `company_name`.
+ */
+export interface EmployeeClaimV2Response {
+  /** JWT de acceso (30 min, ver TOKEN_TTL). */
+  token: string;
+  /** Refresh token opaco, rotativo de un solo uso (7 días). */
+  refresh_token: string;
+  user_uuid: string;
+  /** User type numérico (compáralo con `UserType`). Es número, no string. */
+  user_type: number;
+  /** Empresa de la fila reclamada. */
+  company_name: string;
+}
+
+/**
+ * Códigos de error de POST /api/v2/auth/guest:
+ * - `data.message`: 410 `session_expired` (la sesión de alta caducó o ya se usó).
+ * - `detail` (string): 409 `email_already_registered` · `phone_already_registered`.
+ * Fuera de la unión: 400 contraseña débil o común (`detail: {message, requirements[]}`) y
+ * 401 signup_token ausente o caducado.
+ * Contraseña y contacto se revisan ANTES de gastar la sesión de alta (SITIMM-952): ese
+ * 400/409 deja reintentar con la misma. Desde el 410 en adelante la sesión está gastada y
+ * hay que volver a pedir código.
+ */
+export type GuestSignupV2ErrorCode =
+  | "session_expired"
+  | "email_already_registered"
+  | "phone_already_registered";
+
+/**
+ * Códigos de error de POST /api/v2/auth/employee/claim: los de `GuestSignupV2ErrorCode` y
+ * - 400 `legal_not_accepted` (`data.message`), antes de tocar la sesión.
+ * - 409 `claim_unavailable` (`data.message`): el `claim_token` caducó, ya se usó o es de otro
+ *   signup_token, o la fila dejó de ser reclamable. Llega con la sesión de alta ya gastada.
+ */
+export type EmployeeClaimV2ErrorCode =
+  | GuestSignupV2ErrorCode
+  | "legal_not_accepted"
+  | "claim_unavailable";
+
+/**
+ * Body de POST /api/v2/auth/guest. Bearer <signup_token>. Crea una cuenta INVITADO con el
+ * contacto verificado y, si la sesión vino de Google/Apple, liga ese proveedor.
+ * Backend: schemas/auth_signup.py :: GuestBody (61-65) · api/v2/auth_signup.py ::
+ * guest_signup (620-644).
+ */
+export interface GuestSignupV2Request {
+  /** Mismas reglas que `EmployeeClaimV2Request.password`. */
+  password: string;
+  /** Contacto secundario sin verificar, como en `EmployeeClaimV2Request.email` (≤ 255). */
+  email?: string | null;
+  /** Ídem, para el teléfono (≤ 32). */
+  phone?: string | null;
+}
+
+/** Respuesta 200 de guest: `{status: "success", data: GuestSignupV2Response}`. */
+export interface GuestSignupV2Response {
+  /** Siempre `"authenticated"`. Es `data.status`; el envelope trae su propio `status`. */
+  status: "authenticated";
+  /** JWT de acceso (30 min). */
+  token: string;
+  /** snake_case, como en employee/claim. */
+  refresh_token: string;
+  user_uuid: string;
+  /** INVITADO = 41726. Número. */
+  user_type: number;
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Reauth (step-up) — POST /api/v2/auth/reauth
+//
+// Backend: app/presentation/api/v2/auth_reauth_v2.py. Access token requerido; 5/min por
+// cuenta. Un solo endpoint para contraseña y social. El `reauthToken` lo consumen
+// DELETE /users/me (users_v2.py:755) y POST /auth/social/accounts (social_auth.py:522).
+// ────────────────────────────────────────────────────────────────────
+
+/** Reauth con la contraseña actual. Backend: `ReauthRequest.password` (min 1). */
+export interface ReauthPasswordV2Request {
+  /** Contraseña actual. Si viene, gana sobre los campos sociales. */
+  password: string;
+}
+
+/**
+ * Reauth social, para cuentas sin contraseña: un `id_token` fresco del proveedor cuya cuenta
+ * esté ligada a ESTE usuario (no basta con que sea válido).
+ * OJO: aquí el campo es `idToken` (alias; el BE también acepta `id_token`), no el `id_token`
+ * de `SocialLoginRequest`.
+ */
+export interface ReauthSocialV2Request {
+  provider: SocialProvider;
+  idToken: string;
+  /**
+   * @since 2.21.0 — SITIMM-1275, aún sin servir al publicar 2.21.0 (hasta entonces se
+   * ignora). Mismas reglas que `SocialLoginRequest.nonce`.
+   */
+  nonce?: string;
+}
+
+/**
+ * Body de POST /api/v2/auth/reauth: contraseña, o `provider` + `idToken`.
+ * Backend: auth_reauth_v2.py :: ReauthRequest (31-38) · reauth (41-80).
+ */
+export type ReauthV2Request = ReauthPasswordV2Request | ReauthSocialV2Request;
+
+/** Respuesta 200 de reauth (dentro del envelope `{status, data}`). */
+export interface ReauthV2Response {
+  /** JWT de un solo uso que prueba la reauth reciente. */
+  reauthToken: string;
+  /** Segundos de vida (BE: 300, `REAUTH_TOKEN_EXPIRE_MINUTES` = 5). */
+  expiresIn: number;
+}
+
+/**
+ * Errores de reauth, en `detail` (string):
+ * - 403 `invalid_password`: contraseña incorrecta, o la cuenta no tiene.
+ * - 401 `invalid_id_token`: el proveedor rechazó el token, o esa cuenta del proveedor no está
+ *   ligada a quien llama.
+ * - 422 `password_or_social_required`: ni contraseña ni `provider` + `idToken`.
+ * Además: 429 de slowapi (`{error, retryAfter}`) y 403 `account_pending_deletion` (reauth no
+ * está en lo que una cuenta con borrado pendiente puede llamar).
+ */
+export type ReauthV2ErrorCode =
+  | "invalid_password"
+  | "invalid_id_token"
+  | "password_or_social_required";
+
+// ────────────────────────────────────────────────────────────────────
+// Cliente que llama y puerta de staff (@since 2.21.0)
+//
+// Contrato de ORCHESTRATION-login §3 #5 y #6, aún sin servir en mini-back al publicar
+// 2.21.0.
+// ────────────────────────────────────────────────────────────────────
+
+/**
+ * @since 2.21.0 — SITIMM-1273 (BE #5). Cabecera con la que el cliente dice quién es. Con
+ * ella el BE elige el correo de bienvenida (staff → dashboard, alta web → `/cuenta`, app →
+ * app) y, con `dashboard`, aplica la puerta de staff (`STAFF_ONLY_ERROR_CODE`).
+ *
+ * NO la mandes hasta que SITIMM-1273 esté desplegado en prod: el `allow_headers` de CORS de
+ * prod es una lista explícita (mini-back `bootstrap/middleware.py:292-316`) y una cabecera no
+ * listada hace fallar el preflight, lo que tumba todo el auth del navegador.
+ */
+export const SITIMM_CLIENT_HEADER = "X-Sitimm-Client";
+
+/**
+ * @since 2.21.0 — SITIMM-1273. Valores de `SITIMM_CLIENT_HEADER`. Sin la cabecera, o con un
+ * valor que no sea uno de estos, el BE asume `"app"` (ORCHESTRATION-login-plan.md, Task
+ * BE-3: «ausente o inválida = app»): los builds de la app que no la mandan siguen igual.
+ */
+export type SitimmClient = "web" | "app" | "dashboard";
+
+/**
+ * @since 2.21.0 — SITIMM-1274 (BE #6). Código del 403 de la puerta de staff. Con
+ * `X-Sitimm-Client: dashboard` y un rol efectivo que no es staff (ver `isStaffUserType` en
+ * `users`; un rol vacío o desconocido tampoco lo es), el BE responde 403 `staff_only` ANTES
+ * de emitir tokens en /users/login, /users/login-phone, /auth/social (rama autenticada y
+ * `requires_setup`) y /auth/setup/verify, y no crea sesiones de alta (`needs_verification`,
+ * /auth/social/guest). Sin la cabecera, o con `web`/`app`, nada cambia. Es defensa en
+ * profundidad: la protección real sigue siendo `require_permission`.
+ * En qué campo del cuerpo llega lo fija el PR del BE de SITIMM-1274, sin mergear al publicar
+ * 2.21.0; lo pactado es el estado 403 con este código.
+ */
+export const STAFF_ONLY_ERROR_CODE = "staff_only";

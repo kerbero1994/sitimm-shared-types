@@ -593,6 +593,58 @@ export interface ChangePasswordV2Request {
 }
 
 /**
+ * Body de DELETE /api/v2/users/me (JSON en un DELETE): borrar la propia cuenta, GDPR art. 17.
+ * Access token requerido. La cuenta pasa a `accountStatus: "pending_deletion"` con 30 días
+ * de gracia (`purgeAfter`), se revocan todos sus refresh tokens, se borran sus dispositivos
+ * de push y, si tiene correo, se le escribe cómo restaurarla. Durante la gracia sólo
+ * responden GET /users/me, POST /users/me/restore, DELETE /users/me y POST /users/logout;
+ * lo demás da 403 `account_pending_deletion`.
+ * Idempotente: en una cuenta ya pendiente devuelve el `purgeAfter` que tenía sin revisar el
+ * token (el campo sigue siendo obligatorio).
+ * Backend: schemas/user_v2.py :: DeleteAccountV2Request (22-27) · api/v2/users_v2.py ::
+ * delete_me (728-801).
+ */
+export interface DeleteAccountV2Request {
+  /** El `reauthToken` de POST /api/v2/auth/reauth (un solo uso, 5 min). El BE también acepta `reauth_token`. */
+  reauthToken: string;
+}
+
+/** Respuesta 202 de DELETE /users/me (dentro del envelope `{status, data}`). */
+export interface DeleteAccountV2Response {
+  /**
+   * ISO-8601: cuándo se purga la cuenta (ahora + 30 días). `null` sólo si la cuenta ya estaba
+   * pendiente y no tiene fecha guardada.
+   */
+  purgeAfter: string | null;
+}
+
+/**
+ * Errores de DELETE /users/me, en `detail`:
+ * - 401 `reauth_required` (string): el `reauthToken` falta, ya se usó, caducó o es de otro.
+ * - 403 `staff_self_delete_forbidden` (objeto `{code, message}`): staff (rol efectivo HR y
+ *   arriba) no borra su propia cuenta, se lo pide a un administrador (SITIMM-990,
+ *   users_v2.py:707-725).
+ * Además: 429 de slowapi, 5/hora por cuenta (`{error, retryAfter}`).
+ */
+export type DeleteAccountV2ErrorCode = "reauth_required" | "staff_self_delete_forbidden";
+
+/**
+ * Respuesta 200 de POST /api/v2/users/me/restore (sin body; dentro del envelope): cancela
+ * el borrado durante la gracia. No pide reauth.
+ * Backend: api/v2/users_v2.py :: restore_me (804-828).
+ */
+export interface RestoreAccountV2Response {
+  accountStatus: "active";
+}
+
+/**
+ * Errores de POST /users/me/restore, en `detail` (string): 404 `not_pending` (la cuenta no
+ * está pendiente de borrado) · 410 `grace_expired` (la gracia ya venció). Además: 429 de
+ * slowapi, 10/hora por cuenta.
+ */
+export type RestoreAccountV2ErrorCode = "not_pending" | "grace_expired";
+
+/**
  * Request body for POST /api/v2/users/me/avatar.
  * Upload profile picture via staged file UUID.
  * Backend: app/presentation/schemas/user_v2.py :: AvatarUploadRequest
@@ -693,8 +745,53 @@ export const GUEST_LEVEL_IDS: ReadonlySet<UserTypeValue> = new Set<UserTypeValue
 /**
  * User types that should NOT access the dashboard at all.
  * Includes INVITADO (guest) and EMPLOYEE (regular worker — they use the mobile app).
+ * Es una denylist: un rol vacío o desconocido pasa. Para la puerta del dashboard usa
+ * `isStaffUserType` (allowlist, SITIMM-1281).
  */
 export const NO_DASHBOARD_IDS: ReadonlySet<UserTypeValue> = new Set<UserTypeValue>([
   UserType.INVITADO,
   UserType.EMPLOYEE,
 ]);
+
+/**
+ * @since 2.21.0 — Los user types de staff: HR y arriba en la jerarquía, es decir, todo rol
+ * por encima de EMPLOYEE. Fuente única para la puerta de staff del BE (SITIMM-1274) y la
+ * allowlist del dashboard (SITIMM-1281).
+ *
+ * Backend: api/v2/users_admin_v2.py :: `_USER_TYPE_GROUPS["union_staff"]` (63-72). Es el
+ * mismo conjunto que `has_at_least(UserType.HR)`, el criterio de la puerta de auto-borrado
+ * (users_v2.py:713-725, SITIMM-990) y del `_is_staff` del reset (auth_reset_v2.py:145-148).
+ *
+ * NO es ninguno de los dos conceptos más estrechos que el BE también llama «staff»:
+ * - `_STAFF_TYPES` (users_admin_v2.py:51-59): ADVISOR y arriba, sin HR ni OFFICE. Decide si
+ *   el enlace de invitación va al dashboard.
+ * - `_is_staff` de boletines (bulletins_v2.py:95-96): ADMIN y MANAGER. Campos de audiencia
+ *   reservados.
+ */
+export const STAFF_USER_TYPE_IDS: readonly UserTypeValue[] = [
+  UserType.HR,
+  UserType.OFFICE,
+  UserType.ADVISOR,
+  UserType.ADMIN_COMMUNICATION,
+  UserType.ADMIN_EMPLOYEES,
+  UserType.FINANCIAL,
+  UserType.ADMIN,
+  UserType.MANAGER,
+];
+
+/**
+ * @since 2.21.0 — `true` si el user type (el efectivo) está en `STAFF_USER_TYPE_IDS`. El
+ * SUPER_ADMIN legacy (72468) cuenta como MANAGER, como en `resolveUserType`; `null`,
+ * `undefined`, 0 o un ID desconocido dan `false`.
+ *
+ * @example
+ * ```ts
+ * isStaffUserType(UserType.OFFICE)   // true
+ * isStaffUserType(UserType.EMPLOYEE) // false
+ * isStaffUserType(0)                 // false
+ * ```
+ */
+export function isStaffUserType(value: number | null | undefined): boolean {
+  const resolved = resolveUserType(value);
+  return resolved !== undefined && STAFF_USER_TYPE_IDS.includes(resolved);
+}

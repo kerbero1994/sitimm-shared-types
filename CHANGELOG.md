@@ -5,6 +5,42 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.21.0] - 2026-10-14
+
+Login web + dashboard: los contratos que faltaban y los nuevos de la iniciativa. **SITIMM-1277**
+(hijo de SITIMM-949; `ORCHESTRATION-login.md` §3.10).
+
+Rutas que mini-back ya sirve (`origin/main` @ `3ac62753`), tipadas campo por campo:
+
+- Alta sin cuenta (`auth_signup.py`): `SignupOtpChannelV2`, `SignupOtpV2Request`/`Response`
+  (`POST /auth/otp/request`), `SignupOtpVerifyV2Request`/`Response` (`/auth/otp/verify`),
+  `EmployeeClaimV2Request`/`Response` (`/auth/employee/claim`), `GuestSignupV2Request`/`Response`
+  (`/auth/guest`) y sus códigos: `SignupOtpV2ErrorCode`, `EmployeeClaimV2ErrorCode`,
+  `GuestSignupV2ErrorCode`. La sesión de claim y guest trae `refresh_token` en snake_case y
+  `user_type` numérico.
+- Reauth (`auth_reauth_v2.py`): `ReauthPasswordV2Request`, `ReauthSocialV2Request` (con `idToken`,
+  no `id_token`), `ReauthV2Request`, `ReauthV2Response`, `ReauthV2ErrorCode`.
+- Borrar y restaurar la cuenta (`users_v2.py`): `DeleteAccountV2Request`/`Response` (`purgeAfter`
+  puede ser `null`), `DeleteAccountV2ErrorCode`, `RestoreAccountV2Response`,
+  `RestoreAccountV2ErrorCode`.
+- `SocialAccountListResponse.hasPassword` (SITIMM-747; el BE lo sirve desde el 2026-09-23).
+- `V2_ENDPOINTS`: `AUTH_OTP_REQUEST`, `AUTH_OTP_VERIFY`, `AUTH_EMPLOYEE_CLAIM`, `AUTH_GUEST`,
+  `AUTH_REAUTH`, `USERS_ME_DELETE`, `USERS_ME_RESTORE`.
+
+Contrato nuevo, aún sin servir en mini-back (`@since 2.21.0`):
+
+- `nonce?` en `SocialLoginRequest` y `ReauthSocialV2Request` (SITIMM-1275): el valor crudo; Google
+  lo compara tal cual y Apple con su sha256 hex. Hasta el despliegue el BE lo ignora.
+- `SITIMM_CLIENT_HEADER` (`"X-Sitimm-Client"`) y `SitimmClient` (`"web" | "app" | "dashboard"`;
+  sin cabecera o con otro valor, `app`, según la Task BE-3 del plan) (SITIMM-1273). No mandarla
+  antes de que SITIMM-1273 esté en prod: el preflight CORS fallaría.
+- `STAFF_ONLY_ERROR_CODE` (`"staff_only"`, 403) (SITIMM-1274).
+- `STAFF_USER_TYPE_IDS` e `isStaffUserType()`: HR y arriba (8 roles), el `union_staff` del BE. No
+  son `_STAFF_TYPES` (ADVISOR y arriba, decide el enlace de invitación) ni el `_is_staff` de
+  boletines (ADMIN y MANAGER).
+
+Minor: tipos, constantes, un helper, rutas y un campo de respuesta nuevos; nada existente cambia.
+
 ## [2.20.0] - 2026-10-07
 
 Auth social: el request lleva el nombre que Apple da sólo la primera vez. **SITIMM-1055**

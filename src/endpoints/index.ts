@@ -67,6 +67,10 @@ export const V2_ENDPOINTS = {
   USERS_ME_AVATAR: "/users/me/avatar",
   /** DELETE → V2Response<AvatarV2Response>. Removes profile picture. Auth required. */
   USERS_ME_AVATAR_DELETE: "/users/me/avatar",
+  /** DELETE → Body: DeleteAccountV2Request ({reauthToken}). Returns V2Response<DeleteAccountV2Response> (202, purgeAfter). Borrado con 30 días de gracia; idempotente. Errores: DeleteAccountV2ErrorCode. Auth required; 5/hora por cuenta. */
+  USERS_ME_DELETE: "/users/me",
+  /** POST → sin body. Returns V2Response<RestoreAccountV2Response>. Cancela el borrado durante la gracia; no pide reauth. Errores (`detail`): RestoreAccountV2ErrorCode. Auth required; 10/hora por cuenta. */
+  USERS_ME_RESTORE: "/users/me/restore",
 
   // ── Auth (V2 desde el hard cutover 9e3a4255, 2026-06-22) ──────────
 
@@ -88,8 +92,18 @@ export const V2_ENDPOINTS = {
   AUTH_VERIFY_RESET: "/auth/verify-reset",
   /** POST → Body: ResetPasswordV2Request. Bearer <resetToken> + token en body. */
   AUTH_RESET_PASSWORD: "/auth/reset-password",
+  /** POST → Body: SignupOtpV2Request. Returns V2Response<SignupOtpV2Response> (session_id). NO auth; 30/min por IP. Errores: SignupOtpV2ErrorCode en `data.message`; otros 429 traen texto del BE. */
+  AUTH_OTP_REQUEST: "/auth/otp/request",
+  /** POST → Body: SignupOtpVerifyV2Request. Returns V2Response<SignupOtpVerifyV2Response> (signup_token). NO auth; 30/min por IP. 410 `session_expired` o código caducado · 400 código incorrecto · 429 intentos agotados. */
+  AUTH_OTP_VERIFY: "/auth/otp/verify",
   /** POST → Body: EmployeeMatchV2Request. Bearer <signup_token>. Returns V2Response<EmployeeMatchV2Response>. 403 `age_restricted`, 429 `too_many_attempts`. */
   AUTH_EMPLOYEE_MATCH: "/auth/employee/match",
+  /** POST → Body: EmployeeClaimV2Request. Bearer <signup_token>. Returns V2Response<EmployeeClaimV2Response> (sesión; `refresh_token` en snake_case). Errores: EmployeeClaimV2ErrorCode. */
+  AUTH_EMPLOYEE_CLAIM: "/auth/employee/claim",
+  /** POST → Body: GuestSignupV2Request. Bearer <signup_token>. Returns V2Response<GuestSignupV2Response> (sesión INVITADO). Errores: GuestSignupV2ErrorCode. */
+  AUTH_GUEST: "/auth/guest",
+  /** POST → Body: ReauthV2Request (contraseña, o provider + idToken). Returns V2Response<ReauthV2Response> (reauthToken de un solo uso, 5 min). Errores (`detail`): ReauthV2ErrorCode. Auth required; 5/min por cuenta. */
+  AUTH_REAUTH: "/auth/reauth",
   /** POST → Body: SocialLoginRequest. NO auth. Response FLAT SocialLoginResponse. V2 (antes V1). */
   AUTH_SOCIAL_LOGIN: "/auth/social",
   /** POST → Body: GuestLoginRequest ({session_id}). NO auth. Response FLAT GuestLoginResponse. V2 (antes V1). */

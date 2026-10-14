@@ -24,6 +24,14 @@ describe("V2_ENDPOINTS auth (contrato post-cutover 9e3a4255)", () => {
     ["AUTH_CONTACT_INIT", "/auth/contact/init"],
     ["AUTH_CONTACT_CONFIRM_IDENTITY", "/auth/contact/confirm-identity"],
     ["AUTH_CONTACT_CONFIRM_NEW", "/auth/contact/confirm-new"],
+    // SITIMM-1277: auth_signup.py, auth_reauth_v2.py, users_v2.py
+    ["AUTH_OTP_REQUEST", "/auth/otp/request"],
+    ["AUTH_OTP_VERIFY", "/auth/otp/verify"],
+    ["AUTH_EMPLOYEE_CLAIM", "/auth/employee/claim"],
+    ["AUTH_GUEST", "/auth/guest"],
+    ["AUTH_REAUTH", "/auth/reauth"],
+    ["USERS_ME_DELETE", "/users/me"],
+    ["USERS_ME_RESTORE", "/users/me/restore"],
   ] as const)("%s = %s", (key, path) => {
     expect(V2_ENDPOINTS[key]).toBe(path);
   });
