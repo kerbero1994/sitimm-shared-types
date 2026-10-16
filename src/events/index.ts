@@ -1644,11 +1644,19 @@ export interface EventAuditLogParams {
 
 // ── Event-linked push (SITIMM-1317) ──
 
-/** Who receives an event push: its active registrations, or everyone its audience admits. */
-export type EventNotifyTarget = "participants" | "audience";
+/**
+ * Who receives an event push: its active registrations, everyone its audience admits, or
+ * (SITIMM-1326) those with a check-in — the ones who can download the certificate.
+ */
+export type EventNotifyTarget = "participants" | "audience" | "attended";
 
-/** Fixed, translated templates (8 locales, server-side). No free text. */
-export type EventNotifyTemplate = "announcement" | "reminder" | "update";
+/**
+ * Fixed, translated templates (8 locales, server-side). No free text. `certificate`
+ * (SITIMM-1326, «your certificate is ready») goes to `attended` only and only after the event,
+ * within 30 days of its end (422 `event_not_notifiable` otherwise); the others need the event
+ * not to be over.
+ */
+export type EventNotifyTemplate = "announcement" | "reminder" | "update" | "certificate";
 
 /**
  * POST /api/v2/events/{uuid}/notify — body. Requires `events:notify` (ADMIN, MANAGER,

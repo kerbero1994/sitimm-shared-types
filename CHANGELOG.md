@@ -5,6 +5,15 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.26.0] - 2026-10-16
+
+El aviso «tu constancia está lista» (**SITIMM-1326**). Llega con mini-back SITIMM-1326 y extiende el push ligado al evento de SITIMM-1317.
+
+- **`events`:** `EventNotifyTarget` suma `"attended"` (los participantes con check-in, que son quienes pueden descargar la constancia). `EventNotifyTemplate` suma `"certificate"`.
+  - `certificate` solo va a `attended`.
+  - Solo sale después del evento y dentro de los 30 días desde su fin. Si no, da 422 `event_not_notifiable`.
+- Minor: solo se agregan miembros a dos uniones. Un `switch` exhaustivo sobre esas uniones deja de compilar hasta cubrir el miembro nuevo, y eso es intencional (el precedente es 2.23.0).
+
 ## [2.25.0] - 2026-10-16
 
 La lista de escaneadores del evento, gestionable desde el dashboard (**SITIMM-1322**, hallazgo 1 de la auditoría de ADMIN_EVENTS). Llega con mini-back SITIMM-1322.
