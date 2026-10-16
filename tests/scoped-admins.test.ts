@@ -8,10 +8,12 @@ import {
   hasAtLeast,
   isStaffUserType,
 } from "../src/users";
-import type {
-  EventNotifyPreviewV2Response,
-  EventNotifyV2Request,
-  EventNotifyV2Response,
+import {
+  EVENT_NOTIFY_URGENT_TEMPLATES,
+  type EventNotifyPreviewV2Response,
+  type EventNotifyTemplate,
+  type EventNotifyV2Request,
+  type EventNotifyV2Response,
 } from "../src/events";
 
 describe("scoped admins (SITIMM-1316)", () => {
@@ -47,5 +49,12 @@ describe("scoped admins (SITIMM-1316)", () => {
     };
     const preview: EventNotifyPreviewV2Response = { target: "audience", users: 0, cooldownUntil: null };
     expect([req.target, res.queued, preview.cooldownUntil]).toEqual(["audience", true, null]);
+  });
+
+  it("lists the urgent notice templates (SITIMM-1349)", () => {
+    expect(EVENT_NOTIFY_URGENT_TEMPLATES).toEqual(["venue_change", "time_change", "suspension"]);
+    const urgent: EventNotifyTemplate[] = [...EVENT_NOTIFY_URGENT_TEMPLATES];
+    const req: EventNotifyV2Request = { target: "participants", template: urgent[0] };
+    expect(req.template).toBe("venue_change");
   });
 });
