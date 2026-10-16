@@ -71,6 +71,8 @@ export const V2_ENDPOINTS = {
   USERS_ME_DELETE: "/users/me",
   /** POST → sin body. Returns V2Response<RestoreAccountV2Response>. Cancela el borrado durante la gracia; no pide reauth. Errores (`detail`): RestoreAccountV2ErrorCode. Auth required; 10/hora por cuenta. */
   USERS_ME_RESTORE: "/users/me/restore",
+  /** POST → Body: { full_name (2–255), identifier_type: "rfc" | "curp" | "nss", identifier_value (3–64), company_uuid? | company_name_freetext? (una de las dos), note? (≤2000) }. Auth required: un INVITADO pide la revisión de su cuenta (o la vuelve a pedir). Returns V2Response<{ review_request_uuid }>. Backend: users_activation_v2.py `ActivationRequestBody`. SITIMM-1380. */
+  USERS_ME_ACTIVATION_REQUEST: "/users/me/activation-request",
 
   // ── Auth (V2 desde el hard cutover 9e3a4255, 2026-06-22) ──────────
 
@@ -102,6 +104,10 @@ export const V2_ENDPOINTS = {
   AUTH_EMPLOYEE_CLAIM: "/auth/employee/claim",
   /** POST → Body: GuestSignupV2Request. Bearer <signup_token>. Returns V2Response<GuestSignupV2Response> (sesión INVITADO). Errores: GuestSignupV2ErrorCode. */
   AUTH_GUEST: "/auth/guest",
+  /** GET ?search=&limit= (search 2+ caracteres; limit 1–20, default 20) → V2Response<{ companies: { uuid: string; name: string }[]; total: number }>. NO auth: el selector mínimo de empresas del alta, antes del OTP. 429 `rate_limited` por IP. Backend: auth_signup.py `companies_picker`. SITIMM-1380. */
+  AUTH_COMPANIES: "/auth/companies",
+  /** POST → Body: { password (8–128), full_name (2–255), identifier_type: "rfc" | "curp" | "nss", identifier_value (3–64), company_uuid? | company_name_freetext? (una de las dos), note? (≤2000) }. Bearer <signup_token>. Sin coincidencia en el padrón: crea la cuenta INVITADO y la solicitud de revisión. Returns V2Response<{ status: "authenticated", …sesión, review_request_uuid }>. 410 `session_expired`. Backend: auth_signup.py `ReviewRequestBody`. SITIMM-1380. */
+  AUTH_REVIEW_REQUEST: "/auth/review-request",
   /** POST → Body: ReauthV2Request (contraseña, o provider + idToken). Returns V2Response<ReauthV2Response> (reauthToken de un solo uso, 5 min). Errores (`detail`): ReauthV2ErrorCode. Auth required; 5/min por cuenta. */
   AUTH_REAUTH: "/auth/reauth",
   /** POST → Body: SocialLoginRequest. NO auth. Response FLAT SocialLoginResponse. V2 (antes V1). */
@@ -164,6 +170,10 @@ export const V2_ENDPOINTS = {
       gate as EVENT_DOOR_CANDIDATES. Registers the affiliate if needed and checks them in, in one
       step. Errors: `EventDoorErrorCode`. Ships with mini-back SITIMM-1341. */
   EVENT_DOOR_CHECK_IN: "/events/{uuid}/door/check-in",
+  /** GET → V2Response<SupportCategoryListResponse> (las categorías del formulario de reporte + `supportEmail`). NO auth; estático. Backend: support_v2.py `list_categories`. SITIMM-1380. */
+  SUPPORT_CATEGORIES: "/support/categories",
+  /** POST → Body: SupportTicketCreateRequest. Auth opcional: anónimo con límite por IP y tope global, autenticado con límite por usuario. 201 → V2Response<SupportTicketCreateResponse> (folio, uuid, channel). Backend: support_v2.py `create_ticket`. La misma ruta en GET es la bandeja de staff (permiso `support_tickets:read`; V2Response<SupportTicketListResponse>, support_admin_v2.py `list_tickets`). SITIMM-1380. */
+  SUPPORT_TICKETS: "/support/tickets",
   /** GET → V2Response<MyEventsV2Response>. Returns user's registered events. Auth required. */
   EVENTS_MY: "/events/my-events",
   /** POST → Body: `CreateParticipantV2Request` (events module). Returns

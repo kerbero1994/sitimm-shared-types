@@ -5,6 +5,13 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.34.0] - 2026-10-16
+
+### Added — the app's local V2 endpoints, now in the registry (SITIMM-1380)
+
+- `endpoints`: `AUTH_COMPANIES`, `AUTH_REVIEW_REQUEST`, `USERS_ME_ACTIVATION_REQUEST`, `SUPPORT_CATEGORIES` and `SUPPORT_TICKETS`, with their contract in JSDoc. Checked against the mini-back routes (`auth_signup.py`, `users_activation_v2.py`, `support_v2.py`).
+- `/files/upload` is left out on purpose: mini-back only mounts it under `/api/v1` (`file_storage.py`), and the app calls it with its V1 base.
+
 ## [2.33.0] - 2026-10-16
 
 ### Added — register error for an event without transport (SITIMM-1357)
