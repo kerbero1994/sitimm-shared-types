@@ -5,6 +5,15 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.27.0] - 2026-10-16
+
+### Added — cancel an event without deleting it (SITIMM-1323)
+
+- `events`: `EventV2` (and so `EventDetailV2`) gets optional `cancelledAt` and `cancelReason` (`string | null`).
+- `events`: `CancelEventV2Request` (`{ reason?: string }`, ≤ 280 chars), `EventCancelV2Response` (`{ uuid, cancelledAt, cancelReason, participantsCancelled }`) and `EventCancelErrorCode` (`event_not_found` | `event_already_cancelled`).
+- `endpoints`: `V2_ENDPOINTS.EVENT_CANCEL` (`POST /events/{uuid}/cancel`, permission `events:cancel`) and the generated row `CANCEL_EVENT` (manual patch until mini-back SITIMM-1323 ships).
+- Built on top of 2.26.0 (SITIMM-1326 branch), so it carries everything 2.25.0 and 2.26.0 published.
+
 ## [2.26.0] - 2026-10-16
 
 El aviso «tu constancia está lista» (**SITIMM-1326**). Llega con mini-back SITIMM-1326 y extiende el push ligado al evento de SITIMM-1317.
