@@ -178,6 +178,12 @@ export const V2_ENDPOINTS = {
       evento: un evento pasado dejaría la insignia encendida sobre algo que ya
       no se puede aprobar. */
   EVENT_APPROVALS_PENDING_COUNT: "/events/approvals/pending-count",
+  /** POST → Body: WaitlistPromoteV2Request. Returns V2Response<WaitlistPromoteV2Response>.
+      Requires `event_participants:update` and the event company scope. Promotes the chosen
+      waitlisted rows; over capacity without `allowOverCapacity` → 409
+      `promotion_over_capacity` with `overCapacity`. Errors: `WaitlistPromoteErrorCode`.
+      Ships with mini-back SITIMM-1347. */
+  EVENT_WAITLIST_PROMOTE: "/events/{uuid}/waitlist/promote",
   /** POST → Body: ConfirmRegistrationV2Request. NO auth. IP rate-limited. Returns
       V2Response<ConfirmRegistrationV2Response>. Consumes the one-time email token, creates the participant. */
   EVENT_REGISTRATION_CONFIRM: "/events/registration/confirm",

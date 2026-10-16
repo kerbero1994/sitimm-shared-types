@@ -1775,3 +1775,67 @@ export type EventCancelErrorCode = "event_not_found" | "event_already_cancelled"
 export interface PendingApprovalsCount {
   pendingCount: number;
 }
+
+// ── Manual waitlist promotion (SITIMM-1347) ──
+
+/** POST /api/v2/events/{uuid}/waitlist/promote — body (`extra="forbid"`). */
+export interface WaitlistPromoteV2Request {
+  /** 1–200 UUIDs of the event's waitlisted participants. */
+  participantUuids: string[];
+  /** Promote even when it overbooks the event, a sede or a stop — only after the admin
+   *  confirmed the `overCapacity` the first attempt answered with. Default false. */
+  allowOverCapacity?: boolean;
+}
+
+/** How far one capacity would be exceeded by the promotion. */
+export interface CapacityOverflowV2 {
+  capacity: number;
+  /** Occupancy once the selection is promoted. */
+  after: number;
+  /** `after − capacity`, always > 0. */
+  over: number;
+}
+
+/** A sede (`EventCampus`) or a seat-capped stop (`EventBusStop`) that would be exceeded. */
+export interface SeatOverflowV2 extends CapacityOverflowV2 {
+  uuid: string;
+  label: string | null;
+}
+
+/** Everything the promotion would overbook. Stops count only in the capped, scheduled
+ *  and live transport modes. */
+export interface WaitlistOverCapacityV2 {
+  event: CapacityOverflowV2 | null;
+  venues: SeatOverflowV2[];
+  stops: SeatOverflowV2[];
+}
+
+/** A requested row that was not promoted. */
+export interface WaitlistPromotionSkipV2 {
+  participantUuid: string;
+  reason: "not_found" | "not_waitlisted";
+}
+
+/**
+ * POST /api/v2/events/{uuid}/waitlist/promote — 200. Requires `event_participants:update`
+ * (ADMIN, ADMIN_COMMUNICATION, MANAGER, ADMIN_EVENTS) and the event company scope. Each
+ * promoted row becomes `registered` and its member gets the `event_waitlist_promoted` push.
+ * `overCapacity` is what the promotion overbooked (null when it fit).
+ */
+export interface WaitlistPromoteV2Response {
+  promoted: number;
+  promotedUuids: string[];
+  skipped: WaitlistPromotionSkipV2[];
+  overCapacity: WaitlistOverCapacityV2 | null;
+}
+
+/**
+ * Error codes of POST /api/v2/events/{uuid}/waitlist/promote: 404 event_not_found ·
+ * 409 event_cancelled · 409 promotion_over_capacity, whose `detail` also carries
+ * `overCapacity: WaitlistOverCapacityV2`. The dashboard shows it and retries with
+ * `allowOverCapacity: true` once the admin confirms.
+ */
+export type WaitlistPromoteErrorCode =
+  | "event_not_found"
+  | "event_cancelled"
+  | "promotion_over_capacity";

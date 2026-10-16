@@ -5,6 +5,13 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.29.0] - 2026-10-16
+
+### Added — promote from the waitlist by hand (SITIMM-1347)
+
+- `events`: `WaitlistPromoteV2Request` (`{ participantUuids, allowOverCapacity? }`), `WaitlistPromoteV2Response` (`{ promoted, promotedUuids, skipped, overCapacity }`), `WaitlistOverCapacityV2` / `CapacityOverflowV2` / `SeatOverflowV2` (how far the event, a sede or a stop would go over), `WaitlistPromotionSkipV2` and `WaitlistPromoteErrorCode` (`event_not_found` | `event_cancelled` | `promotion_over_capacity`).
+- `endpoints`: `V2_ENDPOINTS.EVENT_WAITLIST_PROMOTE` (`POST /events/{uuid}/waitlist/promote`, permission `event_participants:update`) and the generated row `PROMOTE_FROM_WAITLIST`. The row is a manual patch until mini-back SITIMM-1347 ships.
+
 ## [2.28.0] - 2026-10-16
 
 ### Added — two contracts the dashboard defined locally (SITIMM-1339)
