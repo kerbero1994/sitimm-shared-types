@@ -79,11 +79,13 @@ export const EVENT_REGISTRATION_ERROR_CODES = [
   "cancel_window_closed", // 409 — self-cancel within 24h of eventDate (admins exempt; system sweeps bypass)
   "registration_conflict", // 409 — concurrent re-registration race (IntegrityError on cancelled-registration reactivation); safe to retry
   // NOTE: two BE surfaces use two different spellings for the whitelist guard —
-  // `transport_stop_not_in_whitelist` (participant PATCH stop change,
-  // event_transport_coordination.py) vs `transport_stop_not_whitelisted`
-  // (dedicated transport stop-change endpoint, in TransportCapacityErrorCode).
+  // `transport_stop_not_in_whitelist` (register + participant PATCH stop change,
+  // event_registration_service.py / event_transport_coordination.py) vs
+  // `transport_stop_not_whitelisted` (dedicated transport stop-change endpoint,
+  // in TransportCapacityErrorCode).
   // Do NOT deduplicate them; they are distinct wire values.
-  "transport_stop_not_in_whitelist", // 422 — target stop is not in the event's transport whitelist (participant PATCH stop change)
+  "transport_stop_not_in_whitelist", // 422 — target stop is not in the event's transport whitelist (register since SITIMM-1357; participant PATCH stop change)
+  "transport_not_enabled", // 409 — register sent a busStopId but the event's transportMode is "none" (SITIMM-1357)
 ] as const;
 
 export type EventRegistrationErrorCode =

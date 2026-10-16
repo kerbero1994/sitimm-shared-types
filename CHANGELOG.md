@@ -5,6 +5,14 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.33.0] - 2026-10-16
+
+### Added — register error for an event without transport (SITIMM-1357)
+
+- `events`: `EVENT_REGISTRATION_ERROR_CODES` gains `transport_not_enabled` (409). `POST /events/{uuid}/register` answers it to a `busStopId` on an event whose `transportMode` is `"none"`.
+- `events`: `transport_stop_not_in_whitelist` (422) is now also answered by the register itself, to a stop outside the event's list.
+- Before mini-back SITIMM-1357, both cases answered 500.
+
 ## [2.32.0] - 2026-10-16
 
 ### Added — analytics across events (SITIMM-1343)
