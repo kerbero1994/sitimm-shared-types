@@ -25,6 +25,12 @@
  * merged to `main` at this source version). Safe to overwrite on the next
  * `make dump-v2-routes` once that backend branch ships.
  *
+ * MANUAL PATCH (SITIMM-1322, 2026-10-16): 2 rows hand-added to the `events`
+ * group for the ticket-scanner allowlist (`GET|PUT /events/{uuid}/scanners`,
+ * already in mini-back since SITIMM-805 but missing from this dump) and the new
+ * `GET /events/{uuid}/scanners/candidates` (mini-back SITIMM-1322). Safe to
+ * overwrite on the next `make dump-v2-routes`.
+ *
  * MANUAL PATCH (SITIMM-1316, 2026-10-15): 2 rows hand-added to the `events`
  * group for the event-linked push (`POST /events/{uuid}/notify` and
  * `GET /events/{uuid}/notify/preview`). The routes ship with mini-back
@@ -565,6 +571,10 @@ export const V2_ENDPOINTS_GENERATED = {
     NOTIFY_EVENT: (uuid: string | number) => `/api/v2/events/${uuid}/notify`,
     /** GET — V2 Event Notify (manual patch, SITIMM-1316) */
     PREVIEW_EVENT_NOTIFY: (uuid: string | number) => `/api/v2/events/${uuid}/notify/preview`,
+    /** GET|PUT — V2 Event Scanners (manual patch, SITIMM-1322) */
+    EVENT_SCANNERS: (uuid: string | number) => `/api/v2/events/${uuid}/scanners`,
+    /** GET — V2 Event Scanner Candidates (manual patch, SITIMM-1322) */
+    LIST_SCANNER_CANDIDATES: (uuid: string | number) => `/api/v2/events/${uuid}/scanners/candidates`,
     /** GET — V2 Event Participants */
     LIST_EVENT_PARTICIPANTS: (uuid: string | number) => `/api/v2/events/${uuid}/participants`,
     /** GET — V2 Event Certificates */

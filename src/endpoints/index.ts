@@ -141,6 +141,13 @@ export const V2_ENDPOINTS = {
       `events:notify`. How many users the push would reach and when the target's 24 h cooldown
       ends (`cooldownUntil`, null when free). Ships with mini-back SITIMM-1317. */
   EVENT_NOTIFY_PREVIEW: "/events/{uuid}/notify/preview",
+  /** GET → V2Response<EventScannersV2Response>. PUT → Body: SetEventScannersV2Request (the full
+      list), returns V2Response<EventScannersV2Response>. Requires `events:manage_scanners`
+      (ADMIN, MANAGER, ADMIN_EVENTS) and the event company scope. SITIMM-805 / SITIMM-1322. */
+  EVENT_SCANNERS: "/events/{uuid}/scanners",
+  /** GET ?q=&limit= → V2Response<EventScannerCandidateV2[]>. Same gate as EVENT_SCANNERS. Active
+      event staff matching `q` (2+ chars); `limit` ≤ 50. Ships with mini-back SITIMM-1322. */
+  EVENT_SCANNER_CANDIDATES: "/events/{uuid}/scanners/candidates",
   /** GET → V2Response<MyEventsV2Response>. Returns user's registered events. Auth required. */
   EVENTS_MY: "/events/my-events",
   /** POST → Body: `CreateParticipantV2Request` (events module). Returns

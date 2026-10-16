@@ -1688,3 +1688,38 @@ export type EventNotifyErrorCode =
   | "notify_cooldown"
   | "event_not_notifiable"
   | "notify_unavailable";
+
+// ── Ticket-scanner allowlist (SITIMM-805, SITIMM-1322) ──
+
+/** A user on the event's ticket-scanner allowlist, resolved for the dashboard. */
+export interface EventScannerV2 {
+  uuid: string;
+  name: string | null;
+  lastNames: string | null;
+  email: string | null;
+}
+
+/**
+ * GET / PUT /api/v2/events/{uuid}/scanners — 200. Requires `events:manage_scanners` (ADMIN,
+ * MANAGER, ADMIN_EVENTS) and the event company scope. `userUuids` is the list as stored (order
+ * kept); `scanners` are its users resolved in list order — a uuid whose user no longer exists is
+ * in `userUuids` only. Checking in a ticket requires being on this list.
+ */
+export interface EventScannersV2Response {
+  userUuids: string[];
+  scanners: EventScannerV2[];
+}
+
+/** PUT /api/v2/events/{uuid}/scanners — body: the full desired list (idempotent, max 200). */
+export interface SetEventScannersV2Request {
+  userUuids: string[];
+}
+
+/**
+ * One item of GET /api/v2/events/{uuid}/scanners/candidates?q=&limit= (200, an array). Active
+ * event staff only — ADVISOR and up and ADMIN_EVENTS, never an affiliate — whose name, last
+ * names or e-mail contain `q` (2+ chars). `limit` 1–50, default 20.
+ */
+export interface EventScannerCandidateV2 extends EventScannerV2 {
+  userType: number;
+}
