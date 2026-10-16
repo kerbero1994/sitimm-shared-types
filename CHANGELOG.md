@@ -5,6 +5,20 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.25.0] - 2026-10-16
+
+La lista de escaneadores del evento, gestionable desde el dashboard (**SITIMM-1322**, hallazgo 1 de la auditoría de ADMIN_EVENTS). Llega con mini-back SITIMM-1322.
+
+- **`events`:**
+  - `EventScannerV2` (`uuid`, `name`, `lastNames`, `email`).
+  - `EventScannersV2Response` (`userUuids` + `scanners`, resueltos) para el GET y el PUT de `/events/{uuid}/scanners`.
+  - `SetEventScannersV2Request` (el body del PUT).
+  - `EventScannerCandidateV2` (+ `userType`), los ítems de `/events/{uuid}/scanners/candidates`.
+- **`endpoints`:**
+  - Constantes curadas: `V2_ENDPOINTS.EVENT_SCANNERS` (GET y PUT) y `EVENT_SCANNER_CANDIDATES` (GET), con su JSDoc de permiso (`events:manage_scanners`).
+  - Generadas: `V2_ENDPOINTS_GENERATED.events.EVENT_SCANNERS` y `LIST_SCANNER_CANDIDATES`, como parche manual documentado en la cabecera.
+- Minor: solo se agregan tipos y constantes.
+
 ## [2.24.0] - 2026-10-15
 
 Admins acotados (**SITIMM-1316**, épica SITIMM-1314) y el contrato del push ligado al evento. Llegan con mini-back SITIMM-1315 (roles) y SITIMM-1317 (push).
