@@ -24,6 +24,13 @@
  * shipped on mini-back branch `SITIMM-45-member-contribute`, not yet
  * merged to `main` at this source version). Safe to overwrite on the next
  * `make dump-v2-routes` once that backend branch ships.
+ *
+ * MANUAL PATCH (SITIMM-1316, 2026-10-15): 2 rows hand-added to the `events`
+ * group for the event-linked push (`POST /events/{uuid}/notify` and
+ * `GET /events/{uuid}/notify/preview`). The routes ship with mini-back
+ * SITIMM-1317 (`app/presentation/api/v2/event_notify_v2.py`), not yet merged
+ * at this source version. Safe to overwrite on the next `make dump-v2-routes`
+ * once that backend branch ships.
  */
 
 export const V2_ENDPOINTS_GENERATED = {
@@ -554,6 +561,10 @@ export const V2_ENDPOINTS_GENERATED = {
     GET_MY_CERTIFICATE: (uuid: string | number) => `/api/v2/events/${uuid}/my-certificate`,
     /** GET — V2 Event Participants */
     GET_MY_TICKET: (uuid: string | number) => `/api/v2/events/${uuid}/my-ticket`,
+    /** POST — V2 Event Notify (manual patch, SITIMM-1316) */
+    NOTIFY_EVENT: (uuid: string | number) => `/api/v2/events/${uuid}/notify`,
+    /** GET — V2 Event Notify (manual patch, SITIMM-1316) */
+    PREVIEW_EVENT_NOTIFY: (uuid: string | number) => `/api/v2/events/${uuid}/notify/preview`,
     /** GET — V2 Event Participants */
     LIST_EVENT_PARTICIPANTS: (uuid: string | number) => `/api/v2/events/${uuid}/participants`,
     /** GET — V2 Event Certificates */

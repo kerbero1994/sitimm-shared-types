@@ -131,6 +131,16 @@ export const V2_ENDPOINTS = {
   EVENT_DELETE: "/events/{uuid}",
   /** POST → V2Response<EventV2>. Clones the event. Requires events:create permission. */
   EVENT_CLONE: "/events/{uuid}/clone",
+  /** POST → Body: EventNotifyV2Request. Returns V2Response<EventNotifyV2Response> (202, the
+      fan-out is queued). Requires `events:notify` (ADMIN, MANAGER, ADMIN_EVENTS) and the event's
+      company scope; 10/hour per user; one send per event+target per 24 h. Errors:
+      `EventNotifyErrorCode` (409 `notify_cooldown` carries `retryAfter`). Ships with mini-back
+      SITIMM-1317. */
+  EVENT_NOTIFY: "/events/{uuid}/notify",
+  /** GET ?target=participants|audience → V2Response<EventNotifyPreviewV2Response>. Requires
+      `events:notify`. How many users the push would reach and when the target's 24 h cooldown
+      ends (`cooldownUntil`, null when free). Ships with mini-back SITIMM-1317. */
+  EVENT_NOTIFY_PREVIEW: "/events/{uuid}/notify/preview",
   /** GET → V2Response<MyEventsV2Response>. Returns user's registered events. Auth required. */
   EVENTS_MY: "/events/my-events",
   /** POST → Body: `CreateParticipantV2Request` (events module). Returns

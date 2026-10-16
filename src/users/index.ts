@@ -24,7 +24,7 @@
  * ADMIN now sits above sub-admins (ADMIN_COMMUNICATION, ADMIN_EMPLOYEES, FINANCIAL).
  *
  * Hierarchy (low → high):
- * INVITADO(0) → EMPLOYEE(1) → HR(2) → ADVISOR(3) → sub-admins(4) → ADMIN(5) → MANAGER(6)
+ * INVITADO(0) → EMPLOYEE(1) → HR/OFFICE/scoped admins(2) → ADVISOR(3) → sub-admins(4) → ADMIN(5) → MANAGER(6)
  */
 export const UserType = {
   /** 41726 — Guest/pre-employee. Created via Social Login before activation. Hierarchy: 0. */
@@ -35,6 +35,19 @@ export const UserType = {
   HR: 23648,
   /** 57341 — General office staff (SITIMM office, read-only). Hierarchy: 2. */
   OFFICE: 57341,
+  /**
+   * 52719 — Scoped admin: EVENTS only (SITIMM-1315). Hierarchy: 2 (staff floor: may use
+   * the dashboard) but never advisor-level; full parity with ADMIN inside events
+   * (events, event_types, event_participants, campuses, events:notify,
+   * events:manage_scanners), member everywhere else. Never inherited by other roles.
+   */
+  ADMIN_EVENTS: 52719,
+  /**
+   * 67384 — Scoped admin: DISCOUNTS (bonuses) only (SITIMM-1315). Hierarchy: 2; parity
+   * with ADMIN inside bonuses (create/update/delete + catalogs), member everywhere else.
+   * Never inherited by other roles.
+   */
+  ADMIN_BONUSES: 67384,
   /** 48235 — Advisor. Handles consultations, can chat with affiliates. Hierarchy: 3. */
   ADVISOR: 48235,
   /** 81493 — Full administrator. Manages all entities. Hierarchy: 5. */
@@ -84,6 +97,8 @@ export const USER_TYPE_HIERARCHY: Record<UserTypeValue, number> = {
   [UserType.EMPLOYEE]: 1,
   [UserType.HR]: 2,
   [UserType.OFFICE]: 2,
+  [UserType.ADMIN_EVENTS]: 2,
+  [UserType.ADMIN_BONUSES]: 2,
   [UserType.ADVISOR]: 3,
   [UserType.ADMIN_COMMUNICATION]: 4,
   [UserType.ADMIN_EMPLOYEES]: 4,
@@ -101,6 +116,8 @@ export const USER_TYPE_ORDER: readonly UserTypeValue[] = [
   UserType.EMPLOYEE,
   UserType.HR,
   UserType.OFFICE,
+  UserType.ADMIN_EVENTS,
+  UserType.ADMIN_BONUSES,
   UserType.ADVISOR,
   UserType.ADMIN_COMMUNICATION,
   UserType.ADMIN_EMPLOYEES,
@@ -771,6 +788,8 @@ export const NO_DASHBOARD_IDS: ReadonlySet<UserTypeValue> = new Set<UserTypeValu
 export const STAFF_USER_TYPE_IDS: readonly UserTypeValue[] = [
   UserType.HR,
   UserType.OFFICE,
+  UserType.ADMIN_EVENTS,
+  UserType.ADMIN_BONUSES,
   UserType.ADVISOR,
   UserType.ADMIN_COMMUNICATION,
   UserType.ADMIN_EMPLOYEES,

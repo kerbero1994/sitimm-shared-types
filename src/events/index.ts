@@ -1641,3 +1641,50 @@ export interface EventAuditLogParams {
   /** Filter by acting user (serialized as `userId`). */
   userId?: number;
 }
+
+// ── Event-linked push (SITIMM-1317) ──
+
+/** Who receives an event push: its active registrations, or everyone its audience admits. */
+export type EventNotifyTarget = "participants" | "audience";
+
+/** Fixed, translated templates (8 locales, server-side). No free text. */
+export type EventNotifyTemplate = "announcement" | "reminder" | "update";
+
+/**
+ * POST /api/v2/events/{uuid}/notify — body. Requires `events:notify` (ADMIN, MANAGER,
+ * ADMIN_EVENTS). Rate limit 10/hour per user. Cooldown: one send per event+target per 24 h.
+ */
+export interface EventNotifyV2Request {
+  target: EventNotifyTarget;
+  template: EventNotifyTemplate;
+}
+
+/** 202 — the fan-out is queued (Celery). `suppressed`: test event, nobody is notified. */
+export interface EventNotifyV2Response {
+  target: EventNotifyTarget;
+  template: EventNotifyTemplate;
+  /** Users matched at enqueue time (devices may be fewer). */
+  users: number;
+  queued: true;
+  suppressed: boolean;
+}
+
+/** GET /api/v2/events/{uuid}/notify/preview?target=… — 200. */
+export interface EventNotifyPreviewV2Response {
+  target: EventNotifyTarget;
+  users: number;
+  /** ISO-8601 when the 24 h cooldown for this target ends; null when free to send. */
+  cooldownUntil: string | null;
+}
+
+/**
+ * `detail.code` of the notify endpoints: 403 forbidden · 404 event_not_found ·
+ * 409 notify_cooldown (+ `retryAfter` seconds) · 422 event_not_notifiable
+ * (disabled, deleted or already ended) · 503 notify_unavailable (Redis down, fail-closed).
+ */
+export type EventNotifyErrorCode =
+  | "forbidden"
+  | "event_not_found"
+  | "notify_cooldown"
+  | "event_not_notifiable"
+  | "notify_unavailable";
