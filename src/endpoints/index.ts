@@ -195,6 +195,12 @@ export const V2_ENDPOINTS = {
       `promotion_over_capacity` with `overCapacity`. Errors: `WaitlistPromoteErrorCode`.
       Ships with mini-back SITIMM-1347. */
   EVENT_WAITLIST_PROMOTE: "/events/{uuid}/waitlist/promote",
+  /** GET ?from&to&groupBy&eventTypeId&campusId&companyId → V2Response<EventAnalyticsV2Response>.
+      Requires `events:analytics` (ADMIN, MANAGER, ADMIN_EVENTS) and the event company scope.
+      Registered, attended, no-show, cancelled and waitlist across events; defaults to the
+      last 90 days, 366 at most. Errors: `EventAnalyticsErrorCode`. Own prefix (not under
+      /events). Ships with mini-back SITIMM-1343. */
+  EVENT_ANALYTICS: "/event-analytics",
   /** POST → Body: ConfirmRegistrationV2Request. NO auth. IP rate-limited. Returns
       V2Response<ConfirmRegistrationV2Response>. Consumes the one-time email token, creates the participant. */
   EVENT_REGISTRATION_CONFIRM: "/events/registration/confirm",

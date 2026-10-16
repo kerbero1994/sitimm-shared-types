@@ -1943,3 +1943,73 @@ export type EventDoorErrorCode =
   | "event_disabled"
   | "registration_disabled"
   | "audience_not_eligible";
+
+// ── Analytics across events (SITIMM-1343) ──
+
+/**
+ * How the analytics rows are grouped: per event (default), event type, sede (`venue`: the
+ * campus of the registration's sede) or the registrant's company.
+ */
+export type EventAnalyticsGroupBy = "event" | "type" | "venue" | "company";
+
+/**
+ * GET /api/v2/event-analytics — query. `from` / `to` are inclusive `YYYY-MM-DD` days of the
+ * Mexico City calendar; without them, the last 90 days up to today. 366 days at most
+ * (422 `period_too_long`). The filters narrow the registrations: `campusId` is the campus of
+ * the registration's sede, `companyId` the registrant's company.
+ */
+export interface EventAnalyticsQuery {
+  from?: string;
+  to?: string;
+  groupBy?: EventAnalyticsGroupBy;
+  eventTypeId?: number;
+  campusId?: number;
+  companyId?: number;
+}
+
+/**
+ * Counted per registration (EventParticipantV2). Pending and rejected requests count nowhere.
+ * Rates (attendance, no-show) are left to the client.
+ */
+export interface EventAnalyticsCounts {
+  /** Distinct events in the group (or in the whole period). */
+  events: number;
+  /** Live registrations: `registered`, `confirmed` or `transport_waitlist`. */
+  registered: number;
+  /** Live registrations with a check-in. */
+  attended: number;
+  /** Live registrations without a check-in, of events that are already over. */
+  noShow: number;
+  cancelled: number;
+  /** Of the cancelled, those the event's own cancellation took (SITIMM-1323). */
+  cancelledByEvent: number;
+  waitlisted: number;
+}
+
+export interface EventAnalyticsRow extends EventAnalyticsCounts {
+  /** Event uuid, or the event type / campus / company id; `"none"` for the group without one. */
+  key: string;
+  /** Event title, type, campus or company name; null for the group without one. */
+  label: string | null;
+  /** ISO-8601 event date, for `groupBy=event` only; null otherwise. */
+  date: string | null;
+}
+
+/**
+ * GET /api/v2/event-analytics — 200. Requires `events:analytics` (ADMIN, MANAGER,
+ * ADMIN_EVENTS) and the event company scope: a scoped caller sees global events and its
+ * companies' events, and counts only its companies' registrants. Universe: events not deleted
+ * nor QA whose `eventDate` falls in the period, cancelled ones included. Rows come newest event
+ * first (`groupBy=event`) or most registered first.
+ */
+export interface EventAnalyticsV2Response {
+  /** Inclusive `YYYY-MM-DD`, as applied (defaults filled in). */
+  from: string;
+  to: string;
+  groupBy: EventAnalyticsGroupBy;
+  totals: EventAnalyticsCounts;
+  rows: EventAnalyticsRow[];
+}
+
+/** `detail.code` of the 422s: `invalid_period` (from > to) · `period_too_long` (+ `maxDays`). */
+export type EventAnalyticsErrorCode = "invalid_period" | "period_too_long";
