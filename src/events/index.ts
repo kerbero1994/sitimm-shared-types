@@ -1652,6 +1652,168 @@ export interface EventAuditLogParams {
   userId?: number;
 }
 
+// ── Event history — readable changes (SITIMM-1345) ──
+
+/**
+ * What an `EventChange` row records, one per admin action on the event.
+ *
+ * - `updated`: a PATCH; `changes` holds the field diff.
+ * - `enabled` / `disabled`: a PATCH that only switched `enabled`.
+ * - `cancelled`: `meta.reason`, `meta.participantsCancelled`.
+ * - `deleted`.
+ * - `cloned`: recorded on the SOURCE event; `meta.newEventUuid`.
+ * - `waitlist_promoted`: `meta.participantUuids`, `meta.overbooked`.
+ * - `door_checkin`: `meta.participantUuids`, `meta.registeredAtDoor`.
+ * - `notified`: `meta.template`, `target`, `users`, `urgent`, `suppressed`.
+ * - `participants_bulk`: `meta.action`, `requested`, `affected`.
+ * - `participants_import`: `meta.totalRows`, `successCount`.
+ *
+ * Backend: `EventChangeAction` in `app/presentation/schemas/event_v2.py`.
+ */
+export const EVENT_CHANGE_ACTIONS = [
+  "updated",
+  "enabled",
+  "disabled",
+  "cancelled",
+  "deleted",
+  "cloned",
+  "waitlist_promoted",
+  "door_checkin",
+  "notified",
+  "participants_bulk",
+  "participants_import",
+] as const;
+
+export type EventChangeAction = (typeof EVENT_CHANGE_ACTIONS)[number];
+
+/**
+ * The actor or a participant of a history item. Name only, resolved by the backend
+ * from the live profile when read (a guest's typed name for a guest); never an email.
+ */
+export interface EventChangePersonV2 {
+  /** User uuid (actor) or EventParticipantV2 uuid (participant). */
+  uuid: string;
+  /** «Name Last names», or `null` when there is none. */
+  name: string | null;
+}
+
+/**
+ * A scalar field value in an edit: ISO-8601 string for dates, a string (cut at 200
+ * chars), a number, a boolean, or `null` when empty.
+ */
+export type EventChangeValue = string | number | boolean | null;
+
+/**
+ * One edited field, by its API name (`title`, `eventDate`, `capacity`, `audienceUuid`…).
+ * Every key is always present on the wire. Opaque fields (long text, JSON, links, the
+ * cover, the map pin: `content`, `description`, `files`, `img`, `audience`,
+ * `audienceTitles`, `audienceUuid`, `eventTypeId`, `companyId`, `addressStructured`,
+ * `accessibility`, `recurrenceRule`, `virtualUrl`, `streamingUrl`, `latitude`,
+ * `longitude`) carry `opaque: true` and `null` values: say that it changed, not to what.
+ *
+ * Backend: `EventFieldChangeV2`.
+ */
+export interface EventFieldChangeV2 {
+  field: string;
+  before: EventChangeValue;
+  after: EventChangeValue;
+  opaque: boolean;
+}
+
+/**
+ * Details of a domain action; which keys are present depends on `action` (see
+ * `EventChangeAction`). Participants appear by uuid only — their names come in
+ * `EventChangeV2.participants`.
+ */
+export interface EventChangeMetaV2 {
+  /** `updated`: recurrence children the edit cascaded to. */
+  propagatedChildren?: number;
+  /** `cancelled`: the reason the admin typed, or `null`. */
+  reason?: string | null;
+  /** `cancelled`: registrations the cancel took down. */
+  participantsCancelled?: number;
+  /** `cloned`: the new event. */
+  newEventUuid?: string;
+  /** `waitlist_promoted` / `door_checkin`: EventParticipantV2 uuids. */
+  participantUuids?: string[];
+  /** `waitlist_promoted`: the admin confirmed going over capacity. */
+  overbooked?: boolean;
+  /** `door_checkin`: registered at the door (`false` = already registered, only checked in). */
+  registeredAtDoor?: boolean;
+  /** `notified`. */
+  template?: EventNotifyTemplate;
+  /** `notified`. */
+  target?: EventNotifyTarget;
+  /** `notified`: recipients counted when it was sent. */
+  users?: number;
+  /** `notified`: one of the urgent templates (SITIMM-1349). */
+  urgent?: boolean;
+  /** `notified`: a QA event — the slot was taken, nothing reached a device. */
+  suppressed?: boolean;
+  /** `participants_bulk`. */
+  action?: BulkParticipantAction;
+  /** `participants_bulk`. */
+  requested?: number;
+  /** `participants_bulk`. */
+  affected?: number;
+  /** `participants_import`. */
+  totalRows?: number;
+  /** `participants_import`. */
+  successCount?: number;
+}
+
+/**
+ * One item of an event's history.
+ *
+ * Backend: `event_changes_v2.py :: list_event_changes` (`EventChangeV2`).
+ */
+export interface EventChangeV2 {
+  uuid: string;
+  action: EventChangeAction;
+  /** Who did it; `null` when the account no longer exists. */
+  actor: EventChangePersonV2 | null;
+  /** The field diff of `updated` / `enabled` / `disabled`; `[]` for the other actions. */
+  changes: EventFieldChangeV2[];
+  meta: EventChangeMetaV2;
+  /** `meta.participantUuids` with their names, in the same order. */
+  participants: EventChangePersonV2[];
+  /** ISO-8601. Rows written in the same request share it. */
+  createdAt: string;
+}
+
+/**
+ * Response from `GET /api/v2/events/{uuid}/changes` — newest first. Requires
+ * `events:update` and the event company scope.
+ *
+ * Backend: `event_changes_v2.py :: list_event_changes` (`EventChangesV2Response`).
+ */
+export interface EventChangesV2Response {
+  items: EventChangeV2[];
+  /** Everyone who ever changed the event, for the «by person» filter. */
+  actors: EventChangePersonV2[];
+  /** Total rows matching the filters. */
+  total: number;
+  /** Current page number (1-based). */
+  page: number;
+  /** Items per page. Default 20, max 100. */
+  pageSize: number;
+  hasNext: boolean;
+}
+
+/** Query args for `GET /api/v2/events/{uuid}/changes`. */
+export interface EventChangesParams {
+  /** Event UUID (path param). */
+  uuid: string;
+  /** Page number (1-based). */
+  page?: number;
+  /** Items per page (serialized as `pageSize`). Default 20, max 100. */
+  pageSize?: number;
+  /** Only this kind of action. */
+  action?: EventChangeAction;
+  /** Only what this person did (an `actors[].uuid`). */
+  actorUuid?: string;
+}
+
 // ── Event-linked push (SITIMM-1317) ──
 
 /**

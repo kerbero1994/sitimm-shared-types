@@ -25,6 +25,10 @@
  * merged to `main` at this source version). Safe to overwrite on the next
  * `make dump-v2-routes` once that backend branch ships.
  *
+ * MANUAL PATCH (SITIMM-1345, 2026-10-16): 1 row hand-added to the `events`
+ * group for `GET /events/{uuid}/changes` (mini-back SITIMM-1345, not yet merged at
+ * this source version). Safe to overwrite on the next `make dump-v2-routes`.
+ *
  * MANUAL PATCH (SITIMM-1343, 2026-10-16): 1 row hand-added to the `events`
  * group for `GET /event-analytics` (mini-back SITIMM-1343, not yet merged at
  * this source version). Safe to overwrite on the next `make dump-v2-routes`.
@@ -543,6 +547,8 @@ export const V2_ENDPOINTS_GENERATED = {
     UPDATE_EVENT: (uuid: string | number) => `/api/v2/events/${uuid}`,
     /** GET — V2 Event Participants */
     GET_EVENT_AUDIT_LOG: (uuid: string | number) => `/api/v2/events/${uuid}/audit-log`,
+    /** GET — V2 Event Changes (manual patch, SITIMM-1345) */
+    LIST_EVENT_CHANGES: (uuid: string | number) => `/api/v2/events/${uuid}/changes`,
     /** POST — V2 Event Participants */
     CHECK_IN_PARTICIPANT: (uuid: string | number) => `/api/v2/events/${uuid}/check-in`,
     /** POST — V2 Events */

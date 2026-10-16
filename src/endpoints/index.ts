@@ -211,6 +211,11 @@ export const V2_ENDPOINTS = {
       last 90 days, 366 at most. Errors: `EventAnalyticsErrorCode`. Own prefix (not under
       /events). Ships with mini-back SITIMM-1343. */
   EVENT_ANALYTICS: "/event-analytics",
+  /** GET ?page&pageSize&action&actorUuid → V2Response<EventChangesV2Response>. Requires
+      `events:update`, the event company scope and the QA harness (uniform 404). The readable
+      history of an event — who changed what, newest first — with the actor and participants
+      by name, never an email. Ships with mini-back SITIMM-1345. */
+  EVENT_CHANGES: "/events/{uuid}/changes",
   /** POST → Body: ConfirmRegistrationV2Request. NO auth. IP rate-limited. Returns
       V2Response<ConfirmRegistrationV2Response>. Consumes the one-time email token, creates the participant. */
   EVENT_REGISTRATION_CONFIRM: "/events/registration/confirm",
