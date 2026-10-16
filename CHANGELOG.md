@@ -5,6 +5,14 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.31.0] - 2026-10-16
+
+### Added — door registration (SITIMM-1341)
+
+- `events`: `EventDoorCandidateV2`, `EventDoorRegistrationV2`, `EventDoorCheckInV2Request`, `EventDoorCheckInV2Response` and `EventDoorErrorCode`.
+- `events`: `EventDetailV2.canScanTickets?`, the flag the backend already sends (SITIMM-805). The door UI is shown with it.
+- `endpoints`: `EVENT_DOOR_CANDIDATES` and `EVENT_DOOR_CHECK_IN`, plus the generated rows `LIST_DOOR_CANDIDATES` and `DOOR_CHECK_IN`.
+
 ## [2.30.0] - 2026-10-16
 
 ### Added — urgent notice to registrants (SITIMM-1349)
