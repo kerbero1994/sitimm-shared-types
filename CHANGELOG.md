@@ -5,6 +5,16 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.32.0] - 2026-10-16
+
+### Added — analytics across events (SITIMM-1343)
+
+- `events`: `EventAnalyticsGroupBy`, `EventAnalyticsQuery`, `EventAnalyticsCounts`, `EventAnalyticsRow`, `EventAnalyticsV2Response` and `EventAnalyticsErrorCode`.
+  - Metrics: registered, attended, no-show, cancelled (and by the event), waitlisted, and distinct events.
+  - Filters: period (last 90 days by default, 366 at most), event type, sede campus and registrant company.
+  - Grouping: by event, type, sede or company.
+- `endpoints`: `V2_ENDPOINTS.EVENT_ANALYTICS` (`GET /event-analytics`, permission `events:analytics`), plus its manual row in `v2_endpoints_generated`. Ships with mini-back SITIMM-1343.
+
 ## [2.31.0] - 2026-10-16
 
 ### Added — door registration (SITIMM-1341)
