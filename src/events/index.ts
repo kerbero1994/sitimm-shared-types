@@ -1655,16 +1655,38 @@ export interface EventAuditLogParams {
 export type EventNotifyTarget = "participants" | "audience" | "attended";
 
 /**
+ * Urgent templates (SITIMM-1349): last-minute venue change, time change or suspension.
+ * They go to `participants` only (the registrants; 422 otherwise) and wait 1 h, in a
+ * cooldown slot apart from the 24 h one of the other templates. Fixed text in 8 locales,
+ * no free text, no e-mail.
+ */
+export type EventNotifyUrgentTemplate = "venue_change" | "time_change" | "suspension";
+
+/** The urgent templates, in the order a picker should offer them (SITIMM-1349). */
+export const EVENT_NOTIFY_URGENT_TEMPLATES: readonly EventNotifyUrgentTemplate[] = [
+  "venue_change",
+  "time_change",
+  "suspension",
+];
+
+/**
  * Fixed, translated templates (8 locales, server-side). No free text. `certificate`
  * (SITIMM-1326, «your certificate is ready») goes to `attended` only and only after the event,
  * within 30 days of its end (422 `event_not_notifiable` otherwise); the others need the event
- * not to be over.
+ * not to be over. The urgent ones (SITIMM-1349, {@link EventNotifyUrgentTemplate}) go to
+ * `participants` only and wait 1 h instead of 24 h.
  */
-export type EventNotifyTemplate = "announcement" | "reminder" | "update" | "certificate";
+export type EventNotifyTemplate =
+  | "announcement"
+  | "reminder"
+  | "update"
+  | "certificate"
+  | EventNotifyUrgentTemplate;
 
 /**
  * POST /api/v2/events/{uuid}/notify — body. Requires `events:notify` (ADMIN, MANAGER,
- * ADMIN_EVENTS). Rate limit 10/hour per user. Cooldown: one send per event+target per 24 h.
+ * ADMIN_EVENTS). Rate limit 10/hour per user. Cooldown: one send per event+target per 24 h;
+ * the urgent templates (SITIMM-1349) have their own slot, one per event+target per 1 h.
  */
 export interface EventNotifyV2Request {
   target: EventNotifyTarget;
@@ -1681,11 +1703,17 @@ export interface EventNotifyV2Response {
   suppressed: boolean;
 }
 
-/** GET /api/v2/events/{uuid}/notify/preview?target=… — 200. */
+/**
+ * GET /api/v2/events/{uuid}/notify/preview?target=…[&template=…] — 200. `template` is
+ * optional (SITIMM-1349): with an urgent one, `cooldownUntil` is the 1 h urgent slot's.
+ */
 export interface EventNotifyPreviewV2Response {
   target: EventNotifyTarget;
   users: number;
-  /** ISO-8601 when the 24 h cooldown for this target ends; null when free to send. */
+  /**
+   * ISO-8601 when the cooldown for this target ends (24 h, or the 1 h urgent slot when the
+   * preview asked with an urgent `template`); null when free to send.
+   */
   cooldownUntil: string | null;
 }
 

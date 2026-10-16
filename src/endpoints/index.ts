@@ -133,13 +133,15 @@ export const V2_ENDPOINTS = {
   EVENT_CLONE: "/events/{uuid}/clone",
   /** POST → Body: EventNotifyV2Request. Returns V2Response<EventNotifyV2Response> (202, the
       fan-out is queued). Requires `events:notify` (ADMIN, MANAGER, ADMIN_EVENTS) and the event's
-      company scope; 10/hour per user; one send per event+target per 24 h. Errors:
+      company scope; 10/hour per user; one send per event+target per 24 h, or per 1 h for the
+      urgent templates (SITIMM-1349, `participants` only, a slot of their own). Errors:
       `EventNotifyErrorCode` (409 `notify_cooldown` carries `retryAfter`). Ships with mini-back
       SITIMM-1317. */
   EVENT_NOTIFY: "/events/{uuid}/notify",
   /** GET ?target=participants|audience → V2Response<EventNotifyPreviewV2Response>. Requires
       `events:notify`. How many users the push would reach and when the target's 24 h cooldown
-      ends (`cooldownUntil`, null when free). Ships with mini-back SITIMM-1317. */
+      ends (`cooldownUntil`, null when free). Optional `?template=`: with an urgent one
+      (SITIMM-1349) it reports the 1 h urgent slot instead. Ships with mini-back SITIMM-1317. */
   EVENT_NOTIFY_PREVIEW: "/events/{uuid}/notify/preview",
   /** POST → Body: CancelEventV2Request. Returns V2Response<EventCancelV2Response>. Requires
       `events:cancel` (ADMIN, MANAGER, ADMIN_EVENTS) and the event company scope. Disables the

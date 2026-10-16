@@ -5,6 +5,15 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.30.0] - 2026-10-16
+
+### Added — urgent notice to registrants (SITIMM-1349)
+
+- `events`: `EventNotifyTemplate` gains the urgent templates `venue_change`, `time_change` and `suspension`. They are also exported as `EventNotifyUrgentTemplate` and `EVENT_NOTIFY_URGENT_TEMPLATES`.
+  - They go to `participants` only and wait 1 h, in a cooldown slot of their own.
+  - The text is fixed in 8 locales, with no free text and no e-mail.
+- `events` / `endpoints`: the notify preview takes an optional `?template=`. With an urgent template, `cooldownUntil` is the 1 h slot's. Ships with mini-back SITIMM-1349.
+
 ## [2.29.0] - 2026-10-16
 
 ### Added — promote from the waitlist by hand (SITIMM-1347)
