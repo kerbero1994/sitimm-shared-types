@@ -5,6 +5,13 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.28.0] - 2026-10-16
+
+### Added — two contracts the dashboard defined locally (SITIMM-1339)
+
+- `bonuses`: `IncludeInactive` (`{ includeInactive?: boolean }`), the dashboard's view of the bonus list and detail and of the category and subcategory lists (SITIMM-1322). It is honoured only for a `bonuses:update` holder and silently ignored for anyone else. JSDoc on `BonusV2ListQuery.isActive` says how the two combine.
+- `events`: `PendingApprovalsCount` (`{ pendingCount: number }`), the response of `GET /events/approvals/pending-count` (`events:approve_guests`, SITIMM-1324). `V2_ENDPOINTS.EVENT_APPROVALS_PENDING_COUNT` now points to it.
+
 ## [2.27.0] - 2026-10-16
 
 ### Added — cancel an event without deleting it (SITIMM-1323)

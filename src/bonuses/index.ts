@@ -433,6 +433,8 @@ export interface BonusV2ListQuery {
   categorySlug?: string;
   cityId?: number;
   isFeatured?: boolean;
+  /** Forced to `true` on public reads. Honoured only together with an honoured
+   *  `includeInactive` (see {@link IncludeInactive}); then omitted = every row. */
   isActive?: boolean;
   search?: string;
   /** Locale code for i18n overlay. Defaults to "es". */
@@ -441,6 +443,21 @@ export interface BonusV2ListQuery {
   limit?: number;
   /** One of: "sortOrder", "createdAt", "business", "-createdAt", "-sortOrder". */
   sort?: string;
+}
+
+/**
+ * Optional `includeInactive=true` (SITIMM-1322) on GET /api/v2/bonuses,
+ * GET /api/v2/bonuses/{uuid}, GET /api/v2/bonuses/categories and
+ * GET /api/v2/bonuses/categories/{slug} (its subcategories). It is the dashboard's view:
+ * inactive bonuses, categories and subcategories too.
+ *
+ * Honoured only for a caller holding `bonuses:update` (ADMIN, MANAGER, ADMIN_EMPLOYEES,
+ * FINANCIAL, ADMIN_BONUSES). For anyone else — anonymous, a bad token, a member — it is
+ * silently ignored and the public active-only view is served. Combine it with a query
+ * type, e.g. `BonusV2ListQuery & IncludeInactive`.
+ */
+export interface IncludeInactive {
+  includeInactive?: boolean;
 }
 
 // ── Response Wrappers ────────────────────────────────────────────────────

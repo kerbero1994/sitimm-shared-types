@@ -1763,3 +1763,15 @@ export interface EventCancelV2Response {
  * 403 is the generic permission error.
  */
 export type EventCancelErrorCode = "event_not_found" | "event_already_cancelled";
+
+// ── Approvals badge (SITIMM-586, SITIMM-1324) ──
+
+/**
+ * GET /api/v2/events/approvals/pending-count — 200. Requires `events:approve_guests`.
+ * Registrations waiting for review across EVERY enabled, upcoming event (not per event):
+ * the dashboard's approvals badge. A past event is left out so the badge never stays lit
+ * on something that can no longer be approved.
+ */
+export interface PendingApprovalsCount {
+  pendingCount: number;
+}
