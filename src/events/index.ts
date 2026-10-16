@@ -412,6 +412,10 @@ export interface EventDetailV2 extends EventV2 {
   requiresApproval: boolean;
   /** True if the caller has an active (non-cancelled) registration. */
   isRegistered: boolean;
+  /** True when the caller may check people in at this event: event staff on its scanner
+   *  list (SITIMM-805). The same predicate gates the ticket check-in and the door
+   *  endpoints, so a button shown with it never 403s. */
+  canScanTickets?: boolean;
   /**
    * 1-indexed FIFO position on the waitlist when the caller's own registration
    * is in state `waitlisted`. `null` for every other caller (not on the
@@ -1867,3 +1871,75 @@ export type WaitlistPromoteErrorCode =
   | "event_not_found"
   | "event_cancelled"
   | "promotion_over_capacity";
+
+// ── Door registration (SITIMM-1341) ──
+
+/** The candidate's own registration for this event (never a substitute's). */
+export interface EventDoorRegistrationV2 {
+  participantUuid: string;
+  status: EventParticipantStatus;
+  checkedInAt: string | null;
+}
+
+/**
+ * GET /api/v2/events/{uuid}/door/candidates?q=&limit= — one row. An affiliate (active
+ * account with a live `Employee` row) of a company in the caller's event scope. RFC and
+ * phone go out as their last 4 characters only.
+ */
+export interface EventDoorCandidateV2 {
+  userUuid: string;
+  name: string | null;
+  lastNames: string | null;
+  companyName: string | null;
+  rfcTail: string | null;
+  phoneTail: string | null;
+  /** null = not registered for this event. */
+  registration: EventDoorRegistrationV2 | null;
+}
+
+/** POST /api/v2/events/{uuid}/door/check-in — body (`extra="forbid"`). */
+export interface EventDoorCheckInV2Request {
+  /** A `userUuid` from the door candidates. */
+  userUuid: string;
+  /** The sede the staff stands at (`EventCampusV2.id`); default: the primary sede. */
+  eventCampusId?: number | null;
+}
+
+/**
+ * POST /api/v2/events/{uuid}/door/check-in — 200. Registers the affiliate if needed (event
+ * and sede capacity enforced, approval queue skipped, no waitlist) and checks them in, in
+ * one transaction. `checkedInBy` records the staff member.
+ */
+export interface EventDoorCheckInV2Response {
+  participant: EventParticipantV2;
+  /** false = they already held a seat and were only checked in. */
+  registeredAtDoor: boolean;
+}
+
+/**
+ * Error codes of the door endpoints: 403 forbidden (not on the event's scanner list) ·
+ * 404 event_not_found · 404 member_not_found (outside the caller's companies) ·
+ * 422 not_affiliate · 422 query_too_short · 409 event_cancelled · 409 already_checked_in ·
+ * 409 already_registered (a substitute holds the member's slot) · 409 already_rejected ·
+ * 409 event_full · 409 venue_full · 409 event_at_capacity (approving a pending request) ·
+ * 409 outside_reception_window · 400 event_ended (past its `endDate`) · 400 event_disabled ·
+ * 400 registration_disabled · 403 audience_not_eligible.
+ */
+export type EventDoorErrorCode =
+  | "forbidden"
+  | "event_not_found"
+  | "member_not_found"
+  | "not_affiliate"
+  | "query_too_short"
+  | "event_cancelled"
+  | "already_checked_in"
+  | "already_registered"
+  | "already_rejected"
+  | "event_full"
+  | "venue_full"
+  | "event_at_capacity"
+  | "outside_reception_window"
+  | "event_ended"
+  | "event_disabled"
+  | "registration_disabled"
+  | "audience_not_eligible";

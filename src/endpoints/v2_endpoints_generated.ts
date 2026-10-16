@@ -25,6 +25,11 @@
  * merged to `main` at this source version). Safe to overwrite on the next
  * `make dump-v2-routes` once that backend branch ships.
  *
+ * MANUAL PATCH (SITIMM-1341, 2026-10-16): 2 rows hand-added to the `events`
+ * group for `GET /events/{uuid}/door/candidates` and `POST /events/{uuid}/door/check-in`
+ * (mini-back SITIMM-1341, not yet merged at this source version). Safe to overwrite on
+ * the next `make dump-v2-routes`.
+ *
  * MANUAL PATCH (SITIMM-1347, 2026-10-16): 1 row hand-added to the `events`
  * group for `POST /events/{uuid}/waitlist/promote` (mini-back SITIMM-1347, not
  * yet merged at this source version). Safe to overwrite on the next
@@ -588,6 +593,10 @@ export const V2_ENDPOINTS_GENERATED = {
     EVENT_SCANNERS: (uuid: string | number) => `/api/v2/events/${uuid}/scanners`,
     /** GET — V2 Event Scanner Candidates (manual patch, SITIMM-1322) */
     LIST_SCANNER_CANDIDATES: (uuid: string | number) => `/api/v2/events/${uuid}/scanners/candidates`,
+    /** GET — V2 Event Door Candidates (manual patch, SITIMM-1341) */
+    LIST_DOOR_CANDIDATES: (uuid: string | number) => `/api/v2/events/${uuid}/door/candidates`,
+    /** POST — V2 Event Door Check-in (manual patch, SITIMM-1341) */
+    DOOR_CHECK_IN: (uuid: string | number) => `/api/v2/events/${uuid}/door/check-in`,
     /** GET — V2 Event Participants */
     LIST_EVENT_PARTICIPANTS: (uuid: string | number) => `/api/v2/events/${uuid}/participants`,
     /** GET — V2 Event Certificates */

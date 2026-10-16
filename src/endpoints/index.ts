@@ -155,6 +155,15 @@ export const V2_ENDPOINTS = {
   /** GET ?q=&limit= → V2Response<EventScannerCandidateV2[]>. Same gate as EVENT_SCANNERS. Active
       event staff matching `q` (2+ chars); `limit` ≤ 50. Ships with mini-back SITIMM-1322. */
   EVENT_SCANNER_CANDIDATES: "/events/{uuid}/scanners/candidates",
+  /** GET ?q=&limit= → V2Response<EventDoorCandidateV2[]>. Requires `events:check_in`, the event's
+      scanner list (`canScanTickets`), the harness and the event company scope. Affiliates of the
+      caller's companies whose name contains `q`, whose RFC starts with it or whose phone contains
+      its digits (`q` 3+ chars, `limit` ≤ 50). Ships with mini-back SITIMM-1341. */
+  EVENT_DOOR_CANDIDATES: "/events/{uuid}/door/candidates",
+  /** POST → Body: EventDoorCheckInV2Request. Returns V2Response<EventDoorCheckInV2Response>. Same
+      gate as EVENT_DOOR_CANDIDATES. Registers the affiliate if needed and checks them in, in one
+      step. Errors: `EventDoorErrorCode`. Ships with mini-back SITIMM-1341. */
+  EVENT_DOOR_CHECK_IN: "/events/{uuid}/door/check-in",
   /** GET → V2Response<MyEventsV2Response>. Returns user's registered events. Auth required. */
   EVENTS_MY: "/events/my-events",
   /** POST → Body: `CreateParticipantV2Request` (events module). Returns
