@@ -90,9 +90,10 @@ describe("resolveUserType (backward compat)", () => {
  * mini-back users_admin_v2.py `_USER_TYPE_GROUPS["union_staff"]` = has_at_least(HR).
  */
 describe("STAFF_USER_TYPE_IDS / isStaffUserType", () => {
-  it("son exactamente los 8 roles de HR para arriba", () => {
+  it("son exactamente los 10 roles de HR para arriba", () => {
+    // SITIMM-1316: + ADMIN_EVENTS (52719) y ADMIN_BONUSES (67384), nivel 2.
     expect([...STAFF_USER_TYPE_IDS].sort()).toEqual(
-      [23648, 57341, 48235, 31847, 29563, 85672, 81493, 45298].sort()
+      [23648, 57341, 52719, 67384, 48235, 31847, 29563, 85672, 81493, 45298].sort()
     );
     for (const ut of USER_TYPE_ORDER) {
       expect(isStaffUserType(ut)).toBe(hasAtLeast(ut, UserType.HR));

@@ -5,6 +5,20 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.24.0] - 2026-10-15
+
+Admins acotados (**SITIMM-1316**, épica SITIMM-1314) y el contrato del push ligado al evento. Llegan con mini-back SITIMM-1315 (roles) y SITIMM-1317 (push).
+
+- **`users`:** `UserType.ADMIN_EVENTS` (52719) y `UserType.ADMIN_BONUSES` (67384), en nivel 2, justo después de OFFICE en `USER_TYPE_HIERARCHY`, `USER_TYPE_ORDER` y `STAFF_USER_TYPE_IDS` (que pasa a tener 10).
+  - Son staff: `isStaffUserType` da `true` y entran al dash.
+  - No pasan `hasAtLeast(ADVISOR)` ni están en `ADMIN_LEVEL_IDS`.
+  - Tienen paridad con ADMIN dentro de su feature y son afiliados en todo lo demás. Ningún otro rol los hereda.
+- **`events`:** `EventNotifyTarget`, `EventNotifyTemplate`, `EventNotifyV2Request`, `EventNotifyV2Response`, `EventNotifyPreviewV2Response` y `EventNotifyErrorCode`. Los códigos son `forbidden`, `event_not_found`, `notify_cooldown` (con `retryAfter`), `event_not_notifiable` y `notify_unavailable`.
+- **`endpoints`:**
+  - Constantes curadas: `V2_ENDPOINTS.EVENT_NOTIFY` (POST) y `EVENT_NOTIFY_PREVIEW` (GET), con su JSDoc de método, body, respuesta y permiso.
+  - Generadas: `V2_ENDPOINTS_GENERATED.events.NOTIFY_EVENT` y `PREVIEW_EVENT_NOTIFY`, como parche manual documentado en la cabecera. Esas rutas todavía no existen en el `main` de mini-back.
+- **Consumidores:** un `Record<UserTypeValue, …>` exhaustivo deja de compilar hasta sumar los dos roles. Por ejemplo, `role.ts` de la web o el tipado de `ROLE_LABEL_KEYS` de la app. Es intencional, y la versión es minor porque solo se agregan miembros.
+
 ## [2.23.0] - 2026-10-14
 
 Puerta de staff del dashboard ya servida por mini-back (#697, **SITIMM-1274**). Hijo de SITIMM-1277.
