@@ -25,6 +25,11 @@
  * merged to `main` at this source version). Safe to overwrite on the next
  * `make dump-v2-routes` once that backend branch ships.
  *
+ * MANUAL PATCH (SITIMM-1347, 2026-10-16): 1 row hand-added to the `events`
+ * group for `POST /events/{uuid}/waitlist/promote` (mini-back SITIMM-1347, not
+ * yet merged at this source version). Safe to overwrite on the next
+ * `make dump-v2-routes`.
+ *
  * MANUAL PATCH (SITIMM-1323, 2026-10-16): 1 row hand-added to the `events`
  * group for `POST /events/{uuid}/cancel` (mini-back SITIMM-1323, not yet merged
  * at this source version). Safe to overwrite on the next `make dump-v2-routes`.
@@ -577,6 +582,8 @@ export const V2_ENDPOINTS_GENERATED = {
     PREVIEW_EVENT_NOTIFY: (uuid: string | number) => `/api/v2/events/${uuid}/notify/preview`,
     /** POST — V2 Events (manual patch, SITIMM-1323) */
     CANCEL_EVENT: (uuid: string | number) => `/api/v2/events/${uuid}/cancel`,
+    /** POST — V2 Event Waitlist (manual patch, SITIMM-1347) */
+    PROMOTE_FROM_WAITLIST: (uuid: string | number) => `/api/v2/events/${uuid}/waitlist/promote`,
     /** GET|PUT — V2 Event Scanners (manual patch, SITIMM-1322) */
     EVENT_SCANNERS: (uuid: string | number) => `/api/v2/events/${uuid}/scanners`,
     /** GET — V2 Event Scanner Candidates (manual patch, SITIMM-1322) */
