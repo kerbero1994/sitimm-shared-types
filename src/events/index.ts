@@ -223,6 +223,10 @@ export interface EventV2 {
   timeZone: string;
   /** True when this is a QA-harness event: time-gate bypass + hidden from non-privileged callers. Default false. */
   qaHarnessEvent: boolean;
+  /** ISO-8601 instant the event was cancelled without being deleted; null while live (SITIMM-1323). */
+  cancelledAt?: string | null;
+  /** Why it was cancelled (≤ 280 chars), as the admin typed it; null when none was given. */
+  cancelReason?: string | null;
   /** Resolved locale applied to translatable fields. Present on i18n GET responses. */
   currentLang?: string;
   /** Origin of the translation (machine/human/fallback). Fallback = native Spanish. */
@@ -1731,3 +1735,31 @@ export interface SetEventScannersV2Request {
 export interface EventScannerCandidateV2 extends EventScannerV2 {
   userType: number;
 }
+
+// ── Cancel without deleting (SITIMM-1323) ──
+
+/** POST /api/v2/events/{uuid}/cancel — body (`extra="forbid"` on the backend). */
+export interface CancelEventV2Request {
+  /** Optional reason, ≤ 280 chars. */
+  reason?: string;
+}
+
+/**
+ * POST /api/v2/events/{uuid}/cancel — 200. The event is disabled, stays listed for admins with
+ * `cancelledAt`, and every live registration is cancelled (`cancelReason: "event_cancelled"`),
+ * which also frees the bus seats. The registrants get the `event_cancelled` push.
+ */
+export interface EventCancelV2Response {
+  uuid: string;
+  cancelledAt: string;
+  cancelReason: string | null;
+  /** Registrations this call cancelled (and notified). */
+  participantsCancelled: number;
+}
+
+/**
+ * Error codes of POST /api/v2/events/{uuid}/cancel: 404 event_not_found (missing, out of the
+ * caller's event scope, or hidden QA) · 409 event_already_cancelled. Without `events:cancel` the
+ * 403 is the generic permission error.
+ */
+export type EventCancelErrorCode = "event_not_found" | "event_already_cancelled";

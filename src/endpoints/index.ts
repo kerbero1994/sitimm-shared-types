@@ -141,6 +141,11 @@ export const V2_ENDPOINTS = {
       `events:notify`. How many users the push would reach and when the target's 24 h cooldown
       ends (`cooldownUntil`, null when free). Ships with mini-back SITIMM-1317. */
   EVENT_NOTIFY_PREVIEW: "/events/{uuid}/notify/preview",
+  /** POST → Body: CancelEventV2Request. Returns V2Response<EventCancelV2Response>. Requires
+      `events:cancel` (ADMIN, MANAGER, ADMIN_EVENTS) and the event company scope. Disables the
+      event, cancels every live registration and pushes `event_cancelled`. Errors:
+      `EventCancelErrorCode` (409 `event_already_cancelled`). Ships with mini-back SITIMM-1323. */
+  EVENT_CANCEL: "/events/{uuid}/cancel",
   /** GET → V2Response<EventScannersV2Response>. PUT → Body: SetEventScannersV2Request (the full
       list), returns V2Response<EventScannersV2Response>. Requires `events:manage_scanners`
       (ADMIN, MANAGER, ADMIN_EVENTS) and the event company scope. SITIMM-805 / SITIMM-1322. */
