@@ -70,8 +70,8 @@ describe("Capability es una unión cerrada", () => {
 });
 
 describe("CAPABILITIES (catálogo de mini-back, app/domain/enums/capabilities.py)", () => {
-  it("65 capacidades, sin repetidas, con la forma área.verbo", () => {
-    expect(CAPABILITIES).toHaveLength(65);
+  it("66 capacidades, sin repetidas, con la forma área.verbo", () => {
+    expect(CAPABILITIES).toHaveLength(66);
     expect(new Set(CAPABILITIES).size).toBe(CAPABILITIES.length);
     for (const c of CAPABILITIES) expect(c).toMatch(/^[a-z_]+\.[a-z_]+$/);
   });
@@ -81,9 +81,20 @@ describe("CAPABILITIES (catálogo de mini-back, app/domain/enums/capabilities.py
     expect(dts).toMatch(/declare const CAPABILITIES: readonly \["panel\.enter", "companies\.view"/);
     expect(dts).toContain('type CompanyScope = "all" | "assigned" | "none";');
     expect(dts).toMatch(/"companies\.view", "companies\.view_basic"/);
-    expect(dts).toMatch(/"census\.upload", "census\.rules"/);
+    expect(dts).toMatch(/"census\.upload", "census\.delete", "census\.rules"/);
     expect(dts).toMatch(/interface HrCompaniesV2Response/);
     expect(dts).toMatch(/capabilities: Capability\[\];/);
     expect(dts).toMatch(/companyScope: CompanyScope;/);
+  });
+});
+
+describe("V2_ENDPOINTS de las empresas de un RH (SITIMM-1391)", () => {
+  it("GET y PUT /admin/users/{uuid}/hr-companies", async () => {
+    const { V2_ENDPOINTS, endpoint } = await import("../src/endpoints");
+    const uuid = "11111111-1111-1111-1111-111111111111";
+    expect(endpoint(V2_ENDPOINTS.ADMIN_USER_HR_COMPANIES, { uuid })).toBe(
+      `/admin/users/${uuid}/hr-companies`,
+    );
+    expect(V2_ENDPOINTS.ADMIN_USER_HR_COMPANIES_SET).toBe(V2_ENDPOINTS.ADMIN_USER_HR_COMPANIES);
   });
 });

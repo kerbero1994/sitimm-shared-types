@@ -371,7 +371,7 @@ export const FIELD_GROUPS = {
  * `role === X`, and never declares capabilities of its own. INVITADO and EMPLOYEE hold none.
  *
  * Backend: app/domain/enums/capabilities.py :: CAPABILITY_PERMISSIONS (its keys, same order),
- * mini-back 420af05f (SITIMM-1391). Matrix: docs/v2/Users/role_capability_proposal.md §2–§3.
+ * mini-back 87f230c0 (SITIMM-1391). Matrix: docs/v2/Users/role_capability_proposal.md §2–§3.
  */
 export const CAPABILITIES = [
   "panel.enter",
@@ -382,6 +382,7 @@ export const CAPABILITIES = [
   "companies.delete",
   "census.view",
   "census.upload",
+  "census.delete",
   "census.rules",
   "census_email.manage",
   "union_reps.view",
