@@ -125,7 +125,7 @@ export const V2_ENDPOINTS = {
 
   // ── Events ───────────────────────────────────────────────
 
-  /** GET → V2Response<EventListV2Response>. Query: page, page_size, search, sort, category, year. Auth required. */
+  /** GET → Query: EventListV2Query (incl. companyId / campusId, SITIMM-1389). Returns V2Response<EventListV2Response>. Auth required. */
   EVENTS: "/events",
   /** POST → Body: CreateEventV2Request. Returns V2Response<EventV2>. Requires events:create permission. */
   EVENTS_CREATE: "/events",

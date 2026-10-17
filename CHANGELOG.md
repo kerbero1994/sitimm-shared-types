@@ -5,6 +5,16 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.36.0] - 2026-10-16
+
+### Added — filter the event list by company and sede (SITIMM-1389)
+
+- `events`: `EventListV2Query`, the query of `GET /api/v2/events`, mirroring the backend's `list_events` params. New in the backend:
+  - `companyId`: the event's company, ANDed with the caller's event scope. A company outside the scope gives an empty list, not a 403.
+  - `campusId`: events with a live venue on that campus.
+- `endpoints`: the `EVENTS` JSDoc now points at `EventListV2Query`. It used to list params that don't exist (`sort`, `category`, `year`).
+- No new item fields. Ships with mini-back SITIMM-1389.
+
 ## [2.35.0] - 2026-10-16
 
 ### Added — readable event history (SITIMM-1345)
