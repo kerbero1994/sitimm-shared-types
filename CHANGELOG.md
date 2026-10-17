@@ -5,6 +5,15 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.35.0] - 2026-10-16
+
+### Added — readable event history (SITIMM-1345)
+
+- `events`: `EVENT_CHANGE_ACTIONS` / `EventChangeAction`, `EventChangePersonV2`, `EventChangeValue`, `EventFieldChangeV2`, `EventChangeMetaV2`, `EventChangeV2`, `EventChangesV2Response` and `EventChangesParams`.
+  - One item per admin action: edits as a field diff (`before`/`after` by API name, opaque fields without values), on/off, cancel, delete, clone, waitlist promotion, door check-in, push, bulk and import.
+  - The actor and the participants come by name, resolved by the backend; never an email.
+- `endpoints`: `V2_ENDPOINTS.EVENT_CHANGES` (`GET /events/{uuid}/changes`, permission `events:update`), plus its manual row `LIST_EVENT_CHANGES` in `v2_endpoints_generated`. Ships with mini-back SITIMM-1345.
+
 ## [2.34.0] - 2026-10-16
 
 ### Added — the app's local V2 endpoints, now in the registry (SITIMM-1380)
