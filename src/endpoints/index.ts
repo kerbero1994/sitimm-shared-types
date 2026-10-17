@@ -74,6 +74,15 @@ export const V2_ENDPOINTS = {
   /** POST → Body: { full_name (2–255), identifier_type: "rfc" | "curp" | "nss", identifier_value (3–64), company_uuid? | company_name_freetext? (una de las dos), note? (≤2000) }. Auth required: un INVITADO pide la revisión de su cuenta (o la vuelve a pedir). Returns V2Response<{ review_request_uuid }>. Backend: users_activation_v2.py `ActivationRequestBody`. SITIMM-1380. */
   USERS_ME_ACTIVATION_REQUEST: "/users/me/activation-request",
 
+  // ── Admin users: an HR user's companies (SITIMM-1391) ──────────────
+
+  /** GET → HrCompaniesV2Response. Requires `users.view`. 422 `not_hr` if the user is not HR. */
+  ADMIN_USER_HR_COMPANIES: "/admin/users/{uuid}/hr-companies",
+  /** PUT → Body: HrCompaniesV2Request (the whole set; `[]` unassigns all). Returns
+   *  HrCompaniesV2Response. Requires `users.edit` + role ceiling. 422 `not_hr` /
+   *  `company_not_found` (with `missing`), 409 `conflict`. */
+  ADMIN_USER_HR_COMPANIES_SET: "/admin/users/{uuid}/hr-companies",
+
   // ── Auth (V2 desde el hard cutover 9e3a4255, 2026-06-22) ──────────
 
   /** POST → Body: LoginV2Request ({email, pass}). Returns LoginV2Response. NO auth. Rate limit 5/min + lockout por email. */

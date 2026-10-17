@@ -371,16 +371,19 @@ export const FIELD_GROUPS = {
  * `role === X`, and never declares capabilities of its own. INVITADO and EMPLOYEE hold none.
  *
  * Backend: app/domain/enums/capabilities.py :: CAPABILITY_PERMISSIONS (its keys, same order),
- * mini-back ee58f45f. Matrix: docs/v2/Users/role_capability_proposal.md §2–§3.
+ * mini-back 87f230c0 (SITIMM-1391). Matrix: docs/v2/Users/role_capability_proposal.md §2–§3.
  */
 export const CAPABILITIES = [
   "panel.enter",
   // Companies and padrón
   "companies.view",
+  "companies.view_basic",
   "companies.edit",
   "companies.delete",
   "census.view",
   "census.upload",
+  "census.delete",
+  "census.rules",
   "census_email.manage",
   "union_reps.view",
   "union_reps.edit",
@@ -459,7 +462,8 @@ export type Capability = (typeof CAPABILITIES)[number];
  *
  * - `"all"`: every company — the unrestricted roles, and OFFICE on the company catalogue
  *   (Companies, Statistics, Maps and the union representatives of a company's detail).
- * - `"assigned"`: only the companies assigned to it (ADVISOR).
+ * - `"assigned"`: only the companies assigned to it — ADVISOR, and HR on its company, census
+ *   and union-representative surfaces (SITIMM-1391).
  * - `"none"`: none.
  */
 export type CompanyScope = "all" | "assigned" | "none";
@@ -637,6 +641,36 @@ export interface UserMeV2Response {
   capabilities: Capability[];
   /** The companies the user works on in the panel. */
   companyScope: CompanyScope;
+}
+
+/**
+ * One of an HR user's companies (SITIMM-1391).
+ * Backend: app/presentation/api/v2/users_admin_hr_companies_v2.py :: HrCompanyV2
+ */
+export interface HrCompanyV2 {
+  uuid: string;
+  name: string | null;
+  /** ISO-8601. */
+  assignedAt: string | null;
+}
+
+/**
+ * `GET` and `PUT /api/v2/admin/users/{uuid}/hr-companies`: the companies an HR user works on.
+ * Backend: app/presentation/api/v2/users_admin_hr_companies_v2.py :: HrCompaniesV2Response
+ */
+export interface HrCompaniesV2Response {
+  userUuid: string;
+  companies: HrCompanyV2[];
+}
+
+/**
+ * Body of `PUT /api/v2/admin/users/{uuid}/hr-companies`: the HR user's whole set (up to 100
+ * uuids); `[]` unassigns them all. Needs `users.edit` and the role ceiling. Errors: 422
+ * `not_hr`, 422 `company_not_found` (with `missing`), 409 `conflict`.
+ * Backend: app/presentation/api/v2/users_admin_hr_companies_v2.py :: HrCompaniesV2Request
+ */
+export interface HrCompaniesV2Request {
+  companyUuids: string[];
 }
 
 /**
