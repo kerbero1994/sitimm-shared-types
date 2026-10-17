@@ -361,6 +361,110 @@ export const FIELD_GROUPS = {
 } as const;
 
 // ============================================================
+// Panel capabilities (SITIMM-1366, SITIMM-1369)
+// ============================================================
+
+/**
+ * Every panel capability: the catalogue of the role × capability matrix the owner approved
+ * (2026-10-16). The session hands each staff user the list of its role
+ * (`UserMeV2Response.capabilities`); the front asks `can("events.edit")`, never
+ * `role === X`, and never declares capabilities of its own. INVITADO and EMPLOYEE hold none.
+ *
+ * Backend: app/domain/enums/capabilities.py :: CAPABILITY_PERMISSIONS (its keys, same order),
+ * mini-back ee58f45f. Matrix: docs/v2/Users/role_capability_proposal.md §2–§3.
+ */
+export const CAPABILITIES = [
+  "panel.enter",
+  // Companies and padrón
+  "companies.view",
+  "companies.edit",
+  "companies.delete",
+  "census.view",
+  "census.upload",
+  "census_email.manage",
+  "union_reps.view",
+  "union_reps.edit",
+  // People
+  "people.search",
+  "users.view",
+  "users.edit",
+  "users.delete",
+  "users.permissions",
+  "advisors.view",
+  // Consultations
+  "consultations.advise",
+  "consultations.supervise",
+  "consultations.delete",
+  "consultations.catalogs",
+  // Offices
+  "offices.view",
+  "offices.edit",
+  "offices.assign_advisors",
+  // Communication
+  "bulletins.view",
+  "bulletins.publish",
+  "bulletins.delete",
+  "comunications.send",
+  "notifications.send",
+  // CMS
+  "home.edit",
+  "programs.edit",
+  "blog.edit",
+  "blog.delete",
+  "magazines.edit",
+  "comments.moderate",
+  "media.edit",
+  "media.moderate",
+  "media.view_sensitive",
+  "faq.edit",
+  "ceforma.view",
+  // Events
+  "events.view",
+  "events.stats",
+  "events.edit",
+  "events.cancel",
+  "events.delete",
+  "events.notify",
+  "events.approve_guests",
+  "events.roster",
+  "events.check_in",
+  "events.transport",
+  "events.scanners",
+  "event_types.edit",
+  "venues.edit",
+  // Discounts
+  "bonuses.edit",
+  // Finance
+  "weekly_fees.view",
+  "weekly_fees.edit",
+  "contributions.view",
+  "contributions.edit",
+  // Statistics
+  "dashboards.view",
+  "statistics.view",
+  "maps.view",
+  // Support and administration
+  "support.triage",
+  "support.recipients",
+  "audit_log.view",
+  "settings.edit",
+] as const;
+
+/** One panel capability. A closed union: a misspelled capability does not compile. */
+export type Capability = (typeof CAPABILITIES)[number];
+
+/**
+ * The companies a staff user works on, as the session reports it.
+ * Backend: app/presentation/dependencies/auth.py :: company_scope
+ *
+ * - `"all"`: every company — the unrestricted roles, and OFFICE on the company catalogue
+ *   (Companies, Statistics, Maps and the union representatives of a company's detail).
+ * - `"assigned"`: only the companies assigned to it (ADVISOR).
+ * - `"none"`: none.
+ */
+export type CompanyScope = "all" | "assigned" | "none";
+
+// ============================================================
 // V2 User Schemas (match mini-back Pydantic schemas, camelCase aliases)
 // ============================================================
 
@@ -514,7 +618,9 @@ export interface EmploymentV2 {
  *   "user": { "id": 1, "uuid": "...", "email": "...", "userType": 63974 },
  *   "profile": { "name": "Juan", "lastNames": "Pérez", ... },
  *   "employment": { "companyName": "ACME", "job": "Operador", ... },
- *   "fieldPermissions": { "name": "editable", "rfc": "readonly", "affiliationDate": "hidden" }
+ *   "fieldPermissions": { "name": "editable", "rfc": "readonly", "affiliationDate": "hidden" },
+ *   "capabilities": ["companies.view", "panel.enter", "union_reps.view"],
+ *   "companyScope": "all"
  * }
  * ```
  */
@@ -527,6 +633,10 @@ export interface UserMeV2Response {
   employment: EmploymentV2 | null;
   /** Per-field permission map for rendering forms. */
   fieldPermissions: FieldPermissions;
+  /** The panel capabilities of the user's role, sorted. Empty for INVITADO and EMPLOYEE. */
+  capabilities: Capability[];
+  /** The companies the user works on in the panel. */
+  companyScope: CompanyScope;
 }
 
 /**
