@@ -5,6 +5,14 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.37.0] - 2026-10-16
+
+### Added — company options for the event list filter (SITIMM-1389)
+
+- `events`: `EventCompanyOptionV2 { id, name }`. It is one company that owns at least one live, non-QA event within the caller's event scope.
+- `endpoints`: `V2_ENDPOINTS.EVENT_COMPANY_OPTIONS` (`GET /events/company-options`, permission `events:update`, no pagination), plus its manual row `LIST_EVENT_COMPANY_OPTIONS` in `v2_endpoints_generated`.
+- It is the one company source for the panel filter, for every role: ADMIN_EVENTS has no `companies:read`. Ships with mini-back SITIMM-1389.
+
 ## [2.36.0] - 2026-10-16
 
 ### Added — filter the event list by company and sede (SITIMM-1389)

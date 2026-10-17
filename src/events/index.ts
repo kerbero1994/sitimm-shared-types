@@ -507,6 +507,18 @@ export interface EventListV2Query {
 }
 
 /**
+ * One option of the panel's company filter of the event list (SITIMM-1389): a company that
+ * owns at least one live, non-QA event within the caller's event scope. Use its `id` as
+ * `EventListV2Query.companyId`.
+ * Backend: event_v2.py :: EventCompanyOptionV2
+ */
+export interface EventCompanyOptionV2 {
+  id: number;
+  /** The company's name; `null` when it has none on file. */
+  name: string | null;
+}
+
+/**
  * Paginated event list response.
  * Backend: event_v2.py :: EventListV2Response
  */
