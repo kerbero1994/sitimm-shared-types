@@ -435,6 +435,7 @@ export const CAPABILITIES = [
   "events.scanners",
   "event_types.edit",
   "venues.edit",
+  "venues.delete", // SITIMM-1411: MANAGER only (campuses:delete)
   // Discounts
   "bonuses.edit",
   // Finance

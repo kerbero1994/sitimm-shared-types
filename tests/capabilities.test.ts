@@ -70,8 +70,8 @@ describe("Capability es una unión cerrada", () => {
 });
 
 describe("CAPABILITIES (catálogo de mini-back, app/domain/enums/capabilities.py)", () => {
-  it("66 capacidades, sin repetidas, con la forma área.verbo", () => {
-    expect(CAPABILITIES).toHaveLength(66);
+  it("67 capacidades, sin repetidas, con la forma área.verbo", () => {
+    expect(CAPABILITIES).toHaveLength(67);
     expect(new Set(CAPABILITIES).size).toBe(CAPABILITIES.length);
     for (const c of CAPABILITIES) expect(c).toMatch(/^[a-z_]+\.[a-z_]+$/);
   });
@@ -82,6 +82,7 @@ describe("CAPABILITIES (catálogo de mini-back, app/domain/enums/capabilities.py
     expect(dts).toContain('type CompanyScope = "all" | "assigned" | "none";');
     expect(dts).toMatch(/"companies\.view", "companies\.view_basic"/);
     expect(dts).toMatch(/"census\.upload", "census\.delete", "census\.rules"/);
+    expect(dts).toMatch(/"venues\.edit", "venues\.delete", "bonuses\.edit"/);
     expect(dts).toMatch(/interface HrCompaniesV2Response/);
     expect(dts).toMatch(/capabilities: Capability\[\];/);
     expect(dts).toMatch(/companyScope: CompanyScope;/);
