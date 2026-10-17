@@ -464,6 +464,49 @@ export interface QAPendingConfirmV2Response {
 }
 
 /**
+ * GET /api/v2/events — query of the authenticated list. Every param is optional and the
+ * filters combine with AND. Non-staff callers always get `enabled=true` and
+ * `isPrivate=false`.
+ * Backend: events_v2.py :: list_events
+ */
+export interface EventListV2Query {
+  /** 1-based page. Default 1. */
+  page?: number;
+  /** Items per page, 1–100. Default 20. Snake case: the backend reads `page_size`. */
+  page_size?: number;
+  /** Matches title, description, place or type name. Max 200 chars. */
+  search?: string;
+  eventTypeId?: number;
+  /** `true` = not over yet (`endDate`, else `eventDate`, still ahead); `false` = over. */
+  upcoming?: boolean;
+  enabled?: boolean;
+  isPrivate?: boolean;
+  /** Registration open. */
+  register?: boolean;
+  offersMobility?: boolean;
+  /** Default `"date"`. */
+  sortBy?: "date" | "title" | "participants" | "type";
+  /** Default `"desc"`. */
+  sortOrder?: "asc" | "desc";
+  /** ISO-8601. Events whose `eventDate` is on or after it. */
+  dateFrom?: string;
+  /** ISO-8601. Events whose `eventDate` is on or before it. */
+  dateTo?: string;
+  /** Locale for translatable fields. Falls back to `Accept-Language`, then `es`. */
+  lang?: string;
+  /** Includes QA harness events for unrestricted callers; ignored for scoped ones. */
+  includeTest?: boolean;
+  /**
+   * Only events of this company (`Event.CompanyId`), ≥ 1. ANDed with the caller's event
+   * scope: a scoped caller asking for a company outside it gets an empty list, not a 403.
+   * Global events (no company) don't match. SITIMM-1389.
+   */
+  companyId?: number;
+  /** Only events with a live venue (EventCampus) on this campus, ≥ 1. SITIMM-1389. */
+  campusId?: number;
+}
+
+/**
  * Paginated event list response.
  * Backend: event_v2.py :: EventListV2Response
  */
