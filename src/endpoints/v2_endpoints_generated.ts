@@ -485,6 +485,8 @@ export const V2_ENDPOINTS_GENERATED = {
     LIST_EVENTS: "/api/v2/events",
     /** GET — V2 Event Analytics (manual patch, SITIMM-1343) */
     EVENT_ANALYTICS: "/api/v2/event-analytics",
+    /** GET — V2 Event company filter options (manual patch, SITIMM-1389) */
+    LIST_EVENT_COMPANY_OPTIONS: "/api/v2/events/company-options",
     /** POST — V2 Events */
     CREATE_EVENT: "/api/v2/events",
     /** GET — Events V2 — Agenda */

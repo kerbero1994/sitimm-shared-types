@@ -211,6 +211,13 @@ export const V2_ENDPOINTS = {
       last 90 days, 366 at most. Errors: `EventAnalyticsErrorCode`. Own prefix (not under
       /events). Ships with mini-back SITIMM-1343. */
   EVENT_ANALYTICS: "/event-analytics",
+  /**
+   * GET → V2Response<EventCompanyOptionV2[]>. The companies owning at least one live, non-QA
+   * event in the caller's event scope, by name — the options of the event list's company
+   * filter, for every role (ADMIN_EVENTS has no companies:read). No pagination. Requires
+   * events:update. SITIMM-1389.
+   */
+  EVENT_COMPANY_OPTIONS: "/events/company-options",
   /** GET ?page&pageSize&action&actorUuid → V2Response<EventChangesV2Response>. Requires
       `events:update`, the event company scope and the QA harness (uniform 404). The readable
       history of an event — who changed what, newest first — with the actor and participants
