@@ -550,3 +550,77 @@ export interface CompanyWithStats extends Company {
   /** Advisors payload — shape varies; typed loosely for backward compat. */
   Advisors?: Record<string, unknown>;
 }
+
+/**
+ * Document type of a company document.
+ *
+ * Backend: `app/infrastructure/database/models/document_models.py` :: `DocumentType`
+ * (with its `CHECK` on `CompanyDocument.documentType`).
+ */
+export type CompanyDocumentType =
+  | "COLLECTIVE_CONTRACT"
+  | "INTERNAL_REGULATION"
+  | "NOMINATION"
+  | "BENEFITS_HISTORY"
+  | "OTHER";
+
+/**
+ * One version of a company document (V2). Every key always travels; empty ones are `null`.
+ *
+ * Backend: `app/presentation/schemas/company_document.py` :: `CompanyDocumentResponse`.
+ * Returned by `GET` and `POST /api/v2/companies/{company_id}/documents[/{doc_uuid}]`
+ * inside `V2Response`, and inside each `CompanyDocumentGroup` of the list.
+ */
+export interface CompanyDocument {
+  /** Numeric primary key. */
+  id: number;
+  /** Document UUID: the `doc_uuid` of the single-document and delete routes. */
+  uuid: string;
+  /** Document type. */
+  documentType: CompanyDocumentType;
+  /** Version within its type, from 1. */
+  versionNumber: number;
+  /**
+   * Signed download URL in the single document and the upload response; **always `null` in the
+   * list** (SITIMM-1477): to download, ask for the single document.
+   */
+  fileUrl: string | null;
+  /** Original file name. */
+  fileName: string;
+  /** MIME type. */
+  mimeType: string | null;
+  /** File size in bytes. */
+  sizeBytes: number | null;
+  /** Optional title. */
+  title: string | null;
+  /** Optional notes. */
+  notes: string | null;
+  /** Date the document takes effect, `YYYY-MM-DD`. */
+  effectiveDate: string | null;
+  /** True for the current version of its type. */
+  isActive: boolean;
+  /** Numeric id of the uploader's user, not a name. */
+  uploadedBy: number | null;
+  /** ISO-8601 timestamp. */
+  createdAt: string;
+  /** ISO-8601 timestamp. */
+  updatedAt: string;
+}
+
+/**
+ * The documents of one type in `GET /api/v2/companies/{company_id}/documents`, which returns
+ * `V2Response<CompanyDocumentGroup[]>`. Types without documents are left out unless the request
+ * filters by `documentType`.
+ *
+ * Backend: `app/presentation/schemas/company_document.py` :: `CompanyDocumentListResponse`.
+ */
+export interface CompanyDocumentGroup {
+  /** Document type of the group. */
+  documentType: CompanyDocumentType;
+  /** The current version, or `null` if none is active. */
+  currentVersion: CompanyDocument | null;
+  /** Number of versions of this type. */
+  versionCount: number;
+  /** Every version, only with `includeVersions=true`; otherwise `[]`. */
+  versions: CompanyDocument[];
+}
