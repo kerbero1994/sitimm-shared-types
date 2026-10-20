@@ -676,6 +676,57 @@ export interface HrCompaniesV2Request {
 }
 
 /**
+ * The company of one census in a person's history (SITIMM-1472).
+ * Backend: app/presentation/schemas/user_v2.py :: CensusHistoryCompany
+ */
+export interface UserCensusHistoryCompany {
+  name: string | null;
+}
+
+/**
+ * One census a person's employee row appears in, as the census sheet's «Historial en padrones»
+ * shows it. No link to the census file: it is a pointer to the whole census.
+ * Backend: app/presentation/schemas/user_v2.py :: CensusHistoryEntry (named `UserCensusHistoryEntry`
+ * here: `companies` already exports a different `CensusHistoryEntry`, a company's census trend).
+ */
+export interface UserCensusHistoryEntry {
+  Company: UserCensusHistoryCompany;
+  /** ISO-8601: when the census was uploaded. */
+  createdAt: string | null;
+  censusId: number;
+  censusUuid: string | null;
+  /** The census period's year; null if it has none. */
+  year: number | null;
+  /** The census period's quarter (1–4); null if it has none. */
+  quarter: number | null;
+  totalEmployees: number | null;
+  payroll: string | null;
+  job: string | null;
+  /** Decimal as a string, e.g. `"315.81"`. */
+  daySalary: string | null;
+  /** ISO-8601. */
+  entry: string | null;
+  address: string | null;
+}
+
+/**
+ * Backend: app/presentation/schemas/user_v2.py :: CensusHistoryUser
+ */
+export interface UserCensusHistoryUser {
+  /** Most recent census first; `[]` when the employee row has no account. */
+  Employees: UserCensusHistoryEntry[];
+}
+
+/**
+ * `GET /api/v2/users/census-history/by-employee/{employee_uuid}` → `V2Response<UserCensusHistoryData>`.
+ * Requires `users.view`, or being the person; anyone else gets the unknown uuid's 404.
+ * Backend: app/presentation/schemas/user_v2.py :: CensusHistoryData
+ */
+export interface UserCensusHistoryData {
+  User: UserCensusHistoryUser;
+}
+
+/**
  * Request body for PATCH /api/v2/users/me — partial profile update.
  * Backend: app/presentation/schemas/user_v2.py :: UserProfileUpdateV2
  *

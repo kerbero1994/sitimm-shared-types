@@ -73,6 +73,10 @@ export const V2_ENDPOINTS = {
   USERS_ME_RESTORE: "/users/me/restore",
   /** POST → Body: { full_name (2–255), identifier_type: "rfc" | "curp" | "nss", identifier_value (3–64), company_uuid? | company_name_freetext? (una de las dos), note? (≤2000) }. Auth required: un INVITADO pide la revisión de su cuenta (o la vuelve a pedir). Returns V2Response<{ review_request_uuid }>. Backend: users_activation_v2.py `ActivationRequestBody`. SITIMM-1380. */
   USERS_ME_ACTIVATION_REQUEST: "/users/me/activation-request",
+  /** GET → V2Response<UserCensusHistoryData>. A person's census history by the uuid of one of their
+   *  employee rows, so no RFC travels in the path (it replaces V1 `/user-profiles/show-history/{rfc}`).
+   *  Requires `users.view`, or being the person; anyone else gets 404 `Employee not found`. SITIMM-1472. */
+  USERS_CENSUS_HISTORY_BY_EMPLOYEE: "/users/census-history/by-employee/{employee_uuid}",
 
   // ── Admin users: an HR user's companies (SITIMM-1391) ──────────────
 

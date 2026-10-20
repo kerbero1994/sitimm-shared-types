@@ -25,6 +25,10 @@
  * merged to `main` at this source version). Safe to overwrite on the next
  * `make dump-v2-routes` once that backend branch ships.
  *
+ * MANUAL PATCH (SITIMM-1472, 2026-10-20): 1 row hand-added to the `users` group for
+ * `GET /users/census-history/by-employee/{employee_uuid}` (mini-back SITIMM-1472, merged in
+ * 6b562500, after this source version). Safe to overwrite on the next `make dump-v2-routes`.
+ *
  * MANUAL PATCH (SITIMM-1345, 2026-10-16): 1 row hand-added to the `events`
  * group for `GET /events/{uuid}/changes` (mini-back SITIMM-1345, not yet merged at
  * this source version). Safe to overwrite on the next `make dump-v2-routes`.
@@ -1011,6 +1015,8 @@ export const V2_ENDPOINTS_GENERATED = {
     SET_DEFAULT_AVATAR: "/api/v2/users/me/avatar/default",
     /** POST — V2 Users */
     UPLOAD_AVATAR_FROM_URL: "/api/v2/users/me/avatar/from-url",
+    /** GET — V2 Users census history by employee (manual patch, SITIMM-1472) */
+    GET_CENSUS_HISTORY_BY_EMPLOYEE: (employee_uuid: string | number) => `/api/v2/users/census-history/by-employee/${employee_uuid}`,
   },
 } as const;
 
