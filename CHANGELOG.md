@@ -5,6 +5,15 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.42.0] - 2026-10-20
+
+### Added — a person's census history by employee uuid (SITIMM-1472)
+
+- `users`: `UserCensusHistoryCompany`, `UserCensusHistoryEntry`, `UserCensusHistoryUser` and `UserCensusHistoryData`, the response of `GET /api/v2/users/census-history/by-employee/{employee_uuid}`.
+  - They mirror mini-back's `CensusHistoryCompany`, `CensusHistoryEntry`, `CensusHistoryUser` and `CensusHistoryData` (`user_v2.py`, merged in 6b562500). The `User` prefix is there because `companies` already exports a different `CensusHistoryEntry`, a company's census trend.
+  - No `fileUrl`: the census file is a pointer to the whole census and does not come out.
+- `endpoints`: `V2_ENDPOINTS.USERS_CENSUS_HISTORY_BY_EMPLOYEE` (`users.view`, or being the person; anyone else gets 404), plus its manual row `GET_CENSUS_HISTORY_BY_EMPLOYEE` in `v2_endpoints_generated`. It replaces V1 `/user-profiles/show-history/{rfc}`, which carries an RFC in the path.
+
 ## [2.37.0] - 2026-10-16
 
 ### Added — company options for the event list filter (SITIMM-1389)
