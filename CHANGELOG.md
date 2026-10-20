@@ -5,6 +5,16 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.43.0] - 2026-10-20
+
+### Added — company documents v2 (SITIMM-1418, D11 of the company detail)
+
+- `companies`: `CompanyDocumentType`, `CompanyDocument` and `CompanyDocumentGroup`, the responses of `GET/POST /api/v2/companies/{company_id}/documents` and `GET …/{doc_uuid}`.
+  - They mirror mini-back's `CompanyDocumentResponse` and `CompanyDocumentListResponse` (`schemas/company_document.py`) and `DocumentType` (`document_models.py`), at origin/main 27aac2ab.
+  - `fileUrl` always travels: `null` in the list (SITIMM-1477), signed in the single document and in the upload response.
+  - `uploadedBy` is the uploader's numeric user id, not a name.
+- The routes were already in `V2_ENDPOINTS_GENERATED.companies` (`LIST_COMPANY_DOCUMENTS`, `UPLOAD_COMPANY_DOCUMENT`, `GET_COMPANY_DOCUMENT`, `DELETE_COMPANY_DOCUMENT`).
+
 ## [2.42.0] - 2026-10-20
 
 ### Added — a person's census history by employee uuid (SITIMM-1472)
