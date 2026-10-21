@@ -696,3 +696,98 @@ export type CompanyEmployeeConflictCode = "employee_active_here" | "identity_mis
 export interface CompanyEmployeeConflict {
   detail: { code: CompanyEmployeeConflictCode; message: string };
 }
+
+// ── Union representatives v2 (SITIMM-1491, ola 3 delta: D14) ─────────────────
+
+/**
+ * One union role of the catalog, filtered by the company's structure: `COMMITTEE` when the
+ * company has a committee, `DELEGATES` otherwise. `GET /api/v2/companies/{company_id}/union-representatives/roles`,
+ * inside `V2Response`.
+ *
+ * Backend: `app/presentation/schemas/union_representative.py` :: `UnionRoleResponse`.
+ */
+export interface UnionRoleV2 {
+  id: number;
+  uuid: string;
+  /** Display name, e.g. «Secretario General». */
+  name: string;
+  /** Stable code of the role. */
+  code: string;
+  /** `COMMITTEE` or `DELEGATES` (typed `str` in the BE). */
+  structureType: string;
+  /** Ascending order of the role in the structure. */
+  hierarchyOrder: number;
+  /** Whether the role can have a substitute. */
+  allowsSubstitute: boolean;
+  /** Whether only one person can hold the role. */
+  isSingular: boolean;
+  description: string | null;
+}
+
+/**
+ * One union representative of a company, with the role and person names joined server-side.
+ * `GET /api/v2/companies/{company_id}/union-representatives[?activeOnly=]` answers a list of these and
+ * `POST` answers one, inside `V2Response`. `company_id` is the company's numeric id.
+ *
+ * Backend: `app/presentation/schemas/union_representative.py` :: `UnionRepresentativeResponse`.
+ */
+export interface UnionRepresentativeV2 {
+  id: number;
+  uuid: string;
+  CompanyId: number;
+  EmployeeId: number;
+  UnionRoleId: number;
+  /** `COMMITTEE` or `DELEGATES`. */
+  structureType: string;
+  /** Titular (`true`) or substitute (`false`). */
+  isPrimary: boolean;
+  isActive: boolean;
+  /** `YYYY-MM-DD`. */
+  startDate: string | null;
+  /** `YYYY-MM-DD`. */
+  endDate: string | null;
+  notes: string | null;
+  /** ISO-8601 datetime. */
+  createdAt: string;
+  /** ISO-8601 datetime. */
+  updatedAt: string;
+  roleName: string | null;
+  roleCode: string | null;
+  employeeName: string | null;
+  employeeLastNames: string | null;
+}
+
+/**
+ * Body of `POST /api/v2/companies/{company_id}/union-representatives`.
+ *
+ * Backend: `app/presentation/schemas/union_representative.py` :: `UnionRepresentativeCreate`.
+ */
+export interface UnionRepresentativeCreateV2 {
+  EmployeeId: number;
+  UnionRoleId: number;
+  /** Defaults to `true` (titular). */
+  isPrimary?: boolean;
+  /** `YYYY-MM-DD`. */
+  startDate?: string | null;
+  /** `YYYY-MM-DD`. */
+  endDate?: string | null;
+  /** Up to 500. */
+  notes?: string | null;
+}
+
+/**
+ * Body of `PATCH /api/v2/companies/{company_id}/union-representatives/{rep_uuid}`. The answer is
+ * `V2Response<{ message: string }>`, the same as `DELETE`.
+ *
+ * Backend: `app/presentation/schemas/union_representative.py` :: `UnionRepresentativeUpdate`.
+ */
+export interface UnionRepresentativeUpdateV2 {
+  isPrimary?: boolean | null;
+  isActive?: boolean | null;
+  /** `YYYY-MM-DD`. */
+  startDate?: string | null;
+  /** `YYYY-MM-DD`. */
+  endDate?: string | null;
+  /** Up to 500. */
+  notes?: string | null;
+}
