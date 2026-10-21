@@ -23,20 +23,29 @@
 
 /**
  * RFC (Registro Federal de Contribuyentes) — Mexican tax ID.
- * 3–4 uppercase letters + 6 digits + 3 alphanumeric check chars.
+ * 3–4 letters (A–Z, Ñ, &) + 6 digits + a 3-character alphanumeric homoclave.
  * Total: 12 chars (persona moral) or 13 chars (persona fisica).
+ *
+ * **The same as the BE** (mini-back `app/domain/value_objects/rfc.py`, `RFC.is_valid`: `PERSONA_FISICA_PATTERN` or
+ * `PERSONA_MORAL_PATTERN`). It does not check the SAT check digit, as the BE does not: an RFC the BE accepts must
+ * pass here. The BE trims and uppercases before matching; normalize the same way before testing.
  *
  * @example "PEGJ900515ABC" (13 chars, persona fisica)
  */
-export const RFC_PATTERN = /^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{2}[0-9A]$/;
+export const RFC_PATTERN = /^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/;
 
 /**
- * CURP (Clave Unica de Registro de Poblacion) — Mexican national ID.
- * Exactly 18 uppercase alphanumeric characters.
+ * CURP (Clave Unica de Registro de Poblacion) — Mexican national ID, 18 characters (RENAPO):
+ * letter · internal vowel or X · 2 letters · YYMMDD (month 01–12, day 01–31) · sex H/M · one of the 32 states or NE ·
+ * 3 internal consonants · homoclave (a digit before 2000, a letter from 2000) · check digit.
+ *
+ * **Copied from the BE**, character for character: mini-back `app/shared/utils/mexican_id_patterns.py`
+ * `CURP_PATTERN_STR` (SITIMM-386), the single source the BE validates with. A CURP that passes here is not answered with
+ * a 422. The BE trims and uppercases before matching; normalize the same way before testing.
  *
  * @example "PEGJ900515HJCRNS09"
  */
-export const CURP_PATTERN = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/;
+export const CURP_PATTERN = /^[A-Z][AEIOUX][A-Z]{2}\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])[HM](?:AS|BC|BS|CC|CL|CM|CS|CH|DF|DG|GT|GR|HG|JC|MC|MN|MS|NT|NL|OC|PL|QT|QR|SP|SL|SR|TC|TS|TL|VZ|YN|ZS|NE)[B-DF-HJ-NP-TV-Z]{3}[A-Z0-9]\d$/;
 
 /**
  * Mexican phone number as a user types it — exactly 10 digits (no country
