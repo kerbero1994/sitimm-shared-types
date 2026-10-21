@@ -5,6 +5,37 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.45.0] - 2026-10-20
+
+### Added — union representatives v2 (SITIMM-1491, ola 3 delta: D14)
+
+- `companies`: `UnionRoleV2`, `UnionRepresentativeV2`, `UnionRepresentativeCreateV2` and `UnionRepresentativeUpdateV2`, for `/api/v2/companies/{company_id}/union-representatives` (`/roles`, list, `POST`, `PATCH /{rep_uuid}` and `DELETE /{rep_uuid}`).
+  - They mirror mini-back's `app/presentation/schemas/union_representative.py` at `c57dacfe`.
+  - Every answer is inside `V2Response`; `PATCH` and `DELETE` answer `{ message }`.
+  - The `V2` suffix keeps apart the v1 `UnionRole` and `UnionPersonnel` already in this module.
+  - `UnionRepresentativeV2.employeePayroll: string | null`, from mini-back #776 (SITIMM-1517). It is always present, with the value only for the full census tier (MANAGER, ADMIN, ADMIN_EMPLOYEES, HR); the limited tier (OFFICE, ADVISOR) and the `POST` answer get `null`. **This release goes out after #776 is in prod.**
+  - The routes already exist in `V2_ENDPOINTS_GENERATED.companies` (`LIST_UNION_ROLES`, `LIST_`, `CREATE_`, `UPDATE_` and `DELETE_UNION_REPRESENTATIVE`).
+
+### Changed — `benefits` is what the wire carries (SITIMM-1491)
+
+Read against new_dashboard, the only consumer (`benefits.api.ts`, `PrestacionesTab.tsx`), not type-checked there. Its uses are template strings and `toLocaleString()`, which accept text; an arithmetic use would now fail to type-check, which is the point. `toLocaleString()` on `"1500.00"` prints no thousands separator: that is a display bug today.
+
+- **Decimals are text.** Pydantic 2 serializes `Decimal` as JSON text (`"30.00"`). That covers `NormalizedBenefit.numericValue`, `BenefitCatalogItem.legalMinimum`, `ContractVersion.salaryIncreasePercent` and `ContractVersion.salaryIncreaseAmount`. They are now `DecimalString | null` (`DecimalString = string`). Before, they were typed `number` while `"30.00"` arrived.
+- **`ContractVersion.status`** is `ContractVersionStatus`, one of `CONTRACT_VERSION_STATUSES`: `DRAFT`, `PENDING`, `ACTIVE`, `EXPIRED` and `SUPERSEDED`, the `CHECK` constraint of the table. It used to be `"ACTIVE" | "INACTIVE"`, and `INACTIVE` cannot exist.
+- **Fields that were missing:**
+  - `BenefitCategory.uuid` and `BenefitCategory.description`;
+  - `BenefitCatalogItem.displayOrder`.
+- **Nullability as in the BE response models:**
+  - `BenefitCatalogItem.categoryName` and `measurementUnit`;
+  - the catalog joins of `NormalizedBenefit` (`benefitCode`, `benefitName`, `categoryName`, `measurementType`, `measurementUnit`) may be `null`;
+  - `NormalizedBenefit.effectiveFrom` and `ContractVersion.effectiveFrom` are always present.
+- The module header now names the real contract route, `/api/v1/benefits/company/{id}/contracts`.
+
+### Tests
+
+- `union-benefits-contract`: tsc compiles a fixture shaped like the wire (synthetic data), with negatives for a numeric `numericValue`, an `INACTIVE` status, a create without a role and a representative without `employeePayroll`. A runtime case checks the payroll for each tier.
+- Mutations go red: `DecimalString = number` and an extra `INACTIVE` status.
+
 ## [2.44.1] - 2026-10-20
 
 ### Fixed — `CURP_PATTERN` is the BE's (SITIMM-1469)
