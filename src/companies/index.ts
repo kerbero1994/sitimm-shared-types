@@ -398,7 +398,7 @@ export interface CompanyStatistics {
  * Products and clients can exist without a `TechnicalDetail` row (the catalog routes write them
  * alone): then `id`, `uuid` and the dates are `null`.
  *
- * Backend: `app/presentation/schemas/company_detail.py` :: `TechnicalDetail` (mini-back #779).
+ * Backend: `app/presentation/schemas/company_detail.py` :: `TechnicalDetail` (mini-back #779 @ 5b6ff292).
  * Legacy fields REMOVED (v0.15.0): delegates, commissioners, secretaries, manager,
  * productionManager, product, clients.
  */
@@ -423,6 +423,25 @@ export interface TechnicalDetail {
   clientIds: string[] | null;
   /** `qwr_product_catalog` uuids assigned to the company; `null` when not loaded. */
   productIds: string[] | null;
+  /**
+   * The same clients with their catalog names, ordered by name, so a reader without `all-options`
+   * (HR: no `company_catalogs:read`) can show them. `null` when not loaded.
+   */
+  clients: CatalogName[] | null;
+  /** The same products with their catalog names, ordered by name. `null` when not loaded. */
+  products: CatalogName[] | null;
+}
+
+/**
+ * A product or client assigned to a company, with its catalog name (SITIMM-1497).
+ *
+ * Backend: `app/presentation/schemas/company_detail.py` :: `CatalogName` (mini-back #779 @ 5b6ff292).
+ */
+export interface CatalogName {
+  /** Catalog uuid (`qwr_product_catalog` / `qwr_client_catalog`). */
+  id: string;
+  /** Catalog name. */
+  name: string;
 }
 
 /**

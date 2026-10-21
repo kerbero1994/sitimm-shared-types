@@ -2,7 +2,7 @@ import { resolve } from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-import { catalogOnly, duplicate, noDuplicate } from "./fixtures/company-technical-contract";
+import { catalogOnly, duplicate, noDuplicate, shown } from "./fixtures/company-technical-contract";
 
 /**
  * Vitest transpila sin chequear tipos, así que la fixture de detalles técnicos y check-duplicate
@@ -27,6 +27,13 @@ describe("detalles técnicos y check-duplicate (SITIMM-1497)", () => {
   it("sin fila de TechnicalDetail, los productos y clientes llegan igual, con id y fechas en null", () => {
     expect(catalogOnly.id).toBeNull();
     expect(catalogOnly.productIds).toHaveLength(1);
+  });
+
+  it("productos y clientes llegan con su nombre y ordenados por nombre, los mismos que los ids", () => {
+    const td = shown.technical_detail!;
+    const names = td.products!.map((p) => p.name);
+    expect(names).toEqual([...names].sort((x, y) => x.localeCompare(y, "es")));
+    expect(new Set(td.products!.map((p) => p.id))).toEqual(new Set(td.productIds));
   });
 
   it("check-duplicate trae el uuid para «Ver la empresa» solo cuando hay duplicado", () => {
