@@ -261,6 +261,13 @@ export interface CompanyDetails {
     complianceName?: number;
     complianceSalary?: number;
   };
+  /**
+   * «Detalles técnicos» (SITIMM-1497): the `TechnicalDetail` row plus the company's catalog
+   * assignments. The wire key is `technical_detail`: the BE dumps the company by field name, and its
+   * `TechnicalDetail` alias does not travel. `null` when the company has neither.
+   * Sent by `POST /api/v1/companies/show` in `data.company.company`, also to HR (`basic_show` keeps it).
+   */
+  technical_detail?: TechnicalDetail | null;
   /** ISO-8601 creation timestamp. */
   createdAt: string;
   /** ISO-8601 last-update timestamp. */
@@ -387,26 +394,71 @@ export interface CompanyStatistics {
 }
 
 /**
- * Company technical/operational details.
+ * Company technical/operational details, with the company's catalog assignments (SITIMM-1497).
+ * Products and clients can exist without a `TechnicalDetail` row (the catalog routes write them
+ * alone): then `id`, `uuid` and the dates are `null`.
  *
- * Legacy fields REMOVED (v0.15.0): delegates, commissioners, secretaries,
- * manager, productionManager, product, clients.
- * Use CompanyAdmin for contacts, CompanyUnionPersonal for union reps,
- * client_ids/product_ids for catalog-based assignments.
+ * Backend: `app/presentation/schemas/company_detail.py` :: `TechnicalDetail` (mini-back #779).
+ * Legacy fields REMOVED (v0.15.0): delegates, commissioners, secretaries, manager,
+ * productionManager, product, clients.
  */
 export interface TechnicalDetail {
-  /** Record UUID. */
-  uuid: string;
+  /** Numeric primary key; `null` without a row. */
+  id: number | null;
+  /** Record UUID; `null` without a row. */
+  uuid: string | null;
+  /** Start of operations: an ISO-8601 datetime (the column is a timestamp). */
+  operationStart: string | null;
   /** Collective contract reference. */
-  contract?: string;
-  /** ISO-8601 date when operations started. */
-  operationStart?: string;
-  /** ISO-8601 date of last contract revision. */
-  lastRevision?: string;
-  /** Catalog-based client UUIDs. */
-  clientIds?: string[];
-  /** Catalog-based product UUIDs. */
-  productIds?: string[];
+  contract: string | null;
+  /** Last contract revision: `YYYY-MM-DD`. */
+  lastRevision: string | null;
+  /** Numeric company FK; `null` without a row. */
+  CompanyId: number | null;
+  /** ISO-8601 creation timestamp of the row. */
+  createdAt: string | null;
+  /** ISO-8601 last-update timestamp of the row. */
+  updatedAt: string | null;
+  /** `qwr_client_catalog` uuids assigned to the company; `null` when not loaded. */
+  clientIds: string[] | null;
+  /** `qwr_product_catalog` uuids assigned to the company; `null` when not loaded. */
+  productIds: string[] | null;
+}
+
+/**
+ * «Detalles técnicos» in the company's own create and update (D3 and D8), with the company's
+ * permission (SITIMM-1497). Products and clients are `all-options` catalog uuids; a list replaces the
+ * company's whole set and `[]` empties it. A key left out changes nothing.
+ *
+ * Backend: `app/presentation/schemas/company.py` :: `CompanyTechnicalFields` (base of
+ * `CompanyCreateRequest` and `CompanyUpdateRequest`, mini-back #779).
+ */
+export interface CompanyTechnicalFields {
+  /** Product uuids, up to 500. */
+  productIds?: string[] | null;
+  /** Client uuids, up to 500. */
+  clientIds?: string[] | null;
+  /** `YYYY-MM-DD`; `null` clears it. */
+  operationStart?: string | null;
+  /** `YYYY-MM-DD`; `null` clears it. */
+  lastRevision?: string | null;
+}
+
+/**
+ * Answer of `POST /api/v1/companies/import/check-duplicate?name=&rfc=` (`companies:create`), inside
+ * `V2Response`: whether a company with that name and/or RFC already exists. D3's «Ver la empresa»
+ * links by `existing_company_uuid` (SITIMM-1497).
+ *
+ * Backend: `app/presentation/api/v1/company_import.py` :: `check_duplicate_company` (mini-back #779).
+ */
+export interface CompanyDuplicateCheck {
+  is_duplicate: boolean;
+  existing_company_id: number | null;
+  /** The existing company's uuid, for the link; `null` when there is no duplicate. */
+  existing_company_uuid: string | null;
+  existing_company_name: string | null;
+  /** `"name and/or RFC"` when there is a duplicate. */
+  match_criteria: string | null;
 }
 
 /**
