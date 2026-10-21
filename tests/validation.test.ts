@@ -16,17 +16,19 @@ import {
  */
 
 /**
- * RFC_PATTERN y CURP_PATTERN son los del BE (SITIMM-1469): lo que el BE acepta tiene que pasar aquí y lo que el BE
- * rechaza con 422, también aquí. Los casos «BE» salen de mini-back `tests/unit/domain/test_value_objects.py`
- * (`RFC.is_valid`, `CURP.is_valid`); los «regex» prueban cada parte de `CURP_PATTERN_STR`
+ * CURP_PATTERN es el del BE (SITIMM-1469): lo que el BE acepta tiene que pasar aquí, y lo que el BE rechaza con 422
+ * también. RFC_PATTERN es más estricto que el BE a propósito (el dígito verificador del SAT). Los casos «BE» salen de
+ * mini-back `tests/unit/domain/test_value_objects.py`; los «regex» prueban cada parte de `CURP_PATTERN_STR`
  * (`app/shared/utils/mexican_id_patterns.py`).
  */
 describe("RFC_PATTERN", () => {
-  it.each([
-    "PEGJ850101ABC", // BE: persona física; el último carácter no es dígito ni «A»
-    "ABC850101XY9", // BE: persona moral
-  ])("acepta lo que el BE acepta: %s", (rfc) => {
-    expect(RFC_PATTERN.test(rfc)).toBe(true);
+  it("acepta el RFC de persona moral de los tests del BE", () => {
+    expect(RFC_PATTERN.test("ABC850101XY9")).toBe(true);
+  });
+
+  it("verifica el dígito del SAT, que el BE no verifica: diferencia a propósito", () => {
+    // El BE (RFC.is_valid) acepta este; ningún RFC real termina en una letra que no sea «A».
+    expect(RFC_PATTERN.test("PEGJ850101ABC")).toBe(false);
   });
 
   it.each([

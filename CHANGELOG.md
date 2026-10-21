@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [2.44.1] - 2026-10-20
 
-### Fixed — `CURP_PATTERN` and `RFC_PATTERN` are the BE's (SITIMM-1469)
+### Fixed — `CURP_PATTERN` is the BE's (SITIMM-1469)
 
 - **`CURP_PATTERN`** is now mini-back's `CURP_PATTERN_STR` (`app/shared/utils/mexican_id_patterns.py`, SITIMM-386), copied character for character:
   - internal vowel or X at position 2;
@@ -16,11 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - internal consonants at 14–16.
   - Before, a CURP that passed here could get a 422 from the BE, e.g. the 2d's synthetic `EJVL…`.
   - **It is stricter:** a form that validated with it now rejects what the BE was already rejecting.
-- **`RFC_PATTERN`** is now the BE's `RFC.is_valid` (`app/domain/value_objects/rfc.py`: `PERSONA_FISICA_PATTERN` or `PERSONA_MORAL_PATTERN`): a 3-character alphanumeric homoclave.
-  - Before, the last character had to be a digit or «A», so the BE's own `PEGJ850101ABC` failed here.
-  - **It is looser:** it accepts every RFC the BE accepts, and no longer checks the SAT check digit.
-  - Consumers: Sitimm-web `completeRfc` and the account profile fields, and sitimmApp's profile schema and login. Sitimm-web's onboarding already avoided `RFC_PATTERN` for that reason (`onboarding-flow.tsx` `RFC_SHAPE`).
-- Tests: accept and reject cases from mini-back `tests/unit/domain/test_value_objects.py`, plus one case per part of the CURP regex.
+- Tests: accept and reject cases from mini-back `tests/unit/domain/test_value_objects.py`, plus one case per part of the regex.
+
+### Note — `RFC_PATTERN` (informative)
+
+- **Unchanged.** It is stricter than the BE on purpose: it checks the SAT check digit at the end (0–9 or «A»), which every real RFC has, and the BE (`RFC.is_valid`) does not. A test pins the difference.
 
 ## [2.44.0] - 2026-10-20
 
