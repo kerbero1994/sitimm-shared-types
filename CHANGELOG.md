@@ -5,7 +5,7 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [2.46.1] - 2026-10-21
+## [2.47.0] - 2026-10-21
 
 ### Added — products and clients with their names (SITIMM-1497)
 
@@ -15,7 +15,7 @@ Checked against mini-back #779 at `5b6ff292`, on branch `SITIMM-1497-company-tec
   - They are the same assignments as `productIds` and `clientIds`, with the catalog's name, ordered by name (`list_for_company` orders by `name`).
   - A reader without `all-options` can show them: HR has no `company_catalogs:read`. FE2 uses them in the «Detalles técnicos» card, and RD_FE can use them in D8.
 - Like every field of `TechnicalDetail`, the key always comes; `null` means not loaded.
-- **Semver note:** the two keys are new and required, so a hand-built `TechnicalDetail` (a test fixture) must add them. Released as a patch by the orchestrator's call; 2.46.0 went out today.
+- **Minor, not patch:** the two keys are new and required, so a hand-built `TechnicalDetail` (a test fixture) must add them. The repo's rule makes a new field a minor. 1500-BE moves to 2.48.0.
 
 ### Tests
 
