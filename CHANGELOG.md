@@ -5,6 +5,26 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.48.0] - 2026-10-21
+
+### Added — company contacts written from the panel (SITIMM-1499, D9 of the ola 3 delta)
+
+Checked against mini-back branch `SITIMM-1499-company-contacts-crud` @ `d293f672` (local, no PR yet; contract Jira 1499 c18422). The BE merges at the owner's sign-off; these types change nothing until then.
+
+- `companies`: `CompanyContactV2`, `CompanyContactV2Create`, `CompanyContactV2Update`, `CompanyContactV2Type` (every type but `ADVISOR`) and `CompanyContactSource` (`"panel" | "excel"`, lowercase).
+  - `POST /api/v2/companies/{company_id}/contacts` answers 201, `PATCH …/{contact_uuid}` answers 200, both inside `V2Response`. `DELETE …/{contact_uuid}` answers 204 with no body.
+  - **The answer has no `company_id`:** the numeric id only travels in the path.
+  - In the update, an explicit `null` clears an optional field; `contactType`, `name` and `isPrimary` reject `null` (422).
+  - Editing an Excel contact makes it `"panel"`. A new primary moves the previous one of its type off.
+- `companies`: `CompanyContact` (`show.contacts[]`) gains `uuid?: string | null` and `source?: CompanyContactSource | null`.
+- `companies`: **drift fixed**: `CompanyContactType` gains `MANAGER` and `DELEGATE`, which the BE already had.
+- `endpoints`: `V2_ENDPOINTS_GENERATED.companies.CREATE_COMPANY_CONTACT`, `UPDATE_COMPANY_CONTACT` and `DELETE_COMPANY_CONTACT` (manual patch until the route reaches the OpenAPI).
+
+### Tests
+
+- `company-contacts-contract`: tsc compiles a fixture shaped like the wire (synthetic data). Negatives: `company_id` in the answer, an uppercase `source`, an `ADVISOR` create and a `null` name.
+- Mutations go red: `CompanyContactV2Type` with `ADVISOR`, and `source` as a free string.
+
 ## [2.47.0] - 2026-10-21
 
 ### Added — products and clients with their names (SITIMM-1497)

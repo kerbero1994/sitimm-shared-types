@@ -309,6 +309,12 @@ export const V2_ENDPOINTS_GENERATED = {
     GET_CENSUS_STATISTICS: (census_uuid: string | number) => `/api/v2/censuses/${census_uuid}/statistics`,
   },
   companies: {
+    /** POST — V2 Company Contacts: create (manual patch, SITIMM-1499) */
+    CREATE_COMPANY_CONTACT: (company_id: string | number) => `/api/v2/companies/${company_id}/contacts`,
+    /** PATCH — V2 Company Contacts: update (manual patch, SITIMM-1499) */
+    UPDATE_COMPANY_CONTACT: (company_id: string | number, contact_uuid: string | number) => `/api/v2/companies/${company_id}/contacts/${contact_uuid}`,
+    /** DELETE — V2 Company Contacts: soft delete, 204 (manual patch, SITIMM-1499) */
+    DELETE_COMPANY_CONTACT: (company_id: string | number, contact_uuid: string | number) => `/api/v2/companies/${company_id}/contacts/${contact_uuid}`,
     /** POST — V2 Companies: manual registration of one person (manual patch, SITIMM-1469) */
     CREATE_COMPANY_EMPLOYEE: (company_uuid: string | number) => `/api/v2/companies/${company_uuid}/employees`,
     /** GET — V2 Company Documents */
