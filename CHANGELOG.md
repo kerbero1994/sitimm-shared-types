@@ -5,6 +5,17 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.44.0] - 2026-10-20
+
+### Added — manual registration of one person in a company (SITIMM-1469, Padrones 2d)
+
+- `companies`: `CompanyEmployeeCreate`, `CompanyEmployeeCreated`, `CompanyEmployeeConflictCode` and `CompanyEmployeeConflict`, the body and answers of `POST /api/v2/companies/{company_uuid}/employees`.
+  - They mirror mini-back's `CompanyEmployeeCreate` and `CompanyEmployeeCreated` (`schemas/company_employee_v2.py`) and the two 409 details of `company_employees_v2.py`, at the head of mini-back #768 (`ba5737af`).
+  - The server rejects unknown keys (`extra="forbid"`). Without an own RFC or CURP, `birthDate` is required (422).
+  - The 409 body is `{ detail: { code, message } }`: `employee_active_here` or `identity_mismatch`, with no data of the record.
+- `endpoints`: `V2_ENDPOINTS.COMPANY_EMPLOYEES_CREATE`, plus its manual row `CREATE_COMPANY_EMPLOYEE` in the `companies` group of `v2_endpoints_generated`.
+- **The endpoint reaches prod with mini-back #768, after the owner's sign-off.** These types change nothing until then.
+
 ## [2.43.0] - 2026-10-20
 
 ### Added — company documents v2 (SITIMM-1418, D11 of the company detail)
