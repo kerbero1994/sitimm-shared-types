@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { CONTRACT_VERSION_STATUSES } from "../src/benefits";
 import { V2_ENDPOINTS_GENERATED } from "../src/endpoints";
+import { created, limitedList, list } from "./fixtures/union-benefits-contract";
 
 /**
  * Vitest transpila sin chequear tipos, así que la fixture de representantes v2 y prestaciones
@@ -28,6 +29,12 @@ describe("representantes v2 y prestaciones (SITIMM-1491)", () => {
 
   it("los estados de una versión son los 5 del CHECK de la tabla", () => {
     expect(CONTRACT_VERSION_STATUSES).toEqual(["DRAFT", "PENDING", "ACTIVE", "EXPIRED", "SUPERSEDED"]);
+  });
+
+  it("la nómina viene siempre: con valor para el nivel completo y null para el limitado y el POST (SITIMM-1517)", () => {
+    expect(list.data[0].employeePayroll).toBe("48213");
+    expect(limitedList.data[0]).toHaveProperty("employeePayroll", null);
+    expect(created.data).toHaveProperty("employeePayroll", null);
   });
 
   it("las rutas de representantes llevan el id numérico de la empresa", () => {

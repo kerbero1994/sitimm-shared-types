@@ -755,6 +755,12 @@ export interface UnionRepresentativeV2 {
   roleCode: string | null;
   employeeName: string | null;
   employeeLastNames: string | null;
+  /**
+   * The representative's payroll number (`Employee.payroll`). Always present (mini-back #776, SITIMM-1517).
+   * The value reaches only the full census tier (MANAGER, ADMIN, ADMIN_EMPLOYEES, HR): it is identity in
+   * SITIMM-1419, so the limited tier (OFFICE, ADVISOR) gets `null`. The `POST` answer also carries `null`.
+   */
+  employeePayroll: string | null;
 }
 
 /**

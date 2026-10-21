@@ -33,10 +33,16 @@ const rep: UnionRepresentativeV2 = {
   roleCode: "SEC_GENERAL",
   employeeName: "Laura",
   employeeLastNames: "Ejemplo Vega",
+  employeePayroll: "48213",
 };
 
 export const list: V2Response<UnionRepresentativeV2[]> = { status: "success", data: [rep] };
-export const created: V2Response<UnionRepresentativeV2> = { status: "success", data: rep };
+// SITIMM-1517: the limited tier (OFFICE, ADVISOR) gets the key with null; the POST answer too.
+export const limitedList: V2Response<UnionRepresentativeV2[]> = { status: "success", data: [{ ...rep, employeePayroll: null }] };
+export const created: V2Response<UnionRepresentativeV2> = { status: "success", data: { ...rep, employeePayroll: null } };
+
+// @ts-expect-error employeePayroll always comes, null or not
+export const withoutPayroll: UnionRepresentativeV2 = (({ employeePayroll: _p, ...r }) => r)(rep);
 export const patched: V2Response<{ message: string }> = { status: "success", data: { message: "Representative updated" } };
 
 export const roles: V2Response<UnionRoleV2[]> = {

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - They mirror mini-back's `app/presentation/schemas/union_representative.py` at `c57dacfe`.
   - Every answer is inside `V2Response`; `PATCH` and `DELETE` answer `{ message }`.
   - The `V2` suffix keeps apart the v1 `UnionRole` and `UnionPersonnel` already in this module.
+  - `UnionRepresentativeV2.employeePayroll: string | null`, from mini-back #776 (SITIMM-1517). It is always present, with the value only for the full census tier (MANAGER, ADMIN, ADMIN_EMPLOYEES, HR); the limited tier (OFFICE, ADVISOR) and the `POST` answer get `null`. **This release goes out after #776 is in prod.**
   - The routes already exist in `V2_ENDPOINTS_GENERATED.companies` (`LIST_UNION_ROLES`, `LIST_`, `CREATE_`, `UPDATE_` and `DELETE_UNION_REPRESENTATIVE`).
 
 ### Changed — `benefits` is what the wire carries (SITIMM-1491)
@@ -32,7 +33,7 @@ Read against new_dashboard, the only consumer (`benefits.api.ts`, `PrestacionesT
 
 ### Tests
 
-- `union-benefits-contract`: tsc compiles a fixture shaped like the wire (synthetic data), with negatives for a numeric `numericValue`, an `INACTIVE` status and a create without a role.
+- `union-benefits-contract`: tsc compiles a fixture shaped like the wire (synthetic data), with negatives for a numeric `numericValue`, an `INACTIVE` status, a create without a role and a representative without `employeePayroll`. A runtime case checks the payroll for each tier.
 - Mutations go red: `DecimalString = number` and an extra `INACTIVE` status.
 
 ## [2.44.1] - 2026-10-20
