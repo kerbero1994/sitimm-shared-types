@@ -25,6 +25,10 @@
  * merged to `main` at this source version). Safe to overwrite on the next
  * `make dump-v2-routes` once that backend branch ships.
  *
+ * MANUAL PATCH (SITIMM-1469, 2026-10-20): 1 row hand-added to the `companies` group for
+ * `POST /companies/{company_uuid}/employees` (mini-back #768, head ba5737af, not yet merged at
+ * this source version). Safe to overwrite on the next `make dump-v2-routes`.
+ *
  * MANUAL PATCH (SITIMM-1472, 2026-10-20): 1 row hand-added to the `users` group for
  * `GET /users/census-history/by-employee/{employee_uuid}` (mini-back SITIMM-1472, merged in
  * 6b562500, after this source version). Safe to overwrite on the next `make dump-v2-routes`.
@@ -305,6 +309,8 @@ export const V2_ENDPOINTS_GENERATED = {
     GET_CENSUS_STATISTICS: (census_uuid: string | number) => `/api/v2/censuses/${census_uuid}/statistics`,
   },
   companies: {
+    /** POST — V2 Companies: manual registration of one person (manual patch, SITIMM-1469) */
+    CREATE_COMPANY_EMPLOYEE: (company_uuid: string | number) => `/api/v2/companies/${company_uuid}/employees`,
     /** GET — V2 Company Documents */
     LIST_COMPANY_DOCUMENTS: (company_id: string | number) => `/api/v2/companies/${company_id}/documents`,
     /** POST — V2 Company Documents */

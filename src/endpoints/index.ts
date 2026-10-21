@@ -78,6 +78,14 @@ export const V2_ENDPOINTS = {
    *  Requires `users.view`, or being the person; anyone else gets 404 `Employee not found`. SITIMM-1472. */
   USERS_CENSUS_HISTORY_BY_EMPLOYEE: "/users/census-history/by-employee/{employee_uuid}",
 
+  // ── Companies: manual registration of one person (SITIMM-1469) ──────
+
+  /** POST → Body: CompanyEmployeeCreate. Returns V2Response<CompanyEmployeeCreated> (201).
+   *  `census:create` (HR, ADMIN, MANAGER) within the caller's companies; out of scope → 404.
+   *  409 CompanyEmployeeConflict (`employee_active_here` | `identity_mismatch`). The row joins no
+   *  census and does not change `Census.total`. Reaches prod with mini-back #768. */
+  COMPANY_EMPLOYEES_CREATE: "/companies/{company_uuid}/employees",
+
   // ── Admin users: an HR user's companies (SITIMM-1391) ──────────────
 
   /** GET → HrCompaniesV2Response. Requires `users.view`. 422 `not_hr` if the user is not HR. */

@@ -624,3 +624,75 @@ export interface CompanyDocumentGroup {
   /** Every version, only with `includeVersions=true`; otherwise `[]`. */
   versions: CompanyDocument[];
 }
+
+/**
+ * Body of the manual registration of one person in a company (Padrones 2d «Dar de alta a una
+ * persona», SITIMM-1469): identity and employment in one call. The server rejects unknown keys
+ * (`extra="forbid"`) and trims strings.
+ *
+ * RFC or CURP identify the person. With neither (or only SAT's generic `XAXX010101…` /
+ * `XEXX010101…`, which names nobody), `birthDate` is required. Status `422` otherwise.
+ *
+ * Backend: `app/presentation/schemas/company_employee_v2.py` :: `CompanyEmployeeCreate`
+ * (mini-back #768, head `ba5737af`).
+ */
+export interface CompanyEmployeeCreate {
+  /** Given name(s), 1–255. */
+  name: string;
+  /** Last names, 1–255. */
+  lastNames: string;
+  /** Employee (payroll) number in this company, 1–255. */
+  payroll: string;
+  /** Job title, 1–255. */
+  job: string;
+  /** Daily salary, > 0, up to 10 digits with 2 decimals. Sent as a number or a decimal string. */
+  daySalary: number | string;
+  /** RFC; validated and normalized by the server. */
+  rfc?: string | null;
+  /** CURP; validated and normalized by the server. */
+  curp?: string | null;
+  /** `YYYY-MM-DD`. Required when there is no own RFC nor CURP. */
+  birthDate?: string | null;
+  /** Sex as the BE stores it. */
+  gender?: "M" | "F" | null;
+  /** Entry date in this company, `YYYY-MM-DD`. */
+  entryDate?: string | null;
+  /** Department, up to 255. */
+  department?: string | null;
+  /** Phone, up to 50. */
+  phone?: string | null;
+  /** E-mail (validated as an address). */
+  email?: string | null;
+  /** NSS: exactly 11 digits. */
+  nss?: string | null;
+}
+
+/**
+ * `201` answer of `POST /api/v2/companies/{company_uuid}/employees`, inside `V2Response`.
+ * Nothing about the person's other employment comes back.
+ *
+ * Backend: `app/presentation/schemas/company_employee_v2.py` :: `CompanyEmployeeCreated`.
+ */
+export interface CompanyEmployeeCreated {
+  /** UUID of the new employee row in this company. */
+  employeeUuid: string;
+  /** The RFC/CURP already had a SITIMM account: the new row is linked to it. */
+  existingAccount: boolean;
+  /** «Alta registrada», or «Alta registrada. Ya tenía cuenta en SITIMM; usa la misma.». */
+  message: string;
+}
+
+/** Stable codes of the `409` answers of the manual registration. */
+export type CompanyEmployeeConflictCode = "employee_active_here" | "identity_mismatch";
+
+/**
+ * `409` body of `POST /api/v2/companies/{company_uuid}/employees`: FastAPI wraps the route's
+ * `detail` object. `employee_active_here`: the person already has a live row in this company.
+ * `identity_mismatch`: the RFC and the CURP do not name one same account; no data of the
+ * record comes back.
+ *
+ * Backend: `company_employees_v2.py` :: `ACTIVE_HERE`, `IDENTITY_MISMATCH`.
+ */
+export interface CompanyEmployeeConflict {
+  detail: { code: CompanyEmployeeConflictCode; message: string };
+}
