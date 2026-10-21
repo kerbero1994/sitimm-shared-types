@@ -5,6 +5,36 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.46.0] - 2026-10-21
+
+### Added — technical details of a company (SITIMM-1497, D3 and D8)
+
+Checked against mini-back #779 at `bff5db28`. The BE merges at the owner's sign-off; these types change nothing until then.
+
+- `companies`: `CompanyDetails.technical_detail?: TechnicalDetail | null`.
+  - **The wire key is `technical_detail`**: the BE dumps the company by field name (`model_dump(mode="json")`), and its `TechnicalDetail` alias does not travel.
+  - It comes in `POST /api/v1/companies/show` (`data.company.company`), also to HR (`basic_show` keeps it).
+  - It is `null` when the company has neither a row nor catalog assignments.
+- `companies`: `CompanyTechnicalFields`, the «Detalles técnicos» of create and update.
+  - It carries `productIds` and `clientIds` (catalog uuids; a list replaces the whole set, `[]` empties it) and `operationStart` and `lastRevision` (`YYYY-MM-DD`; `null` clears one).
+- `companies`: `CompanyDuplicateCheck`, the answer of `POST /api/v1/companies/import/check-duplicate`.
+  - It adds `existing_company_uuid`, which D3's «Ver la empresa» uses as its link.
+
+### Changed — `TechnicalDetail` is the BE's shape
+
+- New fields: `id`, `CompanyId`, `createdAt` and `updatedAt`.
+- Every field is present and nullable. Products and clients can exist without a row, and then `id`, `uuid` and the dates are `null`.
+- `operationStart` is an ISO datetime; `lastRevision` is a `YYYY-MM-DD` date.
+- Before, `uuid` was required and the rest optional.
+- No repo imports this type: new_dashboard uses its own legacy copy (`companies.legacy.types.ts`).
+
+### Tests
+
+- `company-technical-contract`: tsc compiles a fixture shaped like the wire (synthetic data).
+  - Negatives: the `TechnicalDetail` key, a numeric `existing_company_uuid` and numeric product ids.
+  - It also checks the catalog-only case and the uuid of the duplicate.
+- Mutations go red: the key renamed to `TechnicalDetail`, and `existing_company_uuid` accepting a number.
+
 ## [2.45.0] - 2026-10-20
 
 ### Added — union representatives v2 (SITIMM-1491, ola 3 delta: D14)
