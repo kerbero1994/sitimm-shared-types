@@ -15,7 +15,29 @@ import {
  * datos sucios al censo.
  */
 
+/**
+ * CURP_PATTERN es el del BE (SITIMM-1469): lo que el BE acepta tiene que pasar aquí, y lo que el BE rechaza con 422
+ * también. RFC_PATTERN es más estricto que el BE a propósito (el dígito verificador del SAT). Los casos «BE» salen de
+ * mini-back `tests/unit/domain/test_value_objects.py`; los «regex» prueban cada parte de `CURP_PATTERN_STR`
+ * (`app/shared/utils/mexican_id_patterns.py`).
+ */
 describe("RFC_PATTERN", () => {
+  it("acepta el RFC de persona moral de los tests del BE", () => {
+    expect(RFC_PATTERN.test("ABC850101XY9")).toBe(true);
+  });
+
+  it("verifica el dígito del SAT, que el BE no verifica: diferencia a propósito", () => {
+    // El BE (RFC.is_valid) acepta este; ningún RFC real termina en una letra que no sea «A».
+    expect(RFC_PATTERN.test("PEGJ850101ABC")).toBe(false);
+  });
+
+  it.each([
+    "PEGJ85", // BE: muy corto
+    "PEGJ850101AB", // BE: homoclave de 2 (solo pasa el «relaxed»)
+  ])("rechaza lo que el BE rechaza: %s", (rfc) => {
+    expect(RFC_PATTERN.test(rfc)).toBe(false);
+  });
+
   it.each(["PEGJ900515AB1", "GODE561231GR8", "ABC680524P76"])(
     "acepta RFC válido %s",
     (rfc) => {
@@ -34,6 +56,28 @@ describe("RFC_PATTERN", () => {
 });
 
 describe("CURP_PATTERN", () => {
+  it.each([
+    "PEGJ850101HGTRRN09", // BE
+    "PEGJ850101MGTRRN09", // BE: mujer
+    "GARC010101HDFRRLA9", // BE (SITIMM-386): nacida desde 2000, homoclave con letra
+    "GACO851215HDFRRS09", // BE: antes de 2000, homoclave con dígito
+    "EEVL900315MGTXXX04", // la persona sintética de la 2d (Padrones), corregida
+  ])("acepta lo que el BE acepta: %s", (curp) => {
+    expect(CURP_PATTERN.test(curp)).toBe(true);
+  });
+
+  it.each([
+    "GARC010101HDFRRLAA", // BE: letra en el dígito verificador
+    "INVALID", // BE
+    "EJVL900315MGTXXX04", // regex: posición 2 sin vocal (la persona sintética vieja de la 2d)
+    "PEGJ851301HGTRRN09", // regex: mes 13
+    "PEGJ850132HGTRRN09", // regex: día 32
+    "PEGJ850101HXXRRN09", // regex: estado que no existe
+    "PEGJ850101HGTAEI09", // regex: vocales donde van las consonantes internas
+  ])("rechaza lo que el BE rechaza: %s", (curp) => {
+    expect(CURP_PATTERN.test(curp)).toBe(false);
+  });
+
   it.each(["PEGJ900515HJCRNS09", "GODE561231MGRNNS02"])(
     "acepta CURP válida %s",
     (curp) => {

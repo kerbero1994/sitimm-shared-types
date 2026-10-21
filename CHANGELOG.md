@@ -5,6 +5,23 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.44.1] - 2026-10-20
+
+### Fixed — `CURP_PATTERN` is the BE's (SITIMM-1469)
+
+- **`CURP_PATTERN`** is now mini-back's `CURP_PATTERN_STR` (`app/shared/utils/mexican_id_patterns.py`, SITIMM-386), copied character for character:
+  - internal vowel or X at position 2;
+  - month 01–12 and day 01–31;
+  - one of the 32 states or NE;
+  - internal consonants at 14–16.
+  - Before, a CURP that passed here could get a 422 from the BE, e.g. the 2d's synthetic `EJVL…`.
+  - **It is stricter:** a form that validated with it now rejects what the BE was already rejecting.
+- Tests: accept and reject cases from mini-back `tests/unit/domain/test_value_objects.py`, plus one case per part of the regex.
+
+### Note — `RFC_PATTERN` (informative)
+
+- **Unchanged.** It is stricter than the BE on purpose: it checks the SAT check digit at the end (0–9 or «A»), which every real RFC has, and the BE (`RFC.is_valid`) does not. A test pins the difference.
+
 ## [2.44.0] - 2026-10-20
 
 ### Added — manual registration of one person in a company (SITIMM-1469, Padrones 2d)
