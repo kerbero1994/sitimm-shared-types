@@ -501,6 +501,8 @@ export type CompanyContactType =
   | "RH_SECONDARY"
   | "GENERAL_MANAGER"
   | "PRODUCTION_MANAGER"
+  | "MANAGER"
+  | "DELEGATE"
   | "OTHER";
 
 /**
@@ -523,6 +525,88 @@ export interface CompanyContact {
   isPrimary: boolean;
   /** Whether the contact is currently active. */
   isActive: boolean;
+  /**
+   * Addresses the contact in `/api/v2/companies/{company_id}/contacts/{contact_uuid}` (SITIMM-1499).
+   * Optional in `show.contacts[]` (`CompanyContactInfo`).
+   */
+  uuid?: string | null;
+  /**
+   * `"panel"`: captured or edited in the panel, and the Excel load no longer touches it. `"excel"`: it
+   * came from the Excel load (SITIMM-1499).
+   */
+  source?: CompanyContactSource | null;
+}
+
+/** Where a company contact comes from (SITIMM-1499): the panel or the Excel load. Lowercase on the wire. */
+export type CompanyContactSource = "panel" | "excel";
+
+/** The contact types the panel can write: every type but `ADVISOR`, since advisors come from `/advisor-assignments` (SITIMM-1481). */
+export type CompanyContactV2Type = Exclude<CompanyContactType, "ADVISOR">;
+
+/**
+ * A company contact written from the panel. It is the answer of `POST /api/v2/companies/{company_id}/contacts`
+ * (201) and of `PATCH …/{contact_uuid}` (200), inside `V2Response`. `company_id` is the company's numeric id and
+ * only travels in the path. `DELETE …/{contact_uuid}` answers 204 with no body (soft delete).
+ * Permission: the `companies.edit` capability, within the caller's companies.
+ *
+ * Backend: `app/presentation/schemas/company_contact_v2.py` :: `CompanyContactV2` (mini-back branch
+ * `SITIMM-1499-company-contacts-crud` @ d293f672, contract Jira 1499 c18422).
+ */
+export interface CompanyContactV2 {
+  uuid: string;
+  /** Typed `str` in the response; one of `CompanyContactV2Type` for what the panel writes. */
+  contactType: string;
+  name: string;
+  position: string | null;
+  email: string | null;
+  phone: string | null;
+  isPrimary: boolean;
+  notes: string | null;
+  source: CompanyContactSource;
+  /** ISO-8601 datetime. */
+  createdAt: string;
+  /** ISO-8601 datetime. */
+  updatedAt: string;
+}
+
+/**
+ * Body of `POST /api/v2/companies/{company_id}/contacts`. The server rejects unknown keys (`extra="forbid"`),
+ * trims the texts (empty becomes `null`) and lowercases the email. Making one primary moves the previous
+ * primary of the same type off, in the same transaction.
+ *
+ * Backend: `company_contact_v2.py` :: `CompanyContactV2Create`.
+ */
+export interface CompanyContactV2Create {
+  contactType: CompanyContactV2Type;
+  /** 1–500. */
+  name: string;
+  /** Up to 255. */
+  position?: string | null;
+  /** A valid email address. */
+  email?: string | null;
+  /** Up to 255. */
+  phone?: string | null;
+  /** Defaults to `false`. */
+  isPrimary?: boolean;
+  notes?: string | null;
+}
+
+/**
+ * Body of `PATCH /api/v2/companies/{company_id}/contacts/{contact_uuid}`. Only what is sent changes. An
+ * explicit `null` clears an optional field, but `contactType`, `name` and `isPrimary` can't be `null`
+ * (422). Editing an Excel contact makes it `"panel"`.
+ *
+ * Backend: `company_contact_v2.py` :: `CompanyContactV2Update`.
+ */
+export interface CompanyContactV2Update {
+  contactType?: CompanyContactV2Type;
+  /** 1–500; can't be emptied. */
+  name?: string;
+  position?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  isPrimary?: boolean;
+  notes?: string | null;
 }
 
 /**
