@@ -1,6 +1,6 @@
 /**
  * Fixture de tests/company-technical-contract.test.ts: la compila tsc, no vitest. Los payloads tienen la
- * forma exacta del cable de mini-back #779 @ bff5db28 (SITIMM-1497), con datos sintéticos:
+ * forma exacta del cable de mini-back #779 @ 5b6ff292 (SITIMM-1497), con datos sintéticos:
  * - `POST /api/v1/companies/show`: `data.company.company.technical_detail` (dump por nombre de campo);
  * - `POST /api/v1/companies/import/check-duplicate`: en sobre `success_response`;
  * - el cuerpo técnico de create/update (`CompanyTechnicalFields`).
@@ -20,12 +20,22 @@ const withRow: TechnicalDetail = {
   updatedAt: "2026-10-21T10:00:00",
   clientIds: ["0b1c2d3e-4f5a-4b6c-8d7e-9f0a1b2c3d4e"],
   productIds: ["1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f", "2d3e4f5a-6b7c-4d8e-9f0a-1b2c3d4e5f6a"],
+  // Los mismos, con su nombre del catálogo y ordenados por nombre (los lee HR sin all-options).
+  clients: [{ id: "0b1c2d3e-4f5a-4b6c-8d7e-9f0a1b2c3d4e", name: "Cliente Ejemplo" }],
+  products: [
+    { id: "2d3e4f5a-6b7c-4d8e-9f0a-1b2c3d4e5f6a", name: "Arneses Ejemplo" },
+    { id: "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f", name: "Motores Ejemplo" },
+  ],
 };
+
+// @ts-expect-error cada producto trae su nombre del catálogo, no solo el id
+export const productWithoutName: TechnicalDetail = { ...withRow, products: [{ id: "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f" }] };
 
 // Productos y clientes sin fila de TechnicalDetail (los escribió la ruta de catálogos).
 export const catalogOnly: TechnicalDetail = {
   id: null, uuid: null, operationStart: null, contract: null, lastRevision: null,
   CompanyId: null, createdAt: null, updatedAt: null, clientIds: [], productIds: ["1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f"],
+  clients: [], products: [{ id: "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f", name: "Motores Ejemplo" }],
 };
 
 export const shown: Pick<CompanyDetails, "technical_detail"> = { technical_detail: withRow };
