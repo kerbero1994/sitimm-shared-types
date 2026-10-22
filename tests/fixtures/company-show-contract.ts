@@ -1,0 +1,151 @@
+/**
+ * Exact success wire shape of `POST /api/v1/companies/show` from mini-back origin/main.
+ * The endpoint nests the aggregate under `data.company`; the company itself keeps the BE's
+ * field casing (`technical_detail`, `LatestCensus`, `normalized_benefits`, etc.).
+ */
+import type { CompanyDetails, CompanyShowResponse } from "../../src/companies";
+
+const company: CompanyDetails = {
+  id: 45,
+  uuid: "6c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f",
+  name: "Empresa Ejemplo",
+  logoUrl: "https://cdn.example.test/sitimm-storage/company-logo.png",
+  createdAt: "2026-10-21T10:00:00Z",
+  updatedAt: "2026-10-21T10:00:00Z",
+  technical_detail: {
+    id: 77,
+    uuid: "7d3f1a2b-4c5d-4e6f-8a9b-0c1d2e3f4a5b",
+    operationStart: "2015-03-01T00:00:00Z",
+    contract: null,
+    lastRevision: "2026-02-15",
+    CompanyId: 45,
+    createdAt: "2026-10-21T10:00:00Z",
+    updatedAt: "2026-10-21T10:00:00Z",
+    clientIds: ["1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f"],
+    productIds: ["2d3e4f5a-6b7c-4d8e-9f0a-1b2c3d4e5f6a"],
+    clients: [{ id: "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f", name: "Cliente Ejemplo" }],
+    products: [{ id: "2d3e4f5a-6b7c-4d8e-9f0a-1b2c3d4e5f6a", name: "Producto Ejemplo" }],
+  },
+  LatestCensus: {
+    id: 12,
+    uuid: "3d4e5f6a-7b8c-4d9e-8f0a-1b2c3d4e5f6a",
+    year: 2026,
+    quarter: 3,
+    total: 120,
+    men_count: 75,
+    women_count: 45,
+    compliance_level: 96.5,
+    compliance_curp: 100,
+    compliance_nss: 98,
+    compliance_address: 95,
+    compliance_name: 100,
+    compliance_salary: 96,
+    compliance_job: 92,
+    compliance_payroll: 91,
+    accuracy_score: 97,
+    createdAt: "2026-10-20T10:00:00Z",
+  },
+  normalized_benefits: [{
+    benefit_catalog_id: 8,
+    code: "CHRISTMAS_BOX",
+    name: "Caja navideña",
+    category: "BONUS",
+    measurement_type: "AMOUNT",
+    unit: "MXN",
+    numeric_value: 1200,
+    text_value: null,
+    boolean_value: null,
+    effective_from: "2026-01-01T00:00:00Z",
+    notes: null,
+    is_active: true,
+  }],
+  benefit_info: {
+    id: 5,
+    uuid: "4e5f6a7b-8c9d-4e0f-8a1b-2c3d4e5f6a7b",
+    CompanyId: 45,
+    createdAt: "2026-01-01T00:00:00Z",
+    updatedAt: "2026-10-21T10:00:00Z",
+  },
+};
+
+export const shown: CompanyShowResponse = {
+  status: "success",
+  data: {
+    company: {
+      company,
+      statistics: {
+        noOfEmployees: 120,
+        noOfMen: 75,
+        noOfWomen: 45,
+        percentOfMen: 62.5,
+        percentOfWomen: 37.5,
+        minWage: 300,
+        maxWage: 700,
+        meanWage: 450,
+        meanAge: 35.5,
+        total_census: 6,
+        last_census_date: "2026-10-20",
+        active_advisors: 1,
+        medianWage: 425,
+        avgTenureMonths: 48.5,
+        oldestEntryDate: "2010-01-01",
+        newestEntryDate: "2026-10-01",
+        noWithoutGender: 0,
+      },
+      advisors: [{
+        id: 4,
+        uuid: "5f6a7b8c-9d0e-4f1a-8b2c-3d4e5f6a7b8c",
+        email: "advisor@example.test",
+        userType: 3,
+        createdAt: "2026-01-01T00:00:00Z",
+        updatedAt: "2026-10-21T10:00:00Z",
+        deletedAt: null,
+        CandidatePositionId: null,
+        CompanyId: null,
+        AssemblyMemberOfId: null,
+        OtherAssemblyMemberOfId: null,
+        RhOfId: null,
+        UserProfile: null,
+        AdvisorCompany: null,
+        is_auto_advisor: true,
+      }],
+      contacts: [{
+        id: 9,
+        uuid: "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c9d",
+        source: "panel",
+        contactType: "RH",
+        name: "Contacto Ejemplo",
+        email: "contact@example.test",
+        phone: null,
+        position: "Recursos Humanos",
+        isPrimary: true,
+        isActive: true,
+      }],
+      topJobs: [{ job: "Operador", count: 60 }],
+      dataQuality: { rfc: 100, curp: 98, nss: 97, address: 95, salary: 100, entry: 100, job: 92 },
+      censusHistory: [{
+        year: 2026,
+        quarter: 3,
+        total: 120,
+        men_count: 75,
+        women_count: 45,
+        compliance_level: 96.5,
+        accuracy_score: 97,
+        createdAt: "2026-10-20T10:00:00Z",
+      }],
+      censusCount: 6,
+      contributionStatus: {
+        quarter_label: "2026-Q3",
+        amount_due: 24000,
+        payment_status: "pending",
+        worker_count: 120,
+      },
+    },
+  },
+};
+
+// @ts-expect-error `rhPassword` is request-only and never a companies/show response field.
+export const credentialOnShow: CompanyDetails = { ...company, rhPassword: "never-on-the-wire" };
+
+// @ts-expect-error legacy flat benefit values are not sent; use normalized_benefits.
+export const flatBenefitOnShow: NonNullable<CompanyDetails["benefit_info"]> = { ...company.benefit_info!, christmasBox: "no" };

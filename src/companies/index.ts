@@ -10,7 +10,7 @@
  * Used by new_dashboard company views.
  */
 
-import type { BaseEntity } from "../common";
+import type { BaseEntity, V2Response } from "../common";
 
 /**
  * Union personnel role catalog entry.
@@ -136,6 +136,123 @@ export interface CompanyAdvisor {
   };
 }
 
+/** Shared catalog relation in `POST /api/v1/companies/show`. */
+export interface CompanyShowCatalog {
+  id: number;
+  uuid: string | null;
+  name: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+/** Catalog relation with Sequelize soft-delete metadata. */
+export interface CompanyShowCatalogWithDeletion extends CompanyShowCatalog {
+  deletedAt: string | null;
+}
+
+/** City relation in `CompanyDetails.City`. */
+export interface CompanyShowCity extends CompanyShowCatalogWithDeletion {
+  StateId: number | null;
+}
+
+/** State relation in `CompanyDetails.State`. */
+export interface CompanyShowState extends CompanyShowCatalogWithDeletion {
+  CountryId: number | null;
+}
+
+/** Latest census relation in `CompanyDetails.LatestCensus`; its snake_case keys are wire keys. */
+export interface CompanyShowLatestCensus {
+  id: number;
+  uuid: string | null;
+  year: number | null;
+  quarter: number | null;
+  total: number;
+  men_count: number;
+  women_count: number;
+  compliance_level: number | null;
+  compliance_curp: number | null;
+  compliance_nss: number | null;
+  compliance_address: number | null;
+  compliance_name: number | null;
+  compliance_salary: number | null;
+  compliance_job: number | null;
+  compliance_payroll: number | null;
+  accuracy_score: number | null;
+  createdAt: string | null;
+}
+
+/** One normalized benefit embedded in `CompanyDetails.normalized_benefits`. */
+export interface CompanyShowNormalizedBenefit {
+  benefit_catalog_id: number;
+  code: string;
+  name: string;
+  category: string | null;
+  measurement_type: string | null;
+  unit: string | null;
+  numeric_value: number | null;
+  text_value: string | null;
+  boolean_value: boolean | null;
+  effective_from: string | null;
+  notes: string | null;
+  is_active: boolean;
+}
+
+/** Profile projection returned for an advisor in `POST /api/v1/companies/show`. */
+export interface CompanyShowAdvisorProfile {
+  id: number;
+  uuid: string | null;
+  name: string | null;
+  lastNames: string | null;
+  dateOfBirth: string | null;
+  sex: string | null;
+  rfc: string | null;
+  personalPhone: string | null;
+  mobilePhone: string | null;
+  nss: string | null;
+  charge: string | null;
+  address: string | null;
+  otherMail: string | null;
+  isFatherAlive: boolean | null;
+  profilePic: string | null;
+  title: string | null;
+  city: string | null;
+  titleType: string | null;
+  affiliationDate: string | null;
+  UserId: number | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  deletedAt: string | null;
+  CivilStateId: number | null;
+  ScholarshipId: number | null;
+}
+
+/** Assignment relation nested in an advisor returned by `companies/show`. */
+export interface CompanyShowAdvisorAssignment {
+  CompanyId: number;
+  UserId: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+/** Advisor returned by `POST /api/v1/companies/show`; `is_auto_advisor` is the wire key. */
+export interface CompanyShowAdvisor {
+  id: number;
+  uuid: string | null;
+  email: string;
+  userType: number | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  deletedAt: string | null;
+  CandidatePositionId: number | null;
+  CompanyId: number | null;
+  AssemblyMemberOfId: number | null;
+  OtherAssemblyMemberOfId: number | null;
+  RhOfId: number | null;
+  UserProfile: CompanyShowAdvisorProfile | null;
+  AdvisorCompany: CompanyShowAdvisorAssignment | null;
+  is_auto_advisor: boolean;
+}
+
 /**
  * Document attachment with associated date.
  *
@@ -167,9 +284,9 @@ export interface ContributionStatus {
 /**
  * Superset company record with all resolved FKs and extras.
  *
- * Backend: aggregated by `GET /api/v1/companies/{uuid}/details` —
- * joins `Company` with its city/state/company-type/economic-activity catalogs,
- * latest census snapshot, and a few admin-only fields.
+ * Backend: `POST /api/v1/companies/show` (`data.company.company`) — joins
+ * `Company` with its city/state/company-type/economic-activity catalogs and
+ * latest census snapshot. Field names preserve the JSON wire contract.
  */
 export interface CompanyDetails {
   /** Numeric primary key. */
@@ -192,11 +309,6 @@ export interface CompanyDetails {
   electoralId?: string;
   /** Whether the company has a union committee. */
   hasCommittee?: boolean;
-  /**
-   * Shared password used by the HR module to upload files.
-   * Admin-only field; never exposed in the public API.
-   */
-  rhPassword?: string;
   /** RFC (tax ID). */
   rfc?: string;
   /** GPS latitude. Range: -90 to 90. */
@@ -231,6 +343,8 @@ export interface CompanyDetails {
   headquarterName?: string;
   /** Presigned S3 URL for the collective contract. */
   collectiveContractUrl?: string;
+  /** Public company-logo URL. `null` when no logo is configured. */
+  logoUrl?: string | null;
   /** Latest census snapshot joined server-side. */
   latestCensus?: {
     /** Numeric census PK. */
@@ -268,6 +382,29 @@ export interface CompanyDetails {
    * Sent by `POST /api/v1/companies/show` in `data.company.company`, also to HR (`basic_show` keeps it).
    */
   technical_detail?: TechnicalDetail | null;
+  /** Legacy JSON update-date payload. The response schema declares a list; legacy rows can hold an object. */
+  updateDates?: unknown[] | Record<string, unknown> | null;
+  /** Legacy RH relation. The response always serializes an array. */
+  Rhs?: unknown[];
+  /** Resolved catalog relations returned by `companies/show`. */
+  City?: CompanyShowCity | null;
+  State?: CompanyShowState | null;
+  Country?: CompanyShowCatalogWithDeletion | null;
+  IndustrialPark?: CompanyShowCatalogWithDeletion | null;
+  CompanyType?: CompanyShowCatalog & { code: string | null } | null;
+  EconomicActivity?: CompanyShowCatalog & { code: string | null } | null;
+  /** Latest census in its original wire casing (unlike the legacy `latestCensus` compatibility field above). */
+  LatestCensus?: CompanyShowLatestCensus | null;
+  /** Legacy top-level assignments; `technical_detail.productIds` / `clientIds` are the populated source. */
+  client_ids?: string[] | null;
+  product_ids?: string[] | null;
+  /** Modern benefits returned by the show endpoint. */
+  normalized_benefits?: CompanyShowNormalizedBenefit[] | null;
+  /**
+   * Legacy benefit relation documented for `companies/show`. Its old flat benefit fields no longer travel;
+   * use `normalized_benefits` for values. Current BE schema omits this key, hence optional.
+   */
+  benefit_info?: Benefit | null;
   /** ISO-8601 creation timestamp. */
   createdAt: string;
   /** ISO-8601 last-update timestamp. */
@@ -393,6 +530,27 @@ export interface CompanyStatistics {
   newestEntryDate?: string;
 }
 
+/** Statistics object as sent by `POST /api/v1/companies/show`. */
+export interface CompanyShowStatistics {
+  noOfEmployees: number;
+  noOfMen: number;
+  noOfWomen: number;
+  percentOfMen: number | null;
+  percentOfWomen: number | null;
+  minWage: number | null;
+  maxWage: number | null;
+  meanWage: number | null;
+  meanAge: number | null;
+  total_census: number | null;
+  last_census_date: string | null;
+  active_advisors: number | null;
+  medianWage: number | null;
+  avgTenureMonths: number | null;
+  oldestEntryDate: string | null;
+  newestEntryDate: string | null;
+  noWithoutGender: number;
+}
+
 /**
  * Company technical/operational details, with the company's catalog assignments (SITIMM-1497).
  * Products and clients can exist without a `TechnicalDetail` row (the catalog routes write them
@@ -481,15 +639,24 @@ export interface CompanyDuplicateCheck {
 }
 
 /**
- * Company benefits — LEGACY (v0.15.0).
- * All text fields removed. Use `NormalizedBenefit` (from the benefits module)
- * joined with `ContractVersion` instead.
+ * Legacy benefit relation of a company.
+ *
+ * `POST /api/v1/companies/show` documents it as `benefit_info`, but its old
+ * flat text values no longer travel. Read `normalized_benefits` for values.
  *
  * @deprecated Use `NormalizedBenefit` from `@kerbero1994/shared-types/benefits`.
  */
 export interface Benefit {
+  /** Numeric primary key. */
+  id: number;
   /** Record UUID. */
-  uuid: string;
+  uuid: string | null;
+  /** Owning company id. */
+  CompanyId: number | null;
+  /** ISO-8601 creation timestamp. */
+  createdAt: string | null;
+  /** ISO-8601 last-update timestamp. */
+  updatedAt: string | null;
 }
 
 /**
@@ -535,6 +702,21 @@ export interface CompanyContact {
    * came from the Excel load (SITIMM-1499).
    */
   source?: CompanyContactSource | null;
+}
+
+/** Contact object as sent by `POST /api/v1/companies/show`. */
+export interface CompanyShowContact {
+  id: number;
+  uuid: string | null;
+  source: CompanyContactSource | null;
+  /** The BE schema accepts a string; a catalog can add types without changing this response contract. */
+  contactType: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  position: string | null;
+  isPrimary: boolean;
+  isActive: boolean;
 }
 
 /** Where a company contact comes from (SITIMM-1499): the panel or the Excel load. Lowercase on the wire. */
@@ -626,6 +808,8 @@ export interface DataQuality {
   salary: number | null;
   /** % of employees with entry date data. */
   entry: number | null;
+  /** % of employees with a job title. */
+  job: number | null;
 }
 
 /**
@@ -650,50 +834,59 @@ export interface CensusHistoryEntry {
   createdAt: string;
 }
 
+/** Census-history item as sent by `POST /api/v1/companies/show`. */
+export interface CompanyShowCensusHistory {
+  year: number;
+  quarter: number;
+  total: number;
+  men_count: number;
+  women_count: number;
+  compliance_level: number | null;
+  accuracy_score: number | null;
+  createdAt: string | null;
+}
+
+/** Contribution object as sent by `POST /api/v1/companies/show`. */
+export interface CompanyShowContributionStatus {
+  quarter_label: string | null;
+  amount_due: number | null;
+  payment_status: string | null;
+  worker_count: number | null;
+}
+
 /**
- * Full company details response — aggregated from multiple tables.
- * Used by the company detail view in new_dashboard.
+ * Inner `data.company` object of `POST /api/v1/companies/show`.
  *
- * Returned by `GET /api/v1/companies/{uuid}/details`.
+ * The endpoint's success body is `V2Response<{ company: CompanyDetailsResponse }>`. HR receives
+ * `statistics` and `topJobs` as `null`, and empty advisor/contact/benefit arrays.
+ * `technical_detail`, legacy `benefit_info`, the catalog relations and `logoUrl` live inside
+ * `company`, exactly as the BE serializes them.
+ *
+ * Backend: `app/presentation/api/v1/companies/crud.py` :: `show_company`.
  */
 export interface CompanyDetailsResponse {
-  /** Aggregated company record (see `CompanyDetails` for the full shape). */
+  /** Extended company record (see `CompanyDetails` for the full shape). */
   company: CompanyDetails;
-  /** Aggregated employee statistics. */
-  statistics?: CompanyStatistics;
+  /** Aggregated employee statistics; `null` in the basic HR view. */
+  statistics: CompanyShowStatistics | null;
   /** Advisors assigned to this company. */
-  advisors?: CompanyAdvisor[];
+  advisors: CompanyShowAdvisor[];
   /** Company contact people by role. */
-  contacts?: CompanyContact[];
-  /** Technical/operational details. */
-  technicalDetail?: TechnicalDetail;
-  /**
-   * Legacy embedded benefit blob — deprecated.
-   * @deprecated Use `NormalizedBenefit[]` from the `benefits` module instead.
-   */
-  benefit?: Benefit;
-  /** History of contract/benefit revisions for the company. */
-  history?: Array<{
-    /** Numeric primary key. */
-    id: number;
-    /** JSON blob snapshot of the change. */
-    content?: Record<string, unknown>;
-    /** Numeric company FK. */
-    CompanyId?: number;
-    /** ISO-8601 creation timestamp. */
-    createdAt?: string;
-    /** ISO-8601 last-update timestamp. */
-    updatedAt?: string;
-  }>;
-  /** Top job titles by employee count. */
-  topJobs?: TopJob[];
+  contacts: CompanyShowContact[];
+  /** Top job titles by employee count; `null` in the basic HR view. */
+  topJobs: TopJob[] | null;
   /** Data quality percentages per field. */
-  dataQuality?: DataQuality;
+  dataQuality: DataQuality;
   /** Historical census data for trend charts. */
-  censusHistory?: CensusHistoryEntry[];
-  /** Current quarterly contribution status. Null if no data. */
-  contributionStatus?: ContributionStatus | null;
+  censusHistory: CompanyShowCensusHistory[];
+  /** Count of all company censuses, including in the basic HR view. */
+  censusCount: number;
+  /** Current quarterly contribution status. `null` without data or access. */
+  contributionStatus: CompanyShowContributionStatus | null;
 }
+
+/** Complete success response of `POST /api/v1/companies/show`. */
+export type CompanyShowResponse = V2Response<{ company: CompanyDetailsResponse }>;
 
 /**
  * Company record with aggregated employee statistics attached.
