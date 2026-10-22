@@ -5,6 +5,24 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.49.0] - 2026-10-21
+
+### Added — companies/show detail contract (SITIMM-1418, PLAYBOOK M4)
+
+Checked against mini-back `origin/main`: `app/presentation/api/v1/companies/crud.py` (`show_company`),
+`app/presentation/schemas/company_detail.py`, and `docs/v2/Companies`.
+
+- `companies`: `CompanyShowResponse`, the complete `success_response()` body of `POST /api/v1/companies/show`, and `CompanyDetailsResponse`, its inner `data.company` value.
+- `companies`: `CompanyDetails` now contains the whole company wire object: `logoUrl`, resolved catalog relations, `LatestCensus`, `technical_detail`, legacy `benefit_info`, and `normalized_benefits`.
+- `companies`: exact show-specific types for statistics, advisors, contacts, census history, contribution status, catalog relations, and normalized benefits. Their casing follows the wire (`total_census`, `is_auto_advisor`, `men_count`, `quarter_label`, etc.).
+- `companies`: `DataQuality.job`, which the show response includes.
+- `companies`: `Benefit` now mirrors the remaining legacy relation metadata only. Flat benefit values do not travel; use `normalized_benefits`.
+- `companies`: `rhPassword` is removed from `CompanyDetails`: it is create/update input only and never part of the show response.
+
+### Tests
+
+- `company-show-contract`: TypeScript fixture for the full nested response, plus negatives proving a credential and obsolete flat benefit value cannot enter the response type.
+
 ## [2.48.0] - 2026-10-21
 
 ### Added — company contacts written from the panel (SITIMM-1499, D9 of the ola 3 delta)
@@ -1498,4 +1516,3 @@ re-points those shapes to match the actual wire.
   schema is `T | None` without a default.
 - Timestamp fields are ISO 8601 UTC strings (commented inline).
 - UUIDs are strings (UUID v4, commented inline).
-
