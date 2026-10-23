@@ -1013,6 +1013,18 @@ export interface CompanyEmployeeCreate {
   email?: string | null;
   /** NSS: exactly 11 digits. */
   nss?: string | null;
+  /**
+   * Civil state id from `GET /api/v2/catalogs/employee-options`; stored on this company's row
+   * (SITIMM-1500). An id outside its catalog: `422`.
+   */
+  civilStateId?: number | null;
+  /** Schooling id from the same catalog; stored on this company's row (SITIMM-1500). */
+  scholarshipId?: number | null;
+  /**
+   * Affiliation date, `YYYY-MM-DD`, not after Mexico City's today (`422`). Saved only on a NEW
+   * account's profile; with an existing account the answer says `affiliationIgnored`.
+   */
+  affiliationDate?: string | null;
 }
 
 /**
@@ -1026,8 +1038,30 @@ export interface CompanyEmployeeCreated {
   employeeUuid: string;
   /** The RFC/CURP already had a SITIMM account: the new row is linked to it. */
   existingAccount: boolean;
+  /**
+   * An affiliation date was typed and the account already existed: its profile is not
+   * touched, so the date was not saved (SITIMM-1500).
+   */
+  affiliationIgnored: boolean;
   /** «Alta registrada», or «Alta registrada. Ya tenía cuenta en SITIMM; usa la misma.». */
   message: string;
+}
+
+/** One option of a v2 catalog: `{id, name}`, the name as the catalog has it. */
+export interface EmployeeCatalogOption {
+  id: number;
+  name: string;
+}
+
+/**
+ * `GET /api/v2/catalogs/employee-options` (`census:create`), inside `V2Response`: the 2d's
+ * catalogs in one call (SITIMM-1500).
+ *
+ * Backend: `app/presentation/schemas/company_employee_v2.py` :: `EmployeeOptions`.
+ */
+export interface EmployeeOptions {
+  civilStates: EmployeeCatalogOption[];
+  scholarships: EmployeeCatalogOption[];
 }
 
 /** Stable codes of the `409` answers of the manual registration. */

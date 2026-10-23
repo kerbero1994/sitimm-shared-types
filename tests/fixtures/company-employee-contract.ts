@@ -4,7 +4,12 @@
  * los @ts-expect-error fijan lo que el servidor no acepta o no manda.
  */
 import type { V2Response } from "../../src/common";
-import type { CompanyEmployeeConflict, CompanyEmployeeCreate, CompanyEmployeeCreated } from "../../src/companies";
+import type {
+  CompanyEmployeeConflict,
+  CompanyEmployeeCreate,
+  CompanyEmployeeCreated,
+  EmployeeOptions,
+} from "../../src/companies";
 
 // Lo mínimo: los 5 obligatorios y una identidad (aquí, la fecha de nacimiento, sin RFC ni CURP).
 export const minimal: CompanyEmployeeCreate = {
@@ -28,11 +33,15 @@ export const full: CompanyEmployeeCreate = {
   phone: "461 000 0101",
   email: "laura.vega@ejemplo.mx",
   nss: "12345678901",
+  // SITIMM-1500: catalog ids and the affiliation date (only for a new account).
+  civilStateId: 2,
+  scholarshipId: 4,
+  affiliationDate: "2026-09-01",
 };
 
 export const created: V2Response<CompanyEmployeeCreated> = {
   status: "success",
-  data: { employeeUuid: "0b9c3c1e-5a52-4d6b-9a77-3f0d2f7b9e11", existingAccount: true, message: "Alta registrada. Ya tenía cuenta en SITIMM; usa la misma." },
+  data: { employeeUuid: "0b9c3c1e-5a52-4d6b-9a77-3f0d2f7b9e11", existingAccount: true, affiliationIgnored: true, message: "Alta registrada. Ya tenía cuenta en SITIMM; usa la misma." },
 };
 
 export const activeHere: CompanyEmployeeConflict = { detail: { code: "employee_active_here", message: "Ya está activa en esta empresa" } };
@@ -48,6 +57,17 @@ export const noPayroll: CompanyEmployeeCreate = { name: "Laura", lastNames: "Eje
 
 // @ts-expect-error el 201 no trae datos del otro empleo
 export const leak: CompanyEmployeeCreated = { ...created.data, otherCompany: "EMPRESA EJEMPLO" };
+
+// @ts-expect-error el 201 siempre dice si la fecha de afiliación se ignoró (SITIMM-1500)
+export const noAffiliationFlag: CompanyEmployeeCreated = { employeeUuid: "u", existingAccount: false, message: "Alta registrada" };
+
+export const options: V2Response<EmployeeOptions> = {
+  status: "success",
+  data: { civilStates: [{ id: 2, name: "Casado(a)" }], scholarships: [{ id: 4, name: "Preparatoria" }] },
+};
+
+// @ts-expect-error el catálogo solo manda id y name
+export const optionExtra: EmployeeOptions = { civilStates: [{ id: 1, name: "Soltero(a)", code: "S" }], scholarships: [] };
 
 // @ts-expect-error el 409 solo tiene los dos códigos
 export const otherCode: CompanyEmployeeConflict = { detail: { code: "duplicate", message: "x" } };

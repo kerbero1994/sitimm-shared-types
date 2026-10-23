@@ -72,7 +72,15 @@ export type CensusReportField =
   | "curp"
   | "sex"
   | "date_of_birth"
-  | "phone";
+  | "phone"
+  // Wave 5 (SITIMM-1520, owner: «Ofrecerlos opcionales»): offered unchecked, «Dato sensible».
+  | "nss"
+  | "age_years"
+  | "civil_state"
+  | "scholarship"
+  | "city"
+  | "state"
+  | "postal_code";
 
 // ============================================================
 // Request DTOs
@@ -126,6 +134,19 @@ export interface CensusReportBatchResponse {
 }
 
 /**
+ * One validation issue of a file: how many rows miss or fail one identity field.
+ * The FE writes the sentence (singular/plural); no person value travels.
+ *
+ * Backend: `app/application/dtos/census_report.py` :: `ValidationIssue` (SITIMM-1520 4e).
+ */
+export interface CensusReportValidationIssue {
+  /** `name`, `rfc`, `curp`, `nss` or `address`. */
+  field: string;
+  /** Rows with the issue. */
+  count: number;
+}
+
+/**
  * Per-file validation summary (generated while processing each company).
  */
 export interface CensusReportFileValidation {
@@ -133,9 +154,21 @@ export interface CensusReportFileValidation {
   valid_count: number;
   /** Total rows inspected. */
   total_count: number;
-  /** Non-fatal validation issues encountered. */
-  issues: string[];
+  /**
+   * Non-fatal validation issues, one per field. Before SITIMM-1520 these were sentences
+   * (`string[]`); the server now drops any such legacy entry.
+   */
+  issues: CensusReportValidationIssue[];
 }
+
+/**
+ * Why one file failed, stable for the FE (SITIMM-1520 4b). `error_message` never carries an
+ * exception's text.
+ */
+export type CensusReportFileErrorCode =
+  | "company_not_found"
+  | "no_census_employees"
+  | "internal";
 
 /**
  * Per-file output within a batch.
@@ -159,6 +192,8 @@ export interface CensusReportFile {
   suggested_file_name?: string;
   /** Error message. Present only when `status === "error"`. */
   error_message?: string;
+  /** Why it failed; map it to the UI text. Present only when `status === "error"`. */
+  error_code?: CensusReportFileErrorCode | null;
 }
 
 /**
@@ -193,6 +228,10 @@ export interface CensusReportBatchStatusResponse {
   completed_at?: string;
   /** Top-level error message. Present only when `status === "failed"`. */
   error_message?: string;
+  /** ISO-8601 time of the job's last write (SITIMM-1520 4c). Absent on older jobs. */
+  updated_at?: string | null;
+  /** `"timeout"` when the recovery task ended a lost job as `failed` (SITIMM-1520 4c). */
+  error_code?: "timeout" | null;
 }
 
 /**

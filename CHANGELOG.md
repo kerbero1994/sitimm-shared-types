@@ -5,6 +5,29 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.50.0] - 2026-10-23
+
+### Changed — census reports follow wave 5's BE (SITIMM-1520, mini-back #784, in prod `sha-9d267dc`)
+
+Checked against mini-back `origin/main` `9d267dc2`: `app/application/dtos/census_report.py`.
+
+- `censuses`: `CensusReportFileValidation.issues` is now `CensusReportValidationIssue[]` (`{field, count}`), no longer sentences. The server already answers this way and drops legacy text entries; the old `string[]` type no longer matched the wire. Minor, not major: only the panel reads it, in the flow wave 5 replaces.
+- `censuses`: `CensusReportFile.error_code` (`company_not_found` · `no_census_employees` · `internal`) and `CensusReportBatchStatusResponse.error_code` (`"timeout"`) plus `updated_at`.
+- `censuses`: `CensusReportField` gains the owner's 7 optional fields: `nss`, `age_years`, `civil_state`, `scholarship`, `city`, `state`, `postal_code`.
+
+### Added — manual alta catalogs and affiliation date (SITIMM-1500, mini-back #781, in prod)
+
+Checked against `app/presentation/schemas/company_employee_v2.py` and `app/presentation/api/v2/catalogs_v2.py`.
+
+- `companies`: `CompanyEmployeeCreate.civilStateId`, `scholarshipId`, `affiliationDate`.
+- `companies`: `CompanyEmployeeCreated.affiliationIgnored` (required: the server always sends it).
+- `companies`: `EmployeeOptions` and `EmployeeCatalogOption` for `GET /api/v2/catalogs/employee-options`.
+
+### Tests
+
+- `census-reports-contract`: fixture with the new fields and negatives (text issues, unknown codes).
+- `company-employee-contract`: the 1500 fields, `affiliationIgnored` required, the catalog shape.
+
 ## [2.49.0] - 2026-10-21
 
 ### Added — companies/show detail contract (SITIMM-1418, PLAYBOOK M4)
