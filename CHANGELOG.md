@@ -5,6 +5,20 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.51.0] - 2026-10-24
+
+### Added — importar empresas desde un archivo (SITIMM-1498, mini-back #788, sin mergear)
+
+Revisado contra mini-back `8053bd70`: `app/presentation/schemas/company.py` y `app/presentation/api/v1/companies/csv_upload.py`.
+
+- `companies`: `CompanyBulkUploadResponse` y `CompanyBulkResultItem`, la respuesta de `POST /api/v1/companies/upload-csv` (sin sobre `V2Response`). Cada fila trae `errors[]` y `warnings[]` como `CompanyImportIssue`, en vez de los textos en inglés de antes.
+- `companies`: `CompanyImportIssue`, `CompanyImportIssueParams` (las 5 llaves siempre viajan) y `CompanyImportIssueCode`. Son 6 códigos de error y 2 de aviso; el panel pone el texto.
+- Minor, no major: el paquete no tenía tipo para esta respuesta, y ningún componente del panel la leía (D4 posteaba a `companies/import`, que da 404).
+
+### Tests
+
+- `company-import-contract`: la fixture con la vista previa (mal escrito, inexistente con sugerencias, duplicado del archivo, válida) y negativos (el `error` de texto viejo, un código desconocido, un aviso en texto).
+
 ## [2.50.0] - 2026-10-23
 
 ### Changed — census reports follow wave 5's BE (SITIMM-1520, mini-back #784, in prod `sha-9d267dc`)

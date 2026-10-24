@@ -639,6 +639,95 @@ export interface CompanyDuplicateCheck {
 }
 
 /**
+ * Stable code of a row error or warning in the company import (SITIMM-1498). The panel owns the
+ * wording; nothing travels as text.
+ *
+ * - Errors, the row is not created: `REQUIRED_FIELD_MISSING`, `INVALID_VALUE`, `DUPLICATE_NAME`,
+ *   `MUNICIPALITY_MISSPELLED`, `MUNICIPALITY_NOT_IN_CATALOG`, `ROW_FAILED` (only the real pass).
+ * - Warnings, the row is created with that field empty: `NOT_IN_CATALOG`, `DATE_UNPARSEABLE`.
+ *
+ * Backend: `app/presentation/schemas/company.py` :: `CompanyImportIssueCode`.
+ */
+export type CompanyImportIssueCode =
+  | "REQUIRED_FIELD_MISSING"
+  | "INVALID_VALUE"
+  | "DUPLICATE_NAME"
+  | "MUNICIPALITY_MISSPELLED"
+  | "MUNICIPALITY_NOT_IN_CATALOG"
+  | "ROW_FAILED"
+  | "NOT_IN_CATALOG"
+  | "DATE_UNPARSEABLE";
+
+/**
+ * Values for the panel's message. All five keys always travel, `null` or `[]` when they do not apply.
+ *
+ * Backend: `app/presentation/schemas/company.py` :: `CompanyImportIssueParams` (`extra="forbid"`).
+ */
+export interface CompanyImportIssueParams {
+  /** Template column, e.g. `"municipio"`. */
+  column: string | null;
+  /** The value as it came in the row. */
+  value: string | null;
+  /** `MUNICIPALITY_MISSPELLED`: the one catalog name it is a near miss of. */
+  suggestion: string | null;
+  /** `MUNICIPALITY_NOT_IN_CATALOG`: up to 3 similar catalog names; may be empty. */
+  suggestions: string[];
+  /** `DUPLICATE_NAME`: earlier row of the same file; `null` = the name is already in the system. */
+  duplicateOfRow: number | null;
+}
+
+/** A coded row error or warning. Backend: `CompanyImportIssue`. */
+export interface CompanyImportIssue {
+  code: CompanyImportIssueCode;
+  params: CompanyImportIssueParams;
+}
+
+/**
+ * One row of `POST /api/v1/companies/upload-csv` (and `/bulk-upload`). The preview
+ * (`validateOnly=true`) and the real pass apply the same rule, so `success` in the preview is what
+ * the confirmation creates.
+ *
+ * Backend: `app/presentation/schemas/company.py` :: `CompanyBulkResultItem`.
+ */
+export interface CompanyBulkResultItem {
+  /** CSV: spreadsheet row (header = 1, first company = 2). JSON `/bulk-upload`: 1-based position. */
+  row: number;
+  /** `""` when the row has no name (`REQUIRED_FIELD_MISSING`). */
+  name: string;
+  /** Created; with `validateOnly`, would be created. */
+  success: boolean;
+  /** Set only on a created row of the real pass. */
+  companyId: number | null;
+  companyUuid: string | null;
+  /** Why the row was not (or would not be) created; empty when `success`. */
+  errors: CompanyImportIssue[];
+  /** Created anyway, with that field left empty. */
+  warnings: CompanyImportIssue[];
+}
+
+/**
+ * Answer of `POST /api/v1/companies/upload-csv?validateOnly=&skipDuplicates=` (`companies:create`),
+ * **without** the `V2Response` envelope. One result per row, in file order. The template is
+ * `GET /api/v1/companies/template` (the header row this endpoint reads). File-level problems answer
+ * 400 `{detail: {code, params}}` with `FILE_NOT_CSV`, `FILE_UNREADABLE`, `MISSING_COLUMNS`,
+ * `FILE_EMPTY` or `TOO_MANY_ROWS`.
+ *
+ * Backend: `app/presentation/api/v1/companies/csv_upload.py` :: `upload_csv_companies` (SITIMM-1498).
+ */
+export interface CompanyBulkUploadResponse {
+  /** Rows processed. */
+  total: number;
+  /** Created; with `validateOnly`, would be created. The «N» of «N de M empresas dadas de alta». */
+  created: number;
+  /** Not created: only `DUPLICATE_NAME`, with `skipDuplicates=true`. */
+  skipped: number;
+  /** Not created for any other error. */
+  failed: number;
+  results: CompanyBulkResultItem[];
+  validationOnly: boolean;
+}
+
+/**
  * Legacy benefit relation of a company.
  *
  * `POST /api/v1/companies/show` documents it as `benefit_info`, but its old
