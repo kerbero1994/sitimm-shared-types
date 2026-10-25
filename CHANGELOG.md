@@ -5,6 +5,22 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.52.0] - 2026-10-25
+
+### Added — aviso a empresas por su canal: vista previa, envío por empresa e historial (SITIMM-1537, mini-back #795, sin mergear)
+
+Revisado contra mini-back `efb85505`: `app/presentation/schemas/company_notifications_v2.py` y `app/presentation/api/v2/company_notifications_v2.py`.
+
+- `notificationsContent`: `COMPANY_NOTIFICATIONS_ENDPOINTS` (`PREVIEW`, `SEND`, `HISTORY` bajo `/api/v2/notifications/companies`) y `MAX_COMPANIES_PER_SEND = 50`.
+- Vista previa: `CompanyNotificationPreviewRequest` (`companyUuids`) y `CompanyNotificationPreviewResponse` con `CompanyAudience` (`people` = personas en el padrón, no dispositivos) y `totalPeople`.
+- Envío: `CompanyNotificationSendRequest` (con `idempotencyKey`, uno por confirmación: un reintento con la misma llave no manda otra vez; con otro contenido, 409 `idempotency_key_reused`) y `CompanyNotificationSendResponse` (`sent`, `failed`, `pending`), con un `CompanyPushResult` por empresa. `CompanyPushStatus` = `"sent" | "failed" | "pending"`: **`sent` = FCM aceptó el mensaje del topic; no confirma que alguien lo recibiera.** Hoy la app no se suscribe a `{uuid}-TA` (SITIMM-1541): no le llega a nadie hasta ese release. `pending` = escrito antes del mensaje y aún sin la respuesta de FCM. `CompanyPushFailureCode`: `suppressed`, `unknown` y los códigos de FCM en minúsculas; la lista queda abierta.
+- Historial: `CompanyNotificationHistoryResponse`, `CompanyNotificationHistoryItem` (con `pending`) y `CompanyNotificationActor`.
+- Minor: solo tipos nuevos; nada existente cambia.
+
+### Tests
+
+- `company-notifications-contract`: la fixture (vista previa, envío con una empresa enviada y otra fallida, historial con y sin autor y con una empresa `pending`, un código futuro de FCM) la compila tsc; negativos: `company_uuids`, un `topic` libre, envío sin `body`, envío sin `idempotencyKey`, `status: "delivered"`, `devicesTargeted`. Las llaves de cada forma se comparan con las del BE, en orden; los tres conteos cuadran con las filas; todo `uuid` de la fixture es un UUID válido.
+
 ## [2.51.0] - 2026-10-24
 
 ### Added — importar empresas desde un archivo (SITIMM-1498, mini-back #788, sin mergear)
