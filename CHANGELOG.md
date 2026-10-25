@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [2.52.0] - 2026-10-25
 
-### Added — aviso a empresas por su canal: vista previa, envío por empresa e historial (SITIMM-1537, mini-back #PR, sin mergear)
+### Added — aviso a empresas por su canal: vista previa, envío por empresa e historial (SITIMM-1537, mini-back #795, sin mergear)
 
 Revisado contra mini-back `baabbb14`: `app/presentation/schemas/company_notifications_v2.py` y `app/presentation/api/v2/company_notifications_v2.py`.
 
