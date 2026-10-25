@@ -1,7 +1,7 @@
 /**
  * Fixture de tests/company-notifications-contract.test.ts: la compila tsc, no vitest. Los
  * payloads tienen la forma exacta del `data` de `/api/v2/notifications/companies/*` en
- * mini-back SITIMM-1537 (`baabbb14`), con datos sintéticos. Los @ts-expect-error fijan lo que
+ * mini-back SITIMM-1537 (`efb85505`), con datos sintéticos. Los @ts-expect-error fijan lo que
  * no viaja o no vale.
  */
 import type {
@@ -15,6 +15,7 @@ import type {
 
 const A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+const KEY = "5f0c2a8e-6c1d-4f4e-9a57-2b0d1e3c4f5a";
 
 export const previewRequest: CompanyNotificationPreviewRequest = { companyUuids: [A, B] };
 
@@ -29,6 +30,7 @@ export const preview: CompanyNotificationPreviewResponse = {
 
 export const sendRequest: CompanyNotificationSendRequest = {
   companyUuids: [A, B],
+  idempotencyKey: KEY,
   title: "Asamblea",
   body: "Mañana a las 10.",
 };
@@ -51,11 +53,22 @@ export const failed: CompanyPushResult = {
   reason: "FCM is down",
 };
 
+/** Escrito antes del mensaje y aún sin la respuesta de FCM: ni id ni código. */
+export const pending: CompanyPushResult = {
+  companyUuid: B,
+  companyName: "Empresa B",
+  status: "pending",
+  messageId: null,
+  code: null,
+  reason: null,
+};
+
 export const sendResponse: CompanyNotificationSendResponse = {
-  uuid: "5f0c2a8e-6c1d-4f4e-9a57-2b0d1e3c4f5a",
+  uuid: KEY,
   createdAt: "2026-10-25T18:00:00Z",
   sent: 1,
   failed: 1,
+  pending: 0,
   results: [sent, failed],
 };
 
@@ -69,6 +82,7 @@ export const history: CompanyNotificationHistoryResponse = {
       createdAt: sendResponse.createdAt,
       sent: 1,
       failed: 1,
+      pending: 0,
       results: [sent, failed],
     },
     {
@@ -77,9 +91,10 @@ export const history: CompanyNotificationHistoryResponse = {
       body: "b",
       actor: null,
       createdAt: "2026-10-24T18:00:00Z",
-      sent: 0,
+      sent: 1,
       failed: 0,
-      results: [],
+      pending: 1,
+      results: [sent, pending],
     },
   ],
   total: 21,
@@ -100,7 +115,10 @@ export const snake: CompanyNotificationPreviewRequest = { company_uuids: [A] };
 export const withTopic: CompanyNotificationSendRequest = { ...sendRequest, topic: "global" };
 
 // @ts-expect-error — el envío exige el texto
-export const noBody: CompanyNotificationSendRequest = { companyUuids: [A], title: "t" };
+export const noBody: CompanyNotificationSendRequest = { idempotencyKey: KEY, companyUuids: [A], title: "t" };
+
+// @ts-expect-error — el envío exige su llave de idempotencia
+export const noKey: CompanyNotificationSendRequest = { companyUuids: [A], title: "t", body: "b" };
 
 // @ts-expect-error — `delivered` no existe: FCM no confirma entregas a un topic
 export const delivered: CompanyPushResult = { ...sent, status: "delivered" };

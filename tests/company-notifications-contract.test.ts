@@ -5,15 +5,15 @@ import { describe, expect, it } from "vitest";
 import { COMPANY_NOTIFICATIONS_ENDPOINTS, MAX_COMPANIES_PER_SEND } from "../src/notificationsContent";
 import { history, preview, previewRequest, sendRequest, sendResponse } from "./fixtures/company-notifications-contract";
 
-/** Las llaves de cable (alias) de `company_notifications_v2.py` en mini-back `baabbb14`, en orden. */
+/** Las llaves de cable (alias) de `company_notifications_v2.py` en mini-back `efb85505`, en orden. */
 const BE_KEYS = {
   previewRequest: ["companyUuids"],
-  sendRequest: ["companyUuids", "title", "body"],
+  sendRequest: ["companyUuids", "idempotencyKey", "title", "body"],
   audience: ["uuid", "name", "people"],
   preview: ["companies", "companyCount", "totalPeople"],
   result: ["companyUuid", "companyName", "status", "messageId", "code", "reason"],
-  sendResponse: ["uuid", "createdAt", "sent", "failed", "results"],
-  historyItem: ["uuid", "title", "body", "actor", "createdAt", "sent", "failed", "results"],
+  sendResponse: ["uuid", "createdAt", "sent", "failed", "pending", "results"],
+  historyItem: ["uuid", "title", "body", "actor", "createdAt", "sent", "failed", "pending", "results"],
   history: ["items", "total", "page", "pageSize", "hasNext"],
 };
 
@@ -42,21 +42,26 @@ describe("aviso a empresas por su canal (SITIMM-1537)", () => {
     expect(Object.keys(sendRequest)).toEqual(BE_KEYS.sendRequest);
     expect(Object.keys(preview.companies[0])).toEqual(BE_KEYS.audience);
     expect(Object.keys(preview)).toEqual(BE_KEYS.preview);
-    for (const r of sendResponse.results) expect(Object.keys(r)).toEqual(BE_KEYS.result);
+    for (const r of [...sendResponse.results, ...history.items[1].results]) {
+      expect(Object.keys(r)).toEqual(BE_KEYS.result);
+    }
     expect(Object.keys(sendResponse)).toEqual(BE_KEYS.sendResponse);
-    expect(Object.keys(history.items[0])).toEqual(BE_KEYS.historyItem);
+    for (const item of history.items) expect(Object.keys(item)).toEqual(BE_KEYS.historyItem);
     expect(Object.keys(history)).toEqual(BE_KEYS.history);
   });
 
   it("los conteos cuadran con las filas", () => {
     expect(preview.totalPeople).toBe(preview.companies.reduce((n, c) => n + c.people, 0));
     expect(preview.companyCount).toBe(preview.companies.length);
-    expect(sendResponse.sent).toBe(sendResponse.results.filter((r) => r.status === "sent").length);
-    expect(sendResponse.sent + sendResponse.failed).toBe(sendResponse.results.length);
+    for (const s of [sendResponse, ...history.items]) {
+      for (const status of ["sent", "failed", "pending"] as const) {
+        expect(s[status]).toBe(s.results.filter((r) => r.status === status).length);
+      }
+    }
   });
 
-  it("un enviado trae id de FCM y no código; un fallido, código y no id", () => {
-    for (const r of sendResponse.results) {
+  it("un enviado trae id de FCM y no código; un fallido, código y no id; un pendiente, ninguno", () => {
+    for (const r of [...sendResponse.results, ...history.items[1].results]) {
       expect(r.messageId !== null).toBe(r.status === "sent");
       expect(r.code !== null).toBe(r.status === "failed");
     }

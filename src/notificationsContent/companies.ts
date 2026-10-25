@@ -8,10 +8,11 @@
  *
  * Decisión del dueño (24-oct): «Por el canal de cada empresa». Un mensaje por empresa a su
  * topic `{uuid}-TA`. FCM no dice quién está suscrito a un topic, así que:
- * - la vista previa promete «hasta N personas en sus padrones», nunca dispositivos;
- * - `sent` significa **«FCM lo aceptó»**, no «le llegó a alguien». Hoy la app no se suscribe a
- *   ese topic (SITIMM-1541): el panel tiene que decir que el aviso solo llega a quien tenga la
- *   versión nueva de la app.
+ * - la vista previa da «hasta N personas en sus padrones»: el estimado de a quiénes va
+ *   dirigido, nunca dispositivos ni quién lo recibe;
+ * - `sent` = FCM aceptó el mensaje del topic; no confirma que una persona o un dispositivo lo
+ *   recibiera. Hoy la app no se suscribe a ese topic (SITIMM-1541): no le llega a nadie hasta
+ *   ese release, y el panel tiene que decirlo.
  */
 
 /** Empresas por petición, en la vista previa y en el envío. Más → 422. */
@@ -20,7 +21,7 @@ export const MAX_COMPANIES_PER_SEND = 50;
 export const COMPANY_NOTIFICATIONS_ENDPOINTS = {
   /** POST → Body: CompanyNotificationPreviewRequest. data: CompanyNotificationPreviewResponse. No manda nada. */
   PREVIEW: "/api/v2/notifications/companies/preview",
-  /** POST → Body: CompanyNotificationSendRequest. data: CompanyNotificationSendResponse. 200 aunque falle alguna empresa. */
+  /** POST → Body: CompanyNotificationSendRequest. data: CompanyNotificationSendResponse. 200 aunque falle alguna empresa; 409 `idempotency_key_reused`. */
   SEND: "/api/v2/notifications/companies/send",
   /** GET ?page&pageSize (1..100) → data: CompanyNotificationHistoryResponse. Lo más reciente primero. */
   HISTORY: "/api/v2/notifications/companies/history",
@@ -59,12 +60,24 @@ export interface CompanyNotificationPreviewResponse {
 
 /** `POST …/send`. `title` 1..200 y `body` 1..1000, tras recortar espacios. */
 export interface CompanyNotificationSendRequest extends CompanyNotificationPreviewRequest {
+  /**
+   * Uuid que el panel genera una vez por confirmación (`crypto.randomUUID()`) y repite en cada
+   * reintento de esa confirmación. Es el `uuid` del envío: un reintento contesta ese envío sin
+   * mandar nada otra vez. La misma llave con otra cuenta, texto o empresas → 409
+   * `idempotency_key_reused`. Una confirmación nueva lleva llave nueva.
+   */
+  idempotencyKey: string;
   title: string;
   body: string;
 }
 
-/** `"sent"` = FCM aceptó el mensaje para el topic (dio un `messageId`); no que le llegó a alguien. */
-export type CompanyPushStatus = "sent" | "failed";
+/**
+ * `"sent"` = FCM aceptó el mensaje del topic (dio un `messageId`); no confirma que alguien lo
+ * recibiera. `"pending"` = el envío quedó escrito antes del mensaje y aún sin la respuesta de FCM;
+ * si no cambia, el servidor se detuvo entre mandar y anotar: pudo haber salido («sin confirmar»),
+ * y reintentar con la misma `idempotencyKey` no lo manda otra vez.
+ */
+export type CompanyPushStatus = "sent" | "failed" | "pending";
 
 /**
  * `code` de un `failed`. `suppressed`: el título o el texto llevan `__TEST__` y no salió nada.
@@ -97,12 +110,13 @@ export interface CompanyPushResult {
 }
 
 export interface CompanyNotificationSendResponse {
-  /** La fila del historial. */
+  /** La fila del historial: la `idempotencyKey` de la petición. */
   uuid: string;
   /** ISO 8601. */
   createdAt: string;
   sent: number;
   failed: number;
+  pending: number;
   /** Una por empresa, en el orden pedido. */
   results: CompanyPushResult[];
 }
@@ -127,6 +141,7 @@ export interface CompanyNotificationHistoryItem {
   createdAt: string;
   sent: number;
   failed: number;
+  pending: number;
   results: CompanyPushResult[];
 }
 
