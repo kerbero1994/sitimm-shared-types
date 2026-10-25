@@ -4,9 +4,14 @@
  * SITIMM-1498 (sin sobre `V2Response`), con datos sintéticos y municipios reales del catálogo.
  * Los @ts-expect-error fijan lo que ya no viaja o no vale.
  */
-import type { CompanyBulkResultItem, CompanyBulkUploadResponse, CompanyImportIssue } from "../../src/companies";
+import type {
+  CompanyBulkResultItem,
+  CompanyBulkUploadResponse,
+  CompanyImportCorrection,
+  CompanyImportIssue,
+} from "../../src/companies";
 
-const noParams = { column: null, value: null, suggestion: null, suggestions: [], duplicateOfRow: null };
+const noParams = { column: null, value: null, suggestion: null, suggestions: [], duplicateOfRow: null, email: null };
 
 export const preview: CompanyBulkUploadResponse = {
   total: 4,
@@ -71,3 +76,35 @@ export const unknownCode: CompanyImportIssue = { code: "UNKNOWN_CITY", params: n
 
 // @ts-expect-error los avisos también son {code, params}, no textos
 export const textWarning: CompanyBulkResultItem = { ...preview.results[0], warnings: ["Unparseable date"] };
+
+/** La confirmación con la sugerencia aceptada, y lo que responde por esa fila (SITIMM-1498). */
+export const corrections: CompanyImportCorrection[] = [{ row: 4, field: "municipality", value: "San Luis Potosí" }];
+
+export const corrected: CompanyBulkResultItem = {
+  row: 4,
+  name: "No Existe SA",
+  success: true,
+  companyId: 1001,
+  companyUuid: "8d3b5f9a-2c1e-4a7b-9f0d-6e5c4b3a2f10",
+  errors: [],
+  warnings: [
+    {
+      code: "MUNICIPALITY_CORRECTED",
+      params: { ...noParams, column: "municipio", value: "Sn Luis", suggestion: "San Luis Potosí" },
+    },
+  ],
+};
+
+export const advisorRejected: CompanyImportIssue = {
+  code: "ADVISOR_EMAIL_UNKNOWN",
+  params: { ...noParams, column: "correos_asesores", email: "nadie@otra.com" },
+};
+
+// @ts-expect-error solo el municipio se corrige
+export const otherField: CompanyImportCorrection = { row: 4, field: "name", value: "X" };
+
+// @ts-expect-error el cliente no elige el id del municipio: manda el nombre de la sugerencia
+export const byId: CompanyImportCorrection = { row: 4, field: "municipality", value: "San Luis Potosí", cityId: 113366 };
+
+// @ts-expect-error `email` siempre viaja (null si no aplica)
+export const noEmailKey: CompanyImportIssue = { code: "DATE_INVALID", params: { column: "fecha_vigencia_contrato", value: "31/31/2025", suggestion: null, suggestions: [], duplicateOfRow: null } };

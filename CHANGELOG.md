@@ -9,15 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added — importar empresas desde un archivo (SITIMM-1498, mini-back #788, sin mergear)
 
-Revisado contra mini-back `8053bd70`: `app/presentation/schemas/company.py` y `app/presentation/api/v1/companies/csv_upload.py`.
+Revisado contra mini-back `8cbf556e`: `app/presentation/schemas/company.py`, `app/presentation/api/v1/companies/csv_upload.py` y `bulk_upload.py`.
 
 - `companies`: `CompanyBulkUploadResponse` y `CompanyBulkResultItem`, la respuesta de `POST /api/v1/companies/upload-csv` (sin sobre `V2Response`). Cada fila trae `errors[]` y `warnings[]` como `CompanyImportIssue`, en vez de los textos en inglés de antes.
-- `companies`: `CompanyImportIssue`, `CompanyImportIssueParams` (las 5 llaves siempre viajan) y `CompanyImportIssueCode`. Son 6 códigos de error y 2 de aviso; el panel pone el texto.
+- `companies`: `CompanyImportIssue`, `CompanyImportIssueParams` (las 6 llaves siempre viajan, con `email`) y `CompanyImportIssueCode`. Son 10 códigos de error y 3 de aviso; el panel pone el texto. Entre ellos: `ADVISOR_EMAIL_UNKNOWN` y `ADVISOR_ASSIGN_FORBIDDEN` (`correos_asesores` ahora se asigna), `DATE_INVALID` (`fecha_vigencia_contrato` ahora se guarda), y `CORRECTION_INVALID` / `MUNICIPALITY_CORRECTED`.
+- `companies`: `CompanyImportCorrection`, la sugerencia del municipio aceptada en el panel. Viaja en el campo de formulario `corrections` (JSON) de `/upload-csv`; el servidor la vuelve a validar.
 - Minor, no major: el paquete no tenía tipo para esta respuesta, y ningún componente del panel la leía (D4 posteaba a `companies/import`, que da 404).
 
 ### Tests
 
-- `company-import-contract`: la fixture con la vista previa (mal escrito, inexistente con sugerencias, duplicado del archivo, válida) y negativos (el `error` de texto viejo, un código desconocido, un aviso en texto).
+- `company-import-contract`: la fixture con la vista previa (mal escrito, inexistente con sugerencias, duplicado del archivo, válida), la corrección aceptada y su resultado, un asesor rechazado, y negativos (el `error` de texto viejo, un código desconocido, un aviso en texto, corregir otro campo, mandar un id en vez del nombre, `params` sin `email`).
 
 ## [2.50.0] - 2026-10-23
 

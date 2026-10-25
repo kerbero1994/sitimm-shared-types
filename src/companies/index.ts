@@ -643,8 +643,13 @@ export interface CompanyDuplicateCheck {
  * wording; nothing travels as text.
  *
  * - Errors, the row is not created: `REQUIRED_FIELD_MISSING`, `INVALID_VALUE`, `DUPLICATE_NAME`,
- *   `MUNICIPALITY_MISSPELLED`, `MUNICIPALITY_NOT_IN_CATALOG`, `ROW_FAILED` (only the real pass).
- * - Warnings, the row is created with that field empty: `NOT_IN_CATALOG`, `DATE_UNPARSEABLE`.
+ *   `MUNICIPALITY_MISSPELLED`, `MUNICIPALITY_NOT_IN_CATALOG`, `ADVISOR_EMAIL_UNKNOWN` (an email of
+ *   `correos_asesores` that no live advisor has), `ADVISOR_ASSIGN_FORBIDDEN` (the uploader lacks
+ *   `offices.assign_advisors`), `DATE_INVALID` (`fecha_vigencia_contrato` unreadable),
+ *   `CORRECTION_INVALID` (a `CompanyImportCorrection` that is not one of the row's suggestions, or
+ *   for a row without a municipio error), `ROW_FAILED` (only the real pass).
+ * - Warnings, the row is created: `NOT_IN_CATALOG`, `DATE_UNPARSEABLE` (that field left empty),
+ *   `MUNICIPALITY_CORRECTED` (municipio corrected to `params.suggestion`).
  *
  * Backend: `app/presentation/schemas/company.py` :: `CompanyImportIssueCode`.
  */
@@ -654,12 +659,17 @@ export type CompanyImportIssueCode =
   | "DUPLICATE_NAME"
   | "MUNICIPALITY_MISSPELLED"
   | "MUNICIPALITY_NOT_IN_CATALOG"
+  | "ADVISOR_EMAIL_UNKNOWN"
+  | "ADVISOR_ASSIGN_FORBIDDEN"
+  | "DATE_INVALID"
+  | "CORRECTION_INVALID"
   | "ROW_FAILED"
   | "NOT_IN_CATALOG"
-  | "DATE_UNPARSEABLE";
+  | "DATE_UNPARSEABLE"
+  | "MUNICIPALITY_CORRECTED";
 
 /**
- * Values for the panel's message. All five keys always travel, `null` or `[]` when they do not apply.
+ * Values for the panel's message. All six keys always travel, `null` or `[]` when they do not apply.
  *
  * Backend: `app/presentation/schemas/company.py` :: `CompanyImportIssueParams` (`extra="forbid"`).
  */
@@ -668,12 +678,17 @@ export interface CompanyImportIssueParams {
   column: string | null;
   /** The value as it came in the row. */
   value: string | null;
-  /** `MUNICIPALITY_MISSPELLED`: the one catalog name it is a near miss of. */
+  /**
+   * `MUNICIPALITY_MISSPELLED`: the one catalog name it is a near miss of.
+   * `MUNICIPALITY_CORRECTED`: the catalog name the municipio was corrected to.
+   */
   suggestion: string | null;
   /** `MUNICIPALITY_NOT_IN_CATALOG`: up to 3 similar catalog names; may be empty. */
   suggestions: string[];
   /** `DUPLICATE_NAME`: earlier row of the same file; `null` = the name is already in the system. */
   duplicateOfRow: number | null;
+  /** `ADVISOR_EMAIL_UNKNOWN`: the email, as written, that no live advisor has. */
+  email: string | null;
 }
 
 /** A coded row error or warning. Backend: `CompanyImportIssue`. */
@@ -701,8 +716,27 @@ export interface CompanyBulkResultItem {
   companyUuid: string | null;
   /** Why the row was not (or would not be) created; empty when `success`. */
   errors: CompanyImportIssue[];
-  /** Created anyway, with that field left empty. */
+  /** Created anyway: that field left empty, or the municipio corrected. */
   warnings: CompanyImportIssue[];
+}
+
+/**
+ * A municipio fix the panel sends after the preview, taken from that row's suggestions (owner,
+ * 2026-10-24: «Aceptar en la app»). `/upload-csv` takes the list as the multipart form field
+ * `corrections`, `JSON.stringify`-ed; `/bulk-upload`, as `corrections` in the body. Valid with and
+ * without `validateOnly`: the preview with corrections answers what the real pass will do. The
+ * server re-validates: a value that is not, as given, one of the row's suggestions is
+ * `CORRECTION_INVALID`; a repeated row, or one the file does not have, is 400
+ * `CORRECTIONS_INVALID`.
+ *
+ * Backend: `app/presentation/schemas/company.py` :: `CompanyImportCorrection` (`extra="forbid"`).
+ */
+export interface CompanyImportCorrection {
+  /** The row as the preview reported it. */
+  row: number;
+  field: "municipality";
+  /** One of `params.suggestion` / `params.suggestions` of that row, exactly as it came. */
+  value: string;
 }
 
 /**
@@ -710,7 +744,8 @@ export interface CompanyBulkResultItem {
  * **without** the `V2Response` envelope. One result per row, in file order. The template is
  * `GET /api/v1/companies/template` (the header row this endpoint reads). File-level problems answer
  * 400 `{detail: {code, params}}` with `FILE_NOT_CSV`, `FILE_UNREADABLE`, `MISSING_COLUMNS`,
- * `FILE_EMPTY` or `TOO_MANY_ROWS`.
+ * `FILE_EMPTY`, `TOO_MANY_ROWS` or `CORRECTIONS_INVALID`. Optional form field `corrections`:
+ * `CompanyImportCorrection[]` as JSON.
  *
  * Backend: `app/presentation/api/v1/companies/csv_upload.py` :: `upload_csv_companies` (SITIMM-1498).
  */
