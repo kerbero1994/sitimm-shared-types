@@ -5,7 +5,9 @@
  * Los @ts-expect-error fijan lo que ya no viaja o no vale.
  */
 import type {
+  CompanyBulkItem,
   CompanyBulkResultItem,
+  CompanyBulkUploadRequest,
   CompanyBulkUploadResponse,
   CompanyImportCorrection,
   CompanyImportIssue,
@@ -108,3 +110,62 @@ export const byId: CompanyImportCorrection = { row: 4, field: "municipality", va
 
 // @ts-expect-error `email` siempre viaja (null si no aplica)
 export const noEmailKey: CompanyImportIssue = { code: "DATE_INVALID", params: { column: "fecha_vigencia_contrato", value: "31/31/2025", suggestion: null, suggestions: [], duplicateOfRow: null } };
+
+/**
+ * La petición de `/bulk-upload`, literal como la manda el test de mini-back
+ * (`test_wire_shape_of_the_request_and_the_corrected_result`, SITIMM-1498).
+ */
+export const bulkRequest: CompanyBulkUploadRequest = {
+  companies: [{ name: "Json SA", cityName: "Sn Luis Potosi" }],
+  skipDuplicates: true,
+  validateOnly: true,
+  corrections: [{ row: 1, field: "municipality", value: "San Luis Potosí" }],
+};
+
+/** Solo `companies` es obligatorio: lo demás toma el default del BE. */
+export const minimalRequest: CompanyBulkUploadRequest = { companies: [{ name: "Mínima SA" }] };
+
+/**
+ * Cada llave de la petición y del ítem. `Required<>` obliga a que estén todas: si TS tuviera una
+ * llave de más, la fixture no compila; el test compara estas llaves con las del BE.
+ */
+export const fullItem: Required<CompanyBulkItem> = {
+  name: "Plantilla SA",
+  phone: "4621234567",
+  rhPassword: "RH2024",
+  address: "Av. Industrial 123",
+  electoralId: null,
+  hasCommittee: false,
+  companyTypeCode: "NACIONAL",
+  countryName: "México",
+  stateName: "Guanajuato",
+  cityName: "Silao de la Victoria",
+  industrialParkName: "Puerto Interior",
+  advisorEmails: "asesor1@mail.com;asesor2@mail.com",
+  acceptanceDate: "2019-12-31",
+  operationStart: "2020-01-01",
+  contractValidity: "2025-12-31",
+  lastRevision: "2024-06-15",
+  productCodes: null,
+  clientCodes: null,
+  contractTypeCode: "CCT",
+};
+
+export const fullRequest: Required<CompanyBulkUploadRequest> = {
+  companies: [fullItem],
+  skipDuplicates: false,
+  validateOnly: false,
+  corrections: [],
+};
+
+// @ts-expect-error un campo de más en la petición: el BE no lo conoce
+export const extraRequestKey: CompanyBulkUploadRequest = { companies: [{ name: "X" }], dryRun: true };
+
+// @ts-expect-error un campo de más en el ítem
+export const extraItemKey: CompanyBulkUploadRequest = { companies: [{ name: "X", cityId: 113366 }] };
+
+// @ts-expect-error `companies` es obligatorio
+export const noCompanies: CompanyBulkUploadRequest = { validateOnly: true };
+
+// @ts-expect-error el ítem sin `name`
+export const namelessItem: CompanyBulkItem = { cityName: "León" };

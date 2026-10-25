@@ -740,6 +740,62 @@ export interface CompanyImportCorrection {
 }
 
 /**
+ * One company of `POST /api/v1/companies/bulk-upload`, and what one CSV row of `/upload-csv` maps
+ * to (the template columns, `CSV_COLUMN_MAPPING`). Only `name` is required; a key left out takes
+ * the backend default. Dates travel as ISO strings (`YYYY-MM-DD`).
+ *
+ * Backend: `app/presentation/schemas/company.py` :: `CompanyBulkItem` (mini-back #788).
+ */
+export interface CompanyBulkItem {
+  /** 1-255 characters. */
+  name: string;
+  phone?: string | null;
+  rhPassword?: string | null;
+  address?: string | null;
+  electoralId?: string | null;
+  /** Default `false`. */
+  hasCommittee?: boolean | null;
+  /** `CompanyType` code: `NACIONAL`, `INTERNACIONAL`, `MAQUILADORA`, `MIXTA`. */
+  companyTypeCode?: string | null;
+  countryName?: string | null;
+  stateName?: string | null;
+  /** Municipio; outside the live catalog it blocks the row (`MUNICIPALITY_*`). */
+  cityName?: string | null;
+  industrialParkName?: string | null;
+  /** Live advisors' emails separated by `;` (or `|`); assigned like `/advisor-assignments/assign`. */
+  advisorEmails?: string | null;
+  acceptanceDate?: string | null;
+  operationStart?: string | null;
+  /** Stored in `TechnicalDetail.contractValidity`. */
+  contractValidity?: string | null;
+  lastRevision?: string | null;
+  /** Accepted but not persisted. */
+  productCodes?: string | null;
+  /** Accepted but not persisted. */
+  clientCodes?: string | null;
+  /** `ContractType` code: `CCT`, `CCI`, `CONVENIO`, `REGLAMENTO`. */
+  contractTypeCode?: string | null;
+}
+
+/**
+ * Body of `POST /api/v1/companies/bulk-upload` (`companies:create`). It answers
+ * `CompanyBulkUploadResponse`, the same as `/upload-csv`, with `row` = 1-based position in
+ * `companies`.
+ *
+ * Backend: `app/presentation/schemas/company.py` :: `CompanyBulkUploadRequest` (mini-back #788).
+ */
+export interface CompanyBulkUploadRequest {
+  /** 1 to 500 companies. */
+  companies: CompanyBulkItem[];
+  /** Default `true`: a repeated name counts in `skipped` instead of `failed`. */
+  skipDuplicates?: boolean;
+  /** Default `false`: the preview, nothing is written. */
+  validateOnly?: boolean;
+  /** Default `[]`, up to 500. Municipio fixes taken from the preview's suggestions. */
+  corrections?: CompanyImportCorrection[];
+}
+
+/**
  * Answer of `POST /api/v1/companies/upload-csv?validateOnly=&skipDuplicates=` (`companies:create`),
  * **without** the `V2Response` envelope. One result per row, in file order. The template is
  * `GET /api/v1/companies/template` (the header row this endpoint reads). File-level problems answer
