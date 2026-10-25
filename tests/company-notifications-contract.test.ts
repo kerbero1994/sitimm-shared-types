@@ -67,6 +67,20 @@ describe("aviso a empresas por su canal (SITIMM-1537)", () => {
     }
   });
 
+  it("todo uuid es un UUID, como lo guarda Postgres", () => {
+    const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+    const uuids = [
+      ...previewRequest.companyUuids,
+      ...sendRequest.companyUuids,
+      sendRequest.idempotencyKey,
+      ...preview.companies.map((c) => c.uuid),
+      sendResponse.uuid,
+      ...sendResponse.results.map((r) => r.companyUuid),
+      ...history.items.flatMap((i) => [i.uuid, ...(i.actor ? [i.actor.uuid] : []), ...i.results.map((r) => r.companyUuid)]),
+    ];
+    for (const u of uuids) expect(u).toMatch(UUID);
+  });
+
   it("las rutas y el tope son los del BE", () => {
     expect(COMPANY_NOTIFICATIONS_ENDPOINTS).toEqual({
       PREVIEW: "/api/v2/notifications/companies/preview",

@@ -19,7 +19,7 @@ Revisado contra mini-back `efb85505`: `app/presentation/schemas/company_notifica
 
 ### Tests
 
-- `company-notifications-contract`: la fixture (vista previa, envío con una empresa enviada y otra fallida, historial con y sin autor y con una empresa `pending`, un código futuro de FCM) la compila tsc; negativos: `company_uuids`, un `topic` libre, envío sin `body`, envío sin `idempotencyKey`, `status: "delivered"`, `devicesTargeted`. Las llaves de cada forma se comparan con las del BE, en orden; los tres conteos cuadran con las filas.
+- `company-notifications-contract`: la fixture (vista previa, envío con una empresa enviada y otra fallida, historial con y sin autor y con una empresa `pending`, un código futuro de FCM) la compila tsc; negativos: `company_uuids`, un `topic` libre, envío sin `body`, envío sin `idempotencyKey`, `status: "delivered"`, `devicesTargeted`. Las llaves de cada forma se comparan con las del BE, en orden; los tres conteos cuadran con las filas; todo `uuid` de la fixture es un UUID válido.
 
 ## [2.51.0] - 2026-10-24
 

@@ -86,7 +86,7 @@ export const history: CompanyNotificationHistoryResponse = {
       results: [sent, failed],
     },
     {
-      uuid: "h-0",
+      uuid: "3c9e7b1a-2d4f-4a6b-8c0e-1f2a3b4c5d6e",
       title: "t",
       body: "b",
       actor: null,
