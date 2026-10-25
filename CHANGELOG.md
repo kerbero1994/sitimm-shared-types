@@ -5,6 +5,22 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.51.0] - 2026-10-24
+
+### Added — importar empresas desde un archivo (SITIMM-1498, mini-back #788, sin mergear)
+
+Revisado contra mini-back `8cbf556e`: `app/presentation/schemas/company.py`, `app/presentation/api/v1/companies/csv_upload.py` y `bulk_upload.py`.
+
+- `companies`: `CompanyBulkUploadResponse` y `CompanyBulkResultItem`, la respuesta de `POST /api/v1/companies/upload-csv` (sin sobre `V2Response`). Cada fila trae `errors[]` y `warnings[]` como `CompanyImportIssue`, en vez de los textos en inglés de antes.
+- `companies`: `CompanyImportIssue`, `CompanyImportIssueParams` (las 6 llaves siempre viajan, con `email`) y `CompanyImportIssueCode`. Son 10 códigos de error y 3 de aviso; el panel pone el texto. Entre ellos: `ADVISOR_EMAIL_UNKNOWN` y `ADVISOR_ASSIGN_FORBIDDEN` (`correos_asesores` ahora se asigna), `DATE_INVALID` (`fecha_vigencia_contrato` ahora se guarda), y `CORRECTION_INVALID` / `MUNICIPALITY_CORRECTED`.
+- `companies`: `CompanyImportCorrection`, la sugerencia del municipio aceptada en el panel. Viaja en el campo de formulario `corrections` (JSON) de `/upload-csv`; el servidor la vuelve a validar.
+- `companies`: `CompanyBulkUploadRequest` y `CompanyBulkItem`, el cuerpo de `POST /api/v1/companies/bulk-upload`, idénticos a `app/presentation/schemas/company.py` de mini-back: las mismas 19 llaves del ítem y 4 de la petición, en el mismo orden; solo `companies` y `name` son obligatorios.
+- Minor, no major: el paquete no tenía tipo para esta respuesta, y ningún componente del panel la leía (D4 posteaba a `companies/import`, que da 404).
+
+### Tests
+
+- `company-import-contract`: la fixture con la vista previa (mal escrito, inexistente con sugerencias, duplicado del archivo, válida), la corrección aceptada y su resultado, un asesor rechazado, y negativos (el `error` de texto viejo, un código desconocido, un aviso en texto, corregir otro campo, mandar un id en vez del nombre, `params` sin `email`). La petición real de `/bulk-upload`, un ítem y una petición `Required<>` cuyas llaves se comparan con las del BE, y negativos (un campo de más en la petición y en el ítem, sin `companies`, ítem sin `name`).
+
 ## [2.50.0] - 2026-10-23
 
 ### Changed — census reports follow wave 5's BE (SITIMM-1520, mini-back #784, in prod `sha-9d267dc`)
