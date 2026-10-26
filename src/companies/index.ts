@@ -1080,6 +1080,46 @@ export interface CompanyWithStats extends Company {
 }
 
 /**
+ * One census quarter of a company, as `GET /api/v1/companies/index` sends it in each item's
+ * `censusPeriods` (SITIMM-1546): one per quarter, from its canonical census (SITIMM-1451), the
+ * newest quarter first. The list is the same with or without the `year`/`quarter` filter, and
+ * `[]` for a company without census. V1 route: the panel composes this with its local
+ * `CompanyIndexItem`.
+ *
+ * Backend: `app/presentation/api/v1/companies/listing.py` :: `_group_census_periods_by_company`.
+ */
+export interface CompanyCensusPeriod {
+  /** Year of the quarter (Q4 belongs to the year it starts in). */
+  year: number;
+  /** Quarter, 1–4. */
+  quarter: 1 | 2 | 3 | 4;
+  /**
+   * ISO date (`YYYY-MM-DD`) of the padrón. A late padrón falls in a later quarter than its own,
+   * so the quarter comes from `year`/`quarter`, never from this date.
+   */
+  receivedAt: string | null;
+}
+
+/**
+ * The census load of a company, as `GET /api/v1/companies/index` sends it in each item's
+ * `processing`. Without a pending or processing job every field but `isProcessing` is `null`.
+ *
+ * Backend: `app/presentation/api/v1/companies/listing.py` :: `_build_processing_entry`.
+ */
+export interface CompanyIndexProcessing {
+  isProcessing: boolean;
+  /** `"pending"` or `"processing"` while loading. */
+  processingStatus: string | null;
+  /** `processedRows / totalRows` as a percentage, one decimal; `0` while `totalRows` is 0. */
+  processingProgress: number | null;
+  processingEstimatedSeconds: number | null;
+  /** Rows of the padrón already loaded ("58 de 137 personas"). SITIMM-1546. */
+  processedRows: number | null;
+  /** Rows of the padrón being loaded. SITIMM-1546. */
+  totalRows: number | null;
+}
+
+/**
  * Document type of a company document.
  *
  * Backend: `app/infrastructure/database/models/document_models.py` :: `DocumentType`

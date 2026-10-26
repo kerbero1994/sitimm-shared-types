@@ -5,6 +5,23 @@ All notable changes to `@kerbero1994/shared-types` are documented here.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.53.0] - 2026-10-25
+
+### Added — lista de empresas: trimestres del padrón y filas en carga (SITIMM-1546, mini-back #796, sin mergear)
+
+Revisado contra mini-back `4edf21ee`: `app/presentation/api/v1/companies/listing.py` (`_group_census_periods_by_company`, `_build_processing_entry`) y `company_repository.py` :: `get_index_census_periods`. El JSON del handler (`tests/unit/api/v1/test_companies_index_census_periods_sitimm1546.py`) coincide con la fixture, llave por llave y en orden.
+
+- `companies`: `CompanyCensusPeriod` (`year`, `quarter`, `receivedAt`), el de cada ítem de `censusPeriods` en `GET /api/v1/companies/index`. Hay uno por trimestre, del padrón canónico, y el más reciente va primero. La lista no cambia con el filtro de periodo; sin padrón llega `[]`. El trimestre sale de `year`/`quarter` y no de `receivedAt`, porque un padrón extemporáneo llega en un trimestre posterior.
+  - `receivedAt: string | null`: la columna es nullable, `app/infrastructure/database/models/generated_models.py:1515` (`receivedAt: Mapped[datetime.date | None]`). Hoy en prod ningún padrón vivo la tiene en `NULL` (0 de 515).
+  - `quarter: 1 | 2 | 3 | 4`, por el `CHECK` `Census_quarter_check` (`generated_models.py:1488`).
+- `companies`: `CompanyIndexProcessing`, el `processing` del ítem, con `processedRows` y `totalRows` nuevos («Cargándose: 58 de 137 personas»). Son `null` sin carga en curso.
+- **Panel:** son ruta V1, así que el ítem sigue con su tipo local. Los dos tipos se componen con el `CompanyIndexItem` local (`companiesTypes/companyIndex.ts`): `processing?: CompanyIndexProcessing` y `censusPeriods?: CompanyCensusPeriod[]`.
+- Minor: solo tipos nuevos; nada existente cambia.
+
+### Tests
+
+- `company-index-contract`: tsc compila la fixture, que lleva dos trimestres (uno sin fecha), una empresa sin padrón, una carga en curso y una inactiva. Los negativos: el trimestre 5, un `censusId` que no viaja y `processing` sin `totalRows`. Las llaves se comparan con las del BE, en orden. También se comprueba que el trimestre más reciente va primero y que el porcentaje sale de las filas.
+
 ## [2.52.0] - 2026-10-25
 
 ### Added — aviso a empresas por su canal: vista previa, envío por empresa e historial (SITIMM-1537, mini-back #795, sin mergear)
